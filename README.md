@@ -1,5 +1,4 @@
-# POC — Ecossistema estilo Steam
-
+# MIST — Multiplayer Instance for Steam-like Titles
 Prova de conceito de um sistema inspirado no ecossistema da Steam, cobrindo três frentes principais:
 
 - **Loja**: catálogo e compra de jogos.
