@@ -93,3 +93,16 @@ graph TD
 | **MIST Curator & Recommender** | `store-service` | Gera vitrines personalizadas e justificativas contextuais em linguagem natural combinando tags e biblioteca. |
 | **MIST Dynamic Quest Master** | `library-service` | Gera desafios dinâmicos semanais e troféus sazonais para jogos da biblioteca. |
 | **MIST Chatbot / NPC Companion** | `social-service` | Bot de chat acessível na lista de amigos para tirar dúvidas sobre promoções, estatísticas e novidades do ecossistema. |
+
+---
+
+## 5. Runners de Testes e Estratégia de QA
+
+A pirâmide de testes do MIST é distribuída entre os seguintes runners conforme o domínio e a granularidade da camada:
+
+| Runner | Camada / Escopo | Linguagem | Tipos de Teste | Justificativa Técnica |
+| :--- | :--- | :--- | :--- | :--- |
+| **`pytest`** | Backend (API Gateway e os 4 Microsserviços) | Python | Unitários, Integração de serviços, Regressão e Smoke | Padrão do ecossistema FastAPI/Python com suporte assíncrono (`pytest-asyncio`) e testes de cliente HTTP via `httpx`. |
+| **`vitest`** | Frontend SPA (React + TypeScript) | TypeScript | Unitários, Integração de componentes e Regressão de UI | Compatibilidade nativa com a configuração do Vite e TypeScript, oferecendo execução ultrarrápida em memória para componentes. |
+| **`playwright`** | Sistema Completo / End-to-End (E2E) | TypeScript | E2E e Smoke de fluxos integrados | Suporte nativo a browsers reais, automação de fluxos ponta a ponta (compra, login, navegação) e comunicação WebSocket em tempo real. |
+

@@ -102,6 +102,24 @@ topicosIV/
 
 > Todos os arquivos acima foram criados como placeholders vazios. O conteúdo será implementado nas próximas etapas.
 
+## Testes e Automação de QA
+
+O projeto adota uma pirâmide de testes distribuída entre três runners específicos, gerenciados pelo catálogo [`TESTS.md`](./TESTS.md), pelo log unificado de resultados [`resultados.json`](./resultados.json) e pelas Agent Skills do Antigravity (`qa_writer` e `qa_tester`).
+
+### Runners Oficiais e Dependências
+
+| Runner | Escopo | Requisitos / Dependências | Execução Manual |
+| :--- | :--- | :--- | :--- |
+| **`pytest`** | Backend (Gateway e Microsserviços Python) | Python 3.10+<br>`pip install pytest pytest-asyncio httpx` nos ambientes/requirements de cada serviço | `pytest services/auth-service`<br>`pytest gateway` |
+| **`vitest`** | Frontend (Unitários e Componentes React) | Node.js 18+<br>`npm install -D vitest @testing-library/react jsdom` no diretório `frontend/` | `cd frontend && npx vitest run` |
+| **`playwright`** | Sistema Completo (E2E e Smoke de integração) | Node.js 18+<br>`npm install -D @playwright/test`<br>`npx playwright install` (para binários dos navegadores) | `npx playwright test` |
+
+### Operação via Skills de Agente
+
+- **`qa_writer`**: Responsável por manter o arquivo [`TESTS.md`](./TESTS.md) atualizado com novos cenários (Dado/Quando/Então), mapeando IDs e atribuindo os runners correspondentes.
+- **`qa_tester`**: Executa os comandos reais mapeados no `TESTS.md` (modo completo ou por categoria), realiza a normalização atômica dos dados e preserva as últimas 5 execuções no [`resultados.json`](./resultados.json).
+
 ## Histórico de prompts
 
 O histórico de prompts usados para conduzir este projeto está em [`prompts.md`](./prompts.md).
+
