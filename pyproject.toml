@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mist"
+version = "1.0.0"
+description = "MIST — Multiplayer Instance for Steam-like Titles"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = [
+    "gateway/tests",
+    "services/auth-service/tests",
+    "services/store-service/tests",
+    "services/library-service/tests",
+    "services/social-service/tests"
+]
+pythonpath = [
+    ".",
+    "gateway",
+    "services/auth-service",
+    "services/store-service",
+    "services/library-service",
+    "services/social-service"
+]
+asyncio_mode = "auto"
+markers = [
+    "unit: Testes unitários isolados",
+    "integration: Testes de integração entre componentes/serviços",
+    "smoke: Testes de fumaça e conectividade básica",
+    "regression: Testes de regressão baseados em bugs corrigidos"
+]
+addopts = "-ra -q --import-mode=importlib"
