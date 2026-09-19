@@ -185,3 +185,123 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 6. **Log Estruturado de Resultados (`resultados.json`):**
    - Criado vazio (`{}`) na raiz do projeto, pronto para consumo e gravação das skills.
 
+---
+
+## 2026-09-19 — Prompt 9
+
+**Prompt do usuário:**
+
+> /qa_writer faça um teste para validar a correta alternancia entre as páginas, sem corrupção do contexto esperado pelo fluxo. Por exemplo, se eu estiver migrando da Loja ou da Biblioteca para a Loja de Pontos, então a migração deve ser feita sem problemas, sem lentidão excessiva ou com acumulo de contexto desnecessário
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Ativação da Skill `qa_writer`**: Aplicação das regras de curadoria técnica do catálogo de testes do MIST (`TESTS.md`), com edição incremental estrita e sem execução direta de runners.
+- **Enquadramento na Pirâmide de Testes**:
+  - Classificado na camada **E2E / Sistema completo** utilizando o runner `playwright` oficializado no projeto, visto que a alternância entre páginas, avaliação de fluidez na SPA e verificação de desmontagem correta de componentes contextuais correspondem à interação direta do usuário no navegador.
+- **Nomenclatura e Identificação**:
+  - Atribuído o identificador `E2E-NAV-01` (domínio `NAV` para Navegação e Ciclo de Vida), respeitando a regra de numeração sequencial da categoria.
+- **Ciclo de Vida do Teste**:
+  - Registrado com `Status: planejado` e campo `Comando:` vazio, aguardando futura implementação de script de automação e validação via `qa_tester`.
+- **Critérios de Validação Cobertos**:
+  - Desmontagem limpa de cabeçalhos e estados voláteis da tela de origem (ex: input de busca da Loja).
+  - Integridade dos dados e contexto da tela de destino (ex: saldo de 5.348 pontos e catálogo de cosméticos na Loja de Pontos).
+  - Tempo de resposta e transição fluido (< 500ms), sem retenção de nós desnecessários no DOM ou vazamento de memória.
+
+**Resultado e Modificações:**
+
+- Atualização incremental do arquivo [`TESTS.md`](./TESTS.md) com a inclusão da subseção `### Navegação e Ciclo de Vida da Aplicação` contendo o caso `E2E-NAV-01 — Alternância entre páginas sem corrupção de contexto ou lentidão`.
+- Atualização do arquivo [`prompts.md`](./prompts.md) com a documentação mandatória do prompt.
+
+---
+
+## 2026-09-19 — Prompt 10
+
+**Prompt do usuário:**
+
+> /qa_tester Realize o teste E2E-NAV-01
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Ativação da Skill `qa_tester`**: Invocação do motor de execução e gravação de resultados para o teste de ID `E2E-NAV-01`.
+- **Tratamento de Estado `planejado`**:
+  - De acordo com as diretrizes da skill `qa_tester`, testes em `Status: planejado` sem comando automatizado associado foram parseados a partir de `TESTS.md` e registrados com o status `pending` (não tratado como falha).
+- **Suporte Cross-Platform**:
+  - Implementado o adaptador em JavaScript/Node.js ([`runner_adapter.js`](./.agents/skills/qa_tester/scripts/runner_adapter.js)) compatível com o adaptador em Python, garantindo parsing, atomicidade via arquivo temporário e manutenção de histórico FIFO sem dependência exclusiva de runtime do ambiente.
+- **Persistência Atômica**:
+  - Resultado consolidado e salvo atomicamente no arquivo [`resultados.json`](./resultados.json).
+
+**Resultado e Modificações:**
+
+- Atualização de [`resultados.json`](./resultados.json) com o registro de execução para `E2E-NAV-01` (`status: pending`, `duracao_ms: 0`, `origem: execucao`).
+- Inclusão do script adaptador complementar [`runner_adapter.js`](./.agents/skills/qa_tester/scripts/runner_adapter.js).
+- Atualização do [`prompts.md`](./prompts.md) com a documentação mandatória deste prompt.
+
+---
+
+## 2026-09-19 — Prompt 11
+
+**Prompt do usuário:**
+
+> Ok. Validei o funcionamento dos agentes criados de forma básica. Entretanto, para poder testar de forma definitiva, necessito realizar a instalação e configuração dos runners básicos (pytest, vitest e playwrigth).
+> /grill-me qual o melhor método de instalação e configuração local desses runners de forma a poder usar eles com o menor atrito possível pelos agentes. Minha preocupação é que esses runners devem estar prontos para:
+> - Possuir uma configuração local (a nível do projeto) preparada para a escala do projeto mesmo em sua fase final.
+> - Sua configuração deve ser facilmente gerenciada por uma IA, pois após a conclusão da configuração no meu computador, a configuração deverá ser documentada no README.md e no architecture.md de forma a ser reproduzível pelos meus colegas em seus respectivos computadores.
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Ativação da Dinâmica `/grill-me`**: Início da entrevista técnica estruturada (pergunta a pergunta) para definir o modelo de instalação e orquestração dos runners (`pytest`, `vitest`, `playwright`).
+- **Foco nos Requisitos de Escala e Agentes de IA**:
+  - Mapear a estratégia de runtime para execução local direta vs contêineres Docker para os microsserviços Python e frontend TypeScript.
+  - Estruturar a configuração de forma reprodutível para equipe multiplataforma e documentável no `README.md` e `architecture.md`.
+
+**Resultado e Modificações:**
+
+- Atualização do `prompts.md` com a entrada do usuário e início da rodada de alinhamento arquitetural via `ask_question`.
+
+---
+
+## 2026-09-19 — Prompt 12
+
+**Prompt do usuário:**
+
+> Sim, pode seguir com os próximos passos. Para os passos de criação de testes e de atualização dos comandos de teste (passos 3 e 5) utilize a skill qa_writer. Valide a conclusão das suas tarefas ao chamar a skill qa_tester para rodar os testes E2E-NAV-01 e os demais que forem criados no passo 3
+
+**Decisões Arquiteturais e Técnicas:**
+
+1. **Configuração Centralizada do Backend:**
+   - Criado `pyproject.toml` na raiz configurando o Pytest e a resolução automática de `pythonpath` para o API Gateway e todos os 4 microsserviços (`auth-service`, `store-service`, `library-service`, `social-service`).
+   - Criado `requirements-dev.txt` na raiz contendo `pytest`, `pytest-asyncio`, `httpx`, `pytest-mock` e `coverage`.
+
+2. **Configuração Unificada do Frontend & E2E:**
+   - Atualizado `frontend/package.json` com devDependencies (`vitest`, `jsdom`, `@testing-library/react`, `@testing-library/jest-dom`, `@playwright/test`) e scripts de teste (`test:unit`, `test:e2e`).
+   - Criado `frontend/vitest.config.ts` com ambiente `jsdom` e setup file `frontend/src/test/setup.ts`.
+   - Criado `frontend/playwright.config.ts` com orquestração automática do servidor Vite (porta 3000) e suporte cross-browser (Chromium, Firefox, WebKit).
+   - Executada instalação de pacotes e download de navegadores (`npx playwright install`).
+
+3. **Criação de Testes Automatizados Reais:**
+   - **`FRONT-UNIT-01`**: Criado `frontend/src/components/GameCard.test.tsx` testando renderização, título, preço e badge de desconto do card de jogo.
+   - **`REG-FRONT-01`**: Criado `frontend/src/test/theme.test.ts` validando que a cor secundária é estritamente `#1F4D36` e prevenindo regressão para `#BFE7D2`.
+   - **`E2E-NAV-01`**: Criado `frontend/e2e/navigation.spec.ts` validando o fluxo de navegação entre Loja, Biblioteca e Loja de Pontos com preservação e isolamento de contexto.
+
+4. **Documentação de Onboarding:**
+   - Atualizados `README.md` e `docs/architecture.md` detalhando a arquitetura de desacoplamento, comandos de execução da raiz e instruções passo a passo para a equipe reproduzir o ambiente local.
+
+5. **Operação via Skill `qa_writer`:**
+   - Edição incremental de `TESTS.md` atualizando os comandos-base dos runners e promovendo os testes `FRONT-UNIT-01`, `REG-FRONT-01` e `E2E-NAV-01` para `Status: implementado` com comandos diretos via npm scripts.
+
+6. **Validação via Skill `qa_tester`:**
+   - Executados os testes através de `runner_adapter.js`.
+   - Corrigido o analisador de comando para suportar argumentos com dois-pontos (ex: `test:e2e`).
+   - Todos os testes foram executados contra os runners reais e aprovados com sucesso (`pass`), com persistência atômica no `resultados.json`.
+
+**Resultado e Modificações:**
+
+- Arquivos criados: `pyproject.toml`, `requirements-dev.txt`, `frontend/vitest.config.ts`, `frontend/src/test/setup.ts`, `frontend/playwright.config.ts`, `frontend/src/components/GameCard.test.tsx`, `frontend/src/test/theme.test.ts`, `frontend/e2e/navigation.spec.ts`.
+- Arquivos atualizados: `frontend/package.json`, `README.md`, `docs/architecture.md`, `TESTS.md`, `resultados.json`, `.agents/skills/qa_tester/scripts/runner_adapter.js`, `prompts.md`.
+- Resultados no `resultados.json`:
+  - `E2E-NAV-01`: PASS (Playwright cross-browser).
+  - `FRONT-UNIT-01`: PASS (Vitest).
+  - `REG-FRONT-01`: PASS (Vitest).
+
+
+
