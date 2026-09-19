@@ -155,7 +155,7 @@ Os testes podem ser executados manualmente pelos desenvolvedores ou invocados pe
 ### Operação via Skills de Agente
 
 - **`qa_writer`**: Responsável por manter o arquivo [`TESTS.md`](./TESTS.md) atualizado com novos cenários (Dado/Quando/Então), mapeando IDs e atribuindo os runners correspondentes.
-- **`qa_tester`**: Executa os comandos reais mapeados no `TESTS.md` (modo completo, por categoria ou validação pontual), realiza a normalização atômica dos dados e preserva as últimas 5 execuções no [`resultados.json`](./resultados.json).
+- **`qa_tester`**: Executa os comandos reais mapeados no `TESTS.md` (modo completo, por categoria ou validação pontual), realiza a normalização atômica dos dados e preserva as últimas 10 execuções no [`resultados.json`](./resultados.json).
 
 ## Histórico de prompts
 
