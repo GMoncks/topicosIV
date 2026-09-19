@@ -7,7 +7,7 @@ Funcionalidades:
 2. Executa testes reais via subprocess para pytest, vitest e playwright.
 3. Normaliza a saída de cada runner para o schema comum do resultados.json.
 4. Aplica escrita atômica (arquivo temporário + rename).
-5. Mantém histórico FIFO das últimas 5 execuções por ID de teste.
+5. Mantém histórico FIFO das últimas 10 execuções por ID de teste.
 """
 
 import sys
@@ -196,11 +196,11 @@ def execute_suite(category=None, test_id=None, origem="execucao"):
             }
             print(f"   └─ Resultado: {entry['status'].upper()} em {entry['duracao_ms']}ms")
 
-        # Manter histórico FIFO das últimas 5 execuções
+        # Manter histórico FIFO das últimas 10 execuções
         historico = resultados[t_id].get("historico", [])
         historico.append(entry)
-        if len(historico) > 5:
-            historico = historico[-5:]
+        if len(historico) > 10:
+            historico = historico[-10:]
         resultados[t_id]["historico"] = historico
 
     # Escrita atômica garantida

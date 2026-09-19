@@ -106,18 +106,56 @@ topicosIV/
 
 O projeto adota uma pirâmide de testes distribuída entre três runners específicos, gerenciados pelo catálogo [`TESTS.md`](./TESTS.md), pelo log unificado de resultados [`resultados.json`](./resultados.json) e pelas Agent Skills do Antigravity (`qa_writer` e `qa_tester`).
 
-### Runners Oficiais e Dependências
+### Configuração e Onboarding Local do Ambiente de Testes
 
-| Runner | Escopo | Requisitos / Dependências | Execução Manual |
+Para garantir máxima velocidade para os desenvolvedores e para os agentes de IA, os runners são executados nativamente no host com configuração desacoplada e reprodutível.
+
+#### 1. Backend Python (`pytest`)
+1. Instale o Python 3.10+ via instalador oficial do [python.org](https://www.python.org/) marcando a opção **"Add Python to PATH"**.
+2. Na raiz do projeto, crie e ative o ambiente virtual unificado:
+   ```bash
+   # Windows (PowerShell)
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+
+   # Linux / macOS / WSL
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Instale as dependências compartilhadas de desenvolvimento e testes:
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+   *(O arquivo `pyproject.toml` na raiz já mapeia o `pythonpath` para o Gateway e todos os 4 microsserviços automaticamente).*
+
+#### 2. Frontend & E2E (`vitest` + `playwright`)
+1. Certifique-se de possuir o Node.js 18+ instalado no host.
+2. No diretório `frontend/`, instale todas as dependências de interface e testes com um único comando:
+   ```bash
+   cd frontend
+   npm install
+   ```
+3. Baixe os binários de navegador do Playwright (Chromium, Firefox e WebKit):
+   ```bash
+   npx playwright install
+   ```
+
+---
+
+### Execução dos Testes
+
+Os testes podem ser executados manualmente pelos desenvolvedores ou invocados pelas skills de IA a partir da raiz do repositório:
+
+| Runner | Camada / Escopo | Execução da Raiz | Execução no Diretório |
 | :--- | :--- | :--- | :--- |
-| **`pytest`** | Backend (Gateway e Microsserviços Python) | Python 3.10+<br>`pip install pytest pytest-asyncio httpx` nos ambientes/requirements de cada serviço | `pytest services/auth-service`<br>`pytest gateway` |
-| **`vitest`** | Frontend (Unitários e Componentes React) | Node.js 18+<br>`npm install -D vitest @testing-library/react jsdom` no diretório `frontend/` | `cd frontend && npx vitest run` |
-| **`playwright`** | Sistema Completo (E2E e Smoke de integração) | Node.js 18+<br>`npm install -D @playwright/test`<br>`npx playwright install` (para binários dos navegadores) | `npx playwright test` |
+| **`pytest`** | Backend (Gateway e Microsserviços) | `pytest` ou `pytest services/auth-service/tests` | `cd services/auth-service && pytest` |
+| **`vitest`** | Frontend (Unitários e Componentes) | `npm --prefix frontend run test:unit` | `cd frontend && npm run test:unit` |
+| **`playwright`** | Sistema Completo (E2E e Integração) | `npm --prefix frontend run test:e2e` | `cd frontend && npm run test:e2e` |
 
 ### Operação via Skills de Agente
 
 - **`qa_writer`**: Responsável por manter o arquivo [`TESTS.md`](./TESTS.md) atualizado com novos cenários (Dado/Quando/Então), mapeando IDs e atribuindo os runners correspondentes.
-- **`qa_tester`**: Executa os comandos reais mapeados no `TESTS.md` (modo completo ou por categoria), realiza a normalização atômica dos dados e preserva as últimas 5 execuções no [`resultados.json`](./resultados.json).
+- **`qa_tester`**: Executa os comandos reais mapeados no `TESTS.md` (modo completo, por categoria ou validação pontual), realiza a normalização atômica dos dados e preserva as últimas 5 execuções no [`resultados.json`](./resultados.json).
 
 ## Histórico de prompts
 

@@ -1,9 +1,9 @@
 # TESTS.md
 
 ## Runners registrados
-- pytest → comando-base: `pytest`, diretório: `services/<servico>` ou `gateway`
-- vitest → comando-base: `npx vitest run`, diretório: `frontend`
-- playwright → comando-base: `npx playwright test`, diretório: `.`
+- pytest → comando-base: `pytest`, diretório: `.`
+- vitest → comando-base: `npm --prefix frontend run test:unit`, diretório: `.`
+- playwright → comando-base: `npm --prefix frontend run test:e2e`, diretório: `.`
 
 ## Unitários
 
@@ -25,9 +25,9 @@
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
 - Prioridade: P1
-- Status: planejado
+- Status: implementado
 - Runner: vitest
-- Comando: 
+- Comando: `npm --prefix frontend run test:unit -- src/components/GameCard.test.tsx`
 - Pré-condições: Componente `GameCard.tsx` disponível.
 - Passos:
   - Dado as propriedades de um jogo com preço original e percentual de desconto
@@ -82,14 +82,29 @@
 - Resultado esperado: Interface responsiva renderizada sem erros no console do navegador.
 - Rastreabilidade: `docs/architecture.md` (Seções 1 e 2.3)
 
+### Navegação e Ciclo de Vida da Aplicação
+#### E2E-NAV-01 — Alternância entre páginas sem corrupção de contexto ou lentidão
+- Prioridade: P1
+- Status: implementado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/navigation.spec.ts`
+- Pré-condições: Frontend MIST em execução com usuário autenticado e saldo inicial carregado.
+- Passos:
+  - Dado que o usuário está com contexto ativo na tela da Loja (com termo de busca digitado) ou na Biblioteca
+  - Quando aciona a alternância para a tela "Loja de Pontos" através da barra lateral de navegação
+  - Então a transição ocorre de forma fluida (< 500ms), desmontando os elementos exclusivos da página de origem (ex: Header da Loja) sem reter filtros residuais, e exibindo a Loja de Pontos com saldo íntegro de pontos
+- Resultado esperado: Migração de tela instantânea, sem retenção de estado orfão incompatível entre fluxos e renderização completa da Loja de Pontos.
+- Rastreabilidade: `frontend/src/App.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/pages/PointsShop.tsx`
+- Observações: Previne degradação de performance por acúmulo de contexto residual e garante isolamento do ciclo de vida de cada tela na SPA.
+
 ## Regressão
 
 ### Frontend
 #### REG-FRONT-01 — Preservação da paleta de cor secundária (#1F4D36)
 - Prioridade: P2
-- Status: planejado
+- Status: implementado
 - Runner: vitest
-- Comando: 
+- Comando: `npm --prefix frontend run test:unit -- src/test/theme.test.ts`
 - Pré-condições: Variáveis de tema e estilos Tailwind carregados.
 - Passos:
   - Dado a configuração de tema do frontend

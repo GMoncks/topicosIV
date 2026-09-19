@@ -106,3 +106,21 @@ A pirâmide de testes do MIST é distribuída entre os seguintes runners conform
 | **`vitest`** | Frontend SPA (React + TypeScript) | TypeScript | Unitários, Integração de componentes e Regressão de UI | Compatibilidade nativa com a configuração do Vite e TypeScript, oferecendo execução ultrarrápida em memória para componentes. |
 | **`playwright`** | Sistema Completo / End-to-End (E2E) | TypeScript | E2E e Smoke de fluxos integrados | Suporte nativo a browsers reais, automação de fluxos ponta a ponta (compra, login, navegação) e comunicação WebSocket em tempo real. |
 
+### 5.1. Arquitetura de Configuração e Desacoplamento
+
+1. **Backend Python (`pytest`):**
+   - **Ambiente Virtual Unificado (`.venv/`):** Um único ambiente na raiz gerencia as ferramentas de teste compartilhadas (`requirements-dev.txt`), eliminando troca constante de ambientes virtuais.
+   - **Resolução de Microsserviços (`pyproject.toml`):** Configura a chave `tool.pytest.ini_options.pythonpath` apontando para `gateway` e para os 4 microsserviços (`auth-service`, `store-service`, `library-service`, `social-service`), permitindo que a IA e os desenvolvedores executem qualquer teste do backend sem falhas de importação de módulos.
+
+2. **Frontend & E2E (`vitest` + `playwright`):**
+   - **Centralização de Tooling TypeScript (`frontend/package.json`):** Ambos os runners residem sob o mesmo `package.json` do frontend, garantindo instalação em comando único (`npm install`), compartilhamento de tipos e ausência de duplicação de `node_modules`.
+   - **Configurações Dedicadas:** `frontend/vitest.config.ts` para testes rápidos em DOM simulado (`jsdom`) e `frontend/playwright.config.ts` configurado para múltiplos navegadores (Chromium, Firefox, WebKit) e orquestração automática do servidor de desenvolvimento.
+
+### 5.2. Padrão de Execução por Agentes de IA
+
+Para minimizar o atrito e evitar comandos aninhados (`cd`), todos os testes são configurados para disparo a partir da raiz do repositório:
+- Backend: `pytest` ou `pytest services/<servico>/tests`
+- Frontend Unitário: `npm --prefix frontend run test:unit`
+- E2E Sistema Completo: `npm --prefix frontend run test:e2e`
+
+
