@@ -93,4 +93,5 @@ export interface PointsShopItem {
   isOwned?: boolean;
 }
 
-export type NavigationTab = 'store' | 'library' | 'social' | 'news' | 'points' | 'profile';
+export type NavigationTab = 'store' | 'library' | 'social' | 'news' | 'points' | 'profile' | 'login';
+

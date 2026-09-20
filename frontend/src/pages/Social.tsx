@@ -1,6 +1,30 @@
 import React from 'react';
 
+export interface FriendItem {
+  id: string;
+  name: string;
+  status: 'online' | 'offline';
+  activity: string;
+}
+
+export const mockFriends: FriendItem[] = [
+  {
+    id: '1',
+    name: 'CyberKnight',
+    status: 'online',
+    activity: 'Jogando Helldivers 2'
+  },
+  {
+    id: '2',
+    name: 'Valkyrie',
+    status: 'online',
+    activity: 'Online'
+  }
+];
+
 export const Social: React.FC = () => {
+  const onlineFriends = mockFriends.filter(f => f.status === 'online');
+
   return (
     <main className="p-8 pb-24 max-w-[1600px] mx-auto text-white">
       <div className="flex items-center justify-between mb-8">
@@ -35,23 +59,18 @@ export const Social: React.FC = () => {
         <div>
           <div className="bg-brand-card p-6 rounded-2xl border border-gray-800">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <i className="fa-solid fa-user-group text-emerald-400"></i> Amigos Online (3)
+              <i className="fa-solid fa-user-group text-emerald-400"></i> Amigos Online ({onlineFriends.length})
             </h3>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800/60 transition">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-green"></div>
-                  <span className="font-semibold">CyberKnight</span>
-                </div>
-                <span className="text-xs text-gray-400">Jogando Helldivers 2</span>
-              </li>
-              <li className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800/60 transition">
-                <div className="flex items-center gap-3">
-                  <div className="w-2.5 h-2.5 rounded-full bg-brand-green"></div>
-                  <span className="font-semibold">Valkyrie</span>
-                </div>
-                <span className="text-xs text-gray-400">Online</span>
-              </li>
+              {onlineFriends.map(friend => (
+                <li key={friend.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800/60 transition">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-brand-green"></div>
+                    <span className="font-semibold">{friend.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-400">{friend.activity}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import React from 'react';
 import { GameCard } from './GameCard';
 import { GameItem } from '../types';
 
@@ -8,7 +7,7 @@ describe('GameCard Component (FRONT-UNIT-01)', () => {
   const mockGame: GameItem = {
     id: 'game-1',
     title: 'Cyberpunk Odyssey',
-    category: 'DESTAQUE',
+    category: 'JOGO',
     currentPrice: 149.99,
     originalPrice: 199.99,
     discountPercentage: 25,

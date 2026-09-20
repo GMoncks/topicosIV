@@ -303,5 +303,317 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
   - `FRONT-UNIT-01`: PASS (Vitest).
   - `REG-FRONT-01`: PASS (Vitest).
 
+---
+
+## 2026-09-19 — Prompt 13
+
+**Prompt do usuário:**
+
+> /grill-me planeja a implementação das seguintes features no projeto:
+> - Implementar o gateway (FastAPI com httpx para proxy reverso de rotas e injeção do header seguro X-User-Id).
+> - Implementar o auth-service (Registro, Login, Hashing de senha com bcrypt, emissão e validação de JWT, saldo inicial da carteira).
+> - Criar o cliente HTTP (frontend/src/api/client.ts) centralizado com interceptor para injetar o JWT nas requisições do Gateway.
+> - Criar tela/modal de Login e Registro conectada ao auth-service.
+> - Implementar o Contexto Global de Autenticação (AuthContext) e estado do usuário (carteira, avatar, nível).
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Conclusão da Dinâmica `/grill-me`**: Realizada a entrevista técnica estruturada cobrindo toda a árvore de decisão do sistema de autenticação, gateway e estado global:
+  1. **Apresentação Frontend**: Modelo híbrido — Modal interativo sobre a SPA (com alternância Login/Registro) para acesso rápido mantendo navegação livre (guest mode) para visitantes, somado à tela dedicada de autenticação.
+  2. **Política de Novos Usuários**: Registro no `auth-service` com saldo inicial na carteira de R$ 150,00, 500 pontos MIST, Nível 1 e avatar gamer padrão.
+  3. **Segurança e Proxy do Gateway**: Validação centralizada de JWT e sanitização estrita de headers (eliminação de `X-User-*` externos contra spoofing e injeção downstream dos headers confiáveis `X-User-Id`, `X-User-Email` e `X-User-Username`); bloqueio 401 em rotas protegidas sem token e repasse via `httpx.AsyncClient` reutilizável.
+  4. **Gestão de Sessão no Cliente HTTP (`client.ts`) e `AuthContext`**: Interceptor de requisições injeta token JWT; interceptor de respostas detecta status 401, remove o token do `localStorage`, restaura o contexto para guest e dispara notificação com abertura do modal de sessão expirada.
+  5. **Estratégia de Testes Automatizados**: Cobertura nos 3 runners oficiais (`pytest` para gateway e auth-service, `vitest` para componentes e client.ts, e `playwright` para o fluxo E2E de login/registro), com registro no `TESTS.md` via `qa_writer` e validação via `qa_tester`.
+
+**Resultado e Modificações:**
+
+- Atualização incremental do `prompts.md`.
+- Elaboração do plano detalhado de implementação no artifact `implementation_plan.md`.
+
+---
+
+## 2026-09-19 — Prompt 14
+
+**Prompt do usuário:**
+
+> Comments on artifact URI: file:///c%3A/Users/Gabriel%20Torres/.gemini/antigravity/brain/82132158-3576-410f-ad01-b92101eb8d20/implementation_plan.md
+> [Comentários: Alteração de saldo inicial de R$ 150,00 para R$ 200,00; Nomes dos testes a serem avaliados e definidos pelo próprio agente qa_writer]
+> Pode implementar, considerando os comentários que fiz no Implementation Plan
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Ajuste de Saldo Inicial**: Atualizada a concessão de boas-vindas do `auth-service` para R$ 200,00 (default no modelo `User` e resposta de registro), mantendo 500 Pontos MIST e Nível 1.
+- **Autonomia da Skill `qa_writer`**: Os nomes, categorias e IDs oficiais dos testes foram delegados à skill `qa_writer` para manter estrita conformidade com a taxonomia do `TESTS.md`.
+- **Início da Execução**:
+  1. Implementação do `auth-service` (FastAPI, SQLite com SQLAlchemy, bcrypt, JWT, endpoints de registro/login/me).
+  2. Implementação do API Gateway (FastAPI, `httpx`, validação JWT, expurgo de spoofing de headers, proxy reverso).
+  3. Implementação do Cliente HTTP (`frontend/src/api/client.ts`), interceptores e métodos `authApi`.
+  4. Implementação do `AuthContext` e integração na SPA (estado global de usuário, carteira, nível, avatar).
+  5. Criação do `AuthModal` (alternância Login/Registro, tema gamer MIST, animações) e adaptação de `Login.tsx`, `Header.tsx`, `Sidebar.tsx` e `App.tsx`.
+  6. Catálogo e criação de testes automatizados com `qa_writer` e execução via `qa_tester`.
+
+**Resultado e Modificações:**
+
+1. **Auth Service (`services/auth-service`):**
+   - Configurada persistência SQLite em `app/db/database.py` e modelo ORM `User` em `app/models/user.py` com saldo inicial padrão de R$ 200,00, 500 pontos MIST e nível 1.
+   - Implementado serviço de hashing com bcrypt e geração/validação de tokens JWT em `app/services/auth_service.py`.
+   - Implementados endpoints `/register`, `/login`, `/me` e `/health` em `app/api/routes.py`, com suporte a injeção do cabeçalho `X-User-Id` e extração de Bearer token.
+   - Criada suíte de testes unitários e de integração `services/auth-service/tests/test_auth.py` com banco SQLite em memória.
+
+2. **API Gateway (`gateway`):**
+   - Configurações centralizadas em `app/config.py` e cliente `httpx.AsyncClient` compartilhado via lifespan em `app/main.py`.
+   - Proxy reverso em `/api/auth/{path:path}` com sanitização obrigatória de headers `x-user-*` (prevenção contra spoofing), validação de JWT e injeção dos headers de identidade downstream (`X-User-Id`, `X-User-Email`, `X-User-Username`).
+   - Criada suíte de testes de integração `gateway/tests/test_gateway.py`.
+
+3. **Cliente HTTP e Contexto Global (`frontend/src`):**
+   - Atualizado `api/client.ts` com interceptor de requisição (token Bearer) e interceptor de resposta 401 (limpeza de storage e emissão do evento `mist:session-expired`).
+   - Criado `context/AuthContext.tsx` provendo estado reativo de autenticação (`user`, `token`, `isAuthenticated`, `isLoading`, `sessionNotice`, `openAuthModal`, etc.), hidratação automática ao iniciar e atualização dinâmica do saldo da carteira e pontos.
+   - Criada suíte de testes unitários `src/api/client.test.ts`.
+
+4. **Componentes e Telas de UI (`frontend/src`):**
+   - Criado `components/AuthModal.tsx` com alternância fluida entre abas "Entrar" e "Criar Conta", mensagem promocional de R$ 200,00 e 500 pontos, feedback de carregamento e atalho de fechamento via Esc/backdrop.
+   - Atualizado `pages/Login.tsx` com modo dedicado e conectado ao `useAuth()`.
+   - Atualizados `components/Sidebar.tsx`, `components/Header.tsx` e `App.tsx` para sincronização com o `AuthContext` e suporte à navegação tanto de visitantes quanto de usuários autenticados.
+   - Criada suíte de testes de componente `src/components/AuthModal.test.tsx` e teste ponta a ponta `e2e/auth.spec.ts`.
+
+5. **Catálogo de Testes e Execução (`TESTS.md` e `resultados.json`):**
+   - Atualizado `TESTS.md` via taxonomia oficial da skill `qa_writer`, registrando e promovendo para `Status: aprovado`:
+     - `AUTH-UNIT-01` (Pytest): Hashing bcrypt e validação de JWT.
+     - `FRONT-UNIT-02` (Vitest): Interceptor de requisições e captura de 401 no `client.ts`.
+     - `FRONT-UNIT-03` (Vitest): Renderização e alternância de abas do `AuthModal`.
+     - `GATEWAY-INT-01` (Pytest): Encaminhamento do Gateway e injeção do `X-User-Id` com bloqueio de spoofing.
+     - `AUTH-INT-01` (Pytest): Registro com saldo de R$ 200,00, persistência SQLite e login com JWT.
+     - `E2E-AUTH-01` (Playwright cross-browser): Fluxo completo de cadastro, reflexão do saldo na UI e encerramento de sessão.
+   - Execução integral via `qa_tester` com registro atômico em `resultados.json` (100% de aprovação nos testes implementados).
+
+---
+
+## 2026-09-19 — Prompt 15
+
+**Prompt do usuário:**
+
+> Ajustes que devem ser feitos:
+> - A mensagem "Ganhe R$ 200,00 na carteira ..." deve ficar mais vísivel, pois está com baixo contraste ou com baixa transparencia
+> - A senha cadastrada necessariamente deve ter um mínimo de 8 caracteres e conter caracteres dos tipos maiusculo, minusculo, número e símbolo
+> - Deve haver um botão de olho para "ver/ocultar" a senha digitada tanto no cadastro quanto no login
+> - Notei que- rodando apenas o frontend - em ações de cadastro/login de usuário, aparece uma mensagem de "Failed to fetch". Imagino que essa seja uma mensagem de erro padrão pela desconexão com o backend, mas peço que intercepte essa mensagm e mude a mensagem para algo mais amigável ao usuário brasileiro, como "Falha no processo de login" e "Falha no processo de cadastro".
+> - Contexto de simulação incongruente: A lista de desejos aparece com 32 jogos (apesar de ter somente 2), os amigos online aparecem como sendo 3 apesar de mostrar somente 2. Mesmo que ainda não haja implementações definitivas desses recursos, já podemos tornar mais inteligente a contagem dos valores
+> - Zere os saldos de pontos MIST e de dinheiro, que no dev são inicializados com valores diferentes de 0.
+> 
+> Depois desses ajustes, qa_writer deve criar novos testes baseados no botão de visualizar/ocultar senha e da requisição de que a senha seja conforme o padrão exigido.
+> 
+> Por fim, me ensine como devo rodar o sistema completo, em vez de rodar somente o frontend como fiz
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **UI & Acessibilidade**: Aumento do contraste do banner promocional com gradiente escuro de alto contraste (`bg-gradient-to-r from-emerald-950 via-[#1F4D36]/80 to-emerald-950`), bordas brilhantes e tipografia em `text-emerald-200`.
+- **Segurança de Credenciais**:
+  - Frontend: Validação regex estrita de senha (>= 8 caracteres, maiúscula, minúscula, número e símbolo) com feedback prévio.
+  - Backend: Validador Pydantic no schema `UserRegisterRequest` garantindo consistência em toda a API.
+  - UI de Senha: Adição do botão de alternância de visibilidade (ícone de olho `fa-eye`/`fa-eye-slash`) nos campos de senha de login e cadastro.
+- **Resiliência e Mensagens Amigáveis**: Interceptação de falhas de rede (`Failed to fetch`/`TypeError`) no `client.ts` e formulários com mensagens localizadas: "Falha no processo de login: não foi possível conectar ao servidor" e "Falha no processo de cadastro: não foi possível conectar ao servidor".
+- **Consistência de Dados de Demonstração**:
+  - Contagem dinâmica de itens na Lista de Desejos a partir de `mockGames.filter(g => g.category === 'DESEJO' || g.isWishlist).length` (total 2).
+  - Contagem dinâmica de Amigos Online a partir de `mockFriends.filter(f => f.status === 'online').length` (total 2).
+  - Inicialização dos saldos em desenvolvimento como `0.00` de carteira e `0` pontos MIST para o perfil visitante/convidado em `App.tsx` e `PointsShop.tsx`.
+- **QA e Automação**:
+  - Invocação da skill `qa_writer` para adicionar testes para o botão de ver/ocultar senha e validação de requisitos de senha.
+  - Execução via `qa_tester` e persistência em `resultados.json`.
+- **Instruções Operacionais**: Elaboração de guia detalhado no final da resposta ensinando como rodar o sistema completo tanto via Docker Compose quanto localmente via terminals dedicados.
+
+**Resultado e Modificações:**
+
+1. **Backend Auth Service (`services/auth-service`):**
+   - [`app/schemas/user.py`](./services/auth-service/app/schemas/user.py): Adicionado validador `validate_password_complexity` no `UserRegisterRequest` exigindo no mínimo 8 caracteres, letra maiúscula, letra minúscula, número e símbolo especial (`!@#$%^&*()_+-=[]{};':"|,.<>/?~` e correlatos).
+   - [`tests/test_auth.py`](./services/auth-service/tests/test_auth.py): Atualizadas credenciais de teste para `Senha@Segura123!` e implementado o caso de teste unitário `test_password_strength_validation_rejections`.
+
+2. **API Gateway (`gateway`):**
+   - [`tests/test_gateway.py`](./gateway/tests/test_gateway.py): Aprimorado isolamento de patching via `patch.object(gateway_main.http_client, "request")`, prevenindo colisões de módulos entre microsserviços.
+
+3. **Frontend API Client (`frontend/src/api/client.ts`):**
+   - Adicionada função utilitária `isNetworkError` para detecção robusta de erros de conexão HTTP/Fetch.
+   - Envolvidas as chamadas de `authApi.login` e `authApi.register` em blocos `try/catch` que interceptam `TypeError`/`Failed to fetch` e lançam mensagens amigáveis em português: *"Falha no processo de login: não foi possível conectar ao servidor."* e *"Falha no processo de cadastro: não foi possível conectar ao servidor."*.
+
+4. **Componentes e Telas de Autenticação (`frontend/src`):**
+   - [`components/AuthModal.tsx`](./frontend/src/components/AuthModal.tsx):
+     - Atualizado banner promocional de boas-vindas com gradiente profundo de alto contraste (`bg-gradient-to-r from-emerald-950 via-[#133824] to-emerald-950 border border-emerald-400/80 text-emerald-100`), garantindo legibilidade imediata no tema escuro.
+     - Adicionado estado e botões de olho (`fa-eye`/`fa-eye-slash`) para ver/ocultar senha no Login e Cadastro (senha e confirmação).
+     - Exportada a função `isPasswordStrong` e implementada validação de complexidade com checklist visual dinâmico antes do envio.
+   - [`pages/Login.tsx`](./frontend/src/pages/Login.tsx):
+     - Aplicadas as mesmas melhorias de contraste no banner promocional, botões de alternância de visibilidade da senha e validação rigorosa de credenciais.
+
+5. **Correção de Incongruências de Simulação e Saldos Zerados:**
+   - [`pages/Store.tsx`](./frontend/src/pages/Store.tsx): Exportado `mockGames`.
+   - [`pages/Social.tsx`](./frontend/src/pages/Social.tsx): Criada a lista tipada `mockFriends` e calculada dinamicamente a contagem de amigos online (`onlineFriends.length` = 2).
+   - [`App.tsx`](./frontend/src/App.tsx): Importado `mockGames` e calculado dinamicamente o total de itens na lista de desejos (`wishlistCount` = 2) no Header; zerados os saldos padrão de visitante para `walletBalance: 0.00` e `pointsBalance: 0`.
+   - [`pages/PointsShop.tsx`](./frontend/src/pages/PointsShop.tsx): Alterado `initialPoints` padrão para `0` e adicionado `useEffect` para sincronização reativa com props.
+
+6. **Catálogo de Testes e Execução QA (`TESTS.md` e `resultados.json`):**
+   - Registrados no [`TESTS.md`](./TESTS.md) via `qa_writer`:
+     - `AUTH-UNIT-02`: Validação de regras estritas de complexidade de senha no backend.
+     - `FRONT-UNIT-04`: Alternância de visibilidade da senha digitada (Show/Hide) no frontend.
+     - `FRONT-UNIT-05`: Validação de requisitos de senha e bloqueio de envio no frontend.
+     - `FRONT-UNIT-06`: Interceptação amigável de erro de conexão com o backend.
+   - Atualizados [`frontend/e2e/auth.spec.ts`](./frontend/e2e/auth.spec.ts) e [`frontend/e2e/navigation.spec.ts`](./frontend/e2e/navigation.spec.ts) para refletir senhas seguras e saldos zerados de visitantes.
+   - Executados os testes via `qa_tester` (`runner_adapter.js`), com 100% de aprovação e histórico gravado atomicamente em [`resultados.json`](./resultados.json).
+
+---
+
+## 2026-09-19 — Prompt 16
+
+**Prompt do usuário:**
+
+> Tentei rodar a opção A, mas não funcionou. Imagino que seja porque o docker-compose.yaml esteja vazio no projeto. Escreva nele o que for necessário para a operação do projeto até o momento
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Definição dos Serviços Ativos**: Identificados os serviços atualmente implementados e operacionais no ecossistema MIST:
+  - `auth-service` (microsserviço FastAPI na porta interna 8001).
+  - `gateway` (API Gateway FastAPI na porta 8000).
+  - `frontend` (SPA React/Vite servida por Nginx na porta 3000).
+- **Padronização de Dockerfiles**:
+  - `services/auth-service/Dockerfile`: Imagem `python:3.11-slim`, instalação de requisitos e inicialização do Uvicorn na porta 8001.
+  - `gateway/Dockerfile`: Imagem `python:3.11-slim`, instalação de requisitos e inicialização do Uvicorn na porta 8000.
+  - `frontend/Dockerfile`: Multi-stage build utilizando `node:20-alpine` para compilação estática (`npm run build`) e `nginx:alpine` para entrega dos assets web.
+- **Roteamento e Servidor Web SPA (`nginx.conf`)**:
+  - Configuração do Nginx com diretiva `try_files $uri $uri/ /index.html;` para suportar navegação client-side na SPA. Arquivo gerado em UTF-8 sem BOM para evitar erros de interpretação de diretiva.
+- **Orquestração de Rede e Volumes (`docker-compose.yml`)**:
+  - Rede isolada tipo bridge `mist-network`.
+  - Volume persistente `auth_data` para manter os dados do SQLite (`auth.db`) mesmo após paradas ou recriações de contêineres.
+  - Variáveis de ambiente configuradas para resolução DNS interna (`AUTH_SERVICE_URL: http://auth-service:8001`).
+  - Dependências encadeadas com `depends_on`.
+- **Ajustes de TypeScript no Frontend**:
+  - Adicionado `src/vite-env.d.ts` e ajustado `tsconfig.json` para exclusão de testes durante o build de produção (`tsc && vite build`).
+
+**Resultado e Modificações:**
+
+1. **[`docker-compose.yml`](./docker-compose.yml)**: Orquestração completa dos serviços `auth-service`, `gateway` e `frontend`, com rede bridge e volume persistente.
+2. **[`services/auth-service/Dockerfile`](./services/auth-service/Dockerfile)**: Container Python 3.11 com Uvicorn para o serviço de autenticação.
+3. **[`gateway/Dockerfile`](./gateway/Dockerfile)**: Container Python 3.11 com Uvicorn para o API Gateway.
+4. **[`frontend/Dockerfile`](./frontend/Dockerfile)** & **[`frontend/nginx.conf`](./frontend/nginx.conf)**: Multi-stage build Node + Nginx servindo a SPA na porta 3000.
+5. **[`frontend/src/vite-env.d.ts`](./frontend/src/vite-env.d.ts)** & **[`frontend/tsconfig.json`](./frontend/tsconfig.json)**: Configuração de tipos de ambiente Vite e compilação limpa para produção.
+6. **Validação Operacional**: Imagens construídas com `docker compose build`, contêineres iniciados com `docker compose up -d` e pipeline de registro/login testado com sucesso via HTTP real.
+
+---
+
+## 2026-09-19 — Prompt 17
+
+**Prompt do usuário:**
+
+> Obrigado por mais esse auxilio. Agora pude validar mais alguns ajustes que devem ser feitos:
+> - Após falhar em fazer login, tanto a mensagem de usuário/senha inválida (correto) quanto a de que a minha "sessão expirou ou é inválida" apareceram. Essa mensagem em amarelo não deveria aparecer nesse fluxo de falha de login.
+> - A modal de criação da conta está comprida demais verticalmente, e não há scroll atualmente. Aplique a possibilidade de haver um scroll quando a tela tiver um pequeno espaço vertical, além de reduzir a fonte da mensagem de benefícios do cadastro de modo à mensagem caber em somente uma linha. Para ajudar nesse objetivo, mude a mensagem para "Ganhe R$ 200,00 e 500 Pontos MIST ao se cadastrar!"
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Isolamento de Erro 401 de Autenticação Primária**:
+  - O interceptor de respostas HTTP em `frontend/src/api/client.ts` capturava qualquer código `401 Unauthorized` indistintamente e emitia o evento global `SESSION_EXPIRED_EVENT`.
+  - Como o backend responde `401` ao receber credenciais inválidas em `/api/auth/login`, o evento global disparava o aviso amarelo de sessão expirada no `AuthContext` simultaneamente ao erro vermelho de credenciais inválidas.
+  - Implementada checagem `isAuthRoute` para ignorar a emissão do evento em rotas de autenticação primária (`/api/auth/login` e `/api/auth/register`), reservando o aviso de sessão expirada exclusivamente para expiração de tokens em chamadas protegidas da aplicação. Adicionada também chamada explícita para limpar qualquer aviso prévio de sessão ao submeter o formulário de login.
+- **Scroll Responsivo e Densidade Vertical no Modal**:
+  - Adicionado `max-h-[90vh] overflow-y-auto` ao card principal do `AuthModal` com rolagem vertical suave para telas de baixa altura ou dispositivos menores.
+  - Redesenho do banner promocional para uma linha única horizontal (`text-[11px] sm:text-xs leading-tight whitespace-nowrap truncate`), adotando o texto exato solicitado: `"Ganhe R$ 200,00 e 500 Pontos MIST ao se cadastrar!"`.
+  - Atualização correspondente na tela `Login.tsx` para consistência visual.
+
+**Resultado e Modificações:**
+
+1. **[`frontend/src/api/client.ts`](./frontend/src/api/client.ts)**:
+   - Adicionada condicional no interceptor para que endpoints de login/cadastro não emitam o evento global `SESSION_EXPIRED_EVENT`.
+2. **[`frontend/src/components/AuthModal.tsx`](./frontend/src/components/AuthModal.tsx)**:
+   - Adicionado scroll vertical responsivo (`max-h-[90vh] overflow-y-auto`).
+   - Reduzido o banner de benefícios para uma linha única compacta com o texto `"Ganhe R$ 200,00 e 500 Pontos MIST ao se cadastrar!"`.
+   - Invocação de `clearSessionNotice()` antes do submit de login.
+3. **[`frontend/src/pages/Login.tsx`](./frontend/src/pages/Login.tsx)**:
+   - Atualizado o banner de benefícios com o mesmo texto em linha única.
+4. **[`frontend/src/api/client.test.ts`](./frontend/src/api/client.test.ts)**:
+   - Adicionado caso de teste unitário verificando que status 401 em `/api/auth/login` não emite `SESSION_EXPIRED_EVENT`.
+5. **Reconstrução Docker**:
+   - Reconstrução e reinicialização bem-sucedidas do contêiner `mist-frontend` via `docker compose up -d --build frontend`.
+
+---
+
+## 2026-09-19 — Prompt 18
+
+**Prompt do usuário:**
+
+> Remova o scroll lateral da modal de login/registro. Apenas o scroll vertical é necessário
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Supressão Estrita de Overflow Horizontal**:
+  - No CSS padrão, quando uma dimensão define `overflow-y: auto` e `overflow-x` permanece padrão (`visible`), os navegadores automaticamente computam `overflow-x: auto`. Havendo elementos com posicionamento absoluto excedendo as laterais (ex.: os elementos decorativos de glow `-right-24` e `-left-24`) ou texto `whitespace-nowrap`, uma barra de rolagem horizontal indesejada era acionada no container.
+  - Aplicada a combinação explícita `overflow-y-auto overflow-x-hidden` no card do `AuthModal`.
+  - Adicionado `min-w-0 overflow-hidden` nos elementos flex do banner de boas-vindas para impedir que textos ou tags internas empurrem o container lateralmente em qualquer resolução.
+
+**Resultado e Modificações:**
+
+1. **[`frontend/src/components/AuthModal.tsx`](./frontend/src/components/AuthModal.tsx)**:
+   - Card principal atualizado com `overflow-y-auto overflow-x-hidden`.
+   - Elemento do banner atualizado com `min-w-0 overflow-hidden`.
+2. **Testes Unitários**:
+   - Suíte de testes do frontend executada com sucesso (14/14 aprovados no Vitest).
+3. **Reconstrução Docker**:
+   - Contêiner `mist-frontend` reconstruído e recriado com sucesso via `docker compose up -d --build frontend`.
+
+---
+
+## 2026-09-19 — Prompt 19
+
+**Prompt do usuário:**
+
+> Com base no contexto de tarefas realizadas nessa conversa, há necessidade de atualizar o gitignore com algum arquivo ou diretório? Além disso, é necessário ocultar dados de maneira mais segura, de modo a não haver vazamento de senhas dos usuários ou até mesmo de dados do próprio código?
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Auditoria do `.gitignore`**:
+  - Constatado que o arquivo `.gitignore` raiz continha apenas regras para o ecossistema Python tradicional, deixando desprotegidos:
+    1. Bancos de dados locais SQLite (`auth.db`, `services/auth-service/app/data/*.db`), expondo hashes de senhas e dados cadastrais caso comitados.
+    2. Ecossistema Frontend Node/Vite (`node_modules/`, `frontend/dist/`, `.vite/`, relatórios do Vitest/Playwright). Identificado inclusive que arquivos de cache e dependências sob `frontend/node_modules` haviam sido indexados em commits prévios.
+    3. Variáveis de ambiente e segredos locais (`.env`, `.env.*.local`, chaves criptográficas).
+- **Auditoria de Segurança de Credenciais e Segredos**:
+  - *Senhas de Usuários*: O uso de bcrypt com salt dinâmico está tecnicamente correto e os schemas Pydantic omitem o hash. O principal ponto de atenção reside em evitar o commit de bases SQLite locais e garantir que logs HTTP não registrem os corpos das requisições de login/registro.
+  - *Segredos da Aplicação (`JWT_SECRET_KEY`)*: Atualmente existe uma chave padrão de desenvolvimento hardcoded no código e no `docker-compose.yml`. Em produção, isso permite forja de tokens JWT. É mandatório adotar segregação via variáveis de ambiente (`.env` fora do Git + `.env.example` documentado) e validação de inicialização para impedir chave padrão em produção.
+  - *Isolamento de Rede dos Microsserviços*: Serviços internos (`auth-service`) não devem expor portas públicas no Docker em produção, operando apenas através da rede interna `mist-network` roteada pelo Gateway.
+
+**Resultado e Modificações:**
+
+- Elaborada análise técnica diagnóstica e plano de ação estruturado com recomendações práticas para `.gitignore`, blindagem de senhas, gestão de segredos (`.env`) e arquitetura de portas do Docker.
+
+---
+
+## 2026-09-19 — Prompt 20
+
+**Prompt do usuário:**
+
+> /goal Faça todos os ajustes de segurança necessários
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Blindagem Completa do `.gitignore`**:
+  - Inseridas regras abrangentes para supressão de arquivos de banco de dados SQLite (`*.db`, `*.sqlite`, `*.sqlite3`, `app/data/`, `auth_data/`), prevenindo o commit acidental de tabelas de usuários e hashes de senhas.
+  - Inseridas regras para dependências Node.js, compilações estáticas e caches (`node_modules/`, `frontend/dist/`, `.vite/`). Executado `git rm -r --cached frontend/node_modules/` para desindexar dependências antigas rastreadas acidentalmente.
+  - Inseridas regras para variáveis de ambiente e chaves sensíveis (`.env`, `.env.*`, `!.env.example`, `*.pem`, `*.key`, `*.cert`).
+- **Gestão de Segredos e Validação Estrita em Produção**:
+  - Criado o arquivo template [`./.env.example`](./.env.example) e gerado o [`.env`](./.env) local (ignorado pelo Git).
+  - Atualizados [`services/auth-service/app/services/auth_service.py`](./services/auth-service/app/services/auth_service.py) e [`gateway/app/config.py`](./gateway/app/config.py) com lógica *crash-fast*: se `ENVIRONMENT == "production"` e `JWT_SECRET_KEY` for a chave padrão ou menor que 32 caracteres, a aplicação recusa a inicialização com `RuntimeError`.
+- **Isolamento de Portas e CORS Controlado**:
+  - Atualizado [`docker-compose.yml`](./docker-compose.yml) com interpolação dinâmica de variáveis de ambiente (`${JWT_SECRET_KEY}`, etc.) e restrição de porta do `auth-service` para `127.0.0.1:8001:8001`, impedindo acesso direto pela rede externa/LAN.
+  - Substituída a configuração de CORS permissivo (`*` com `allow_credentials=True`) por origens permitidas controladas via variável de ambiente `CORS_ORIGINS` no Gateway e Auth Service.
+- **Automação de Testes e QA**:
+  - Criado o teste unitário de segurança `AUTH-UNIT-03` em `services/auth-service/tests/test_auth.py`, registrado e aprovado no [`TESTS.md`](./TESTS.md).
+  - Execução da suíte completa de testes via `runner_adapter.js` com registro atômico em [`resultados.json`](./resultados.json) (100% de aprovação nos testes implementados).
+
+**Resultado e Modificações:**
+
+1. **[`.gitignore`](./.gitignore)**: Adicionadas seções para bancos de dados, ecossistema Node/Vite, segredos `.env` e relatórios de testes.
+2. **[`git rm -r --cached frontend/node_modules`](./frontend/node_modules)**: Desindexadas mais de 3.600 dependências do histórico do repositório.
+3. **[`.env.example`](./.env.example)** & **[`.env`](./.env)**: Criados template documentado e arquivo local de ambiente.
+4. **[`services/auth-service/app/services/auth_service.py`](./services/auth-service/app/services/auth_service.py)** & **[`gateway/app/config.py`](./gateway/app/config.py)**: Validação obrigatória de segurança da chave JWT em produção.
+5. **[`gateway/app/main.py`](./gateway/app/main.py)** & **[`services/auth-service/app/main.py`](./services/auth-service/app/main.py)**: Configuração de CORS com origens restritas e seguras.
+6. **[`docker-compose.yml`](./docker-compose.yml)**: Portas protegidas e injeção limpa de variáveis de ambiente.
+7. **[`services/auth-service/tests/test_auth.py`](./services/auth-service/tests/test_auth.py)** & **[`TESTS.md`](./TESTS.md)** & **[`resultados.json`](./resultados.json)**: Catalogado e validado o teste `AUTH-UNIT-03`.
+8. **Reconstrução Docker**: Todos os contêineres reconstruídos e ativos (`docker compose up -d --build`).
+
+
 
 
