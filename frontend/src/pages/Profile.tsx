@@ -41,7 +41,7 @@ const defaultRecentGames: GameActivity[] = [
 
 export const Profile: React.FC<ProfileProps> = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
+  const [profileData] = useState({
     username: 'ggtorres2001',
     realName: 'Gabriel Torres',
     location: 'Rio Grande do Sul, Brazil',

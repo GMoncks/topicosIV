@@ -79,7 +79,14 @@ function parseTestsMd(categoryFilter, testIdFilter) {
 function runCommand(command, cwd = ROOT_DIR) {
   const startTime = Date.now();
   try {
-    const output = execSync(command, { cwd, encoding: 'utf-8', stdio: 'pipe' });
+    let resolvedCmd = command;
+    if (process.platform === 'win32' && resolvedCmd.startsWith('pytest')) {
+      const venvPytest = path.join(ROOT_DIR, '.venv', 'Scripts', 'pytest.exe');
+      if (fs.existsSync(venvPytest)) {
+        resolvedCmd = `"${venvPytest}"` + resolvedCmd.substring(6);
+      }
+    }
+    const output = execSync(resolvedCmd, { cwd, encoding: 'utf-8', stdio: 'pipe' });
     const durationMs = Date.now() - startTime;
     return { status: 'pass', duracao_ms: durationMs, erro: null };
   } catch (error) {
@@ -88,6 +95,7 @@ function runCommand(command, cwd = ROOT_DIR) {
     return { status: 'fail', duracao_ms: durationMs, erro: errorMsg };
   }
 }
+
 
 function loadResultados() {
   if (!fs.existsSync(RESULTADOS_JSON_PATH)) return {};

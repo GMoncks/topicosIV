@@ -4,10 +4,18 @@ import { NavigationTab, UserProfile } from '../types';
 interface SidebarProps {
   activeTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
-  user: UserProfile;
+  user: UserProfile | null;
+  onOpenAuth?: () => void;
+  onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, user }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab,
+  onSelectTab,
+  user,
+  onOpenAuth,
+  onLogout
+}) => {
   return (
     <aside className="w-20 lg:w-64 bg-brand-surface border-r border-gray-800 flex flex-col justify-between transition-all duration-300 z-50 h-screen select-none shrink-0">
       <div>
@@ -101,29 +109,54 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onSelectTab, user }
         </nav>
       </div>
 
-      {/* User Profile Bottom -> Clica para abrir o Perfil */}
-      <div
-        onClick={() => onSelectTab('profile')}
-        className={`p-4 border-t border-gray-800 flex justify-center lg:justify-start items-center cursor-pointer transition ${
-          activeTab === 'profile' ? 'bg-brand-purple/20 border-brand-purple/40' : 'hover:bg-gray-800'
-        }`}
-        title="Ver Perfil"
-      >
-        <div className="relative">
-          <img
-            src={user.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80"}
-            alt="Avatar"
-            className="w-10 h-10 rounded-xl border-2 border-brand-green object-cover"
-          />
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-brand-green rounded-full border-2 border-brand-surface"></div>
+      {/* Perfil de Usuário ou CTA de Login */}
+      {user ? (
+        <div className="p-4 border-t border-gray-800 flex items-center justify-between">
+          <div
+            onClick={() => onSelectTab('profile')}
+            className={`flex items-center cursor-pointer transition flex-1 rounded-xl p-1 ${
+              activeTab === 'profile' ? 'bg-brand-purple/20' : 'hover:bg-gray-800/50'
+            }`}
+            title="Ver Perfil"
+          >
+            <div className="relative">
+              <img
+                src={user.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80"}
+                alt={user.username}
+                className="w-10 h-10 rounded-xl border-2 border-brand-green object-cover"
+              />
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-brand-green rounded-full border-2 border-brand-surface"></div>
+            </div>
+            <div className="hidden lg:block ml-3 truncate">
+              <p className={`text-sm font-bold truncate ${activeTab === 'profile' ? 'text-brand-purple' : 'text-white'}`}>
+                {user.username}
+              </p>
+              <p className="text-xs text-emerald-400 font-semibold">{user.status}</p>
+            </div>
+          </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2"
+              title="Encerrar Sessão"
+            >
+              <i className="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+            </button>
+          )}
         </div>
-        <div className="hidden lg:block ml-3">
-          <p className={`text-sm font-bold ${activeTab === 'profile' ? 'text-brand-purple' : 'text-white'}`}>
-            {user.username}
-          </p>
-          <p className="text-xs text-emerald-400 font-semibold">{user.status}</p>
+      ) : (
+        <div className="p-4 border-t border-gray-800">
+          <button
+            onClick={onOpenAuth}
+            className="w-full bg-brand-purple hover:bg-brand-purpleDark text-white text-xs font-bold py-2.5 px-2 rounded-xl transition shadow-[0_0_12px_rgba(160,32,240,0.4)] flex items-center justify-center gap-2"
+            title="Iniciar Sessão"
+          >
+            <i className="fa-solid fa-user"></i>
+            <span className="hidden lg:inline">Entrar na Conta</span>
+          </button>
         </div>
-      </div>
+      )}
     </aside>
   );
 };
+

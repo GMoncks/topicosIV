@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PointsShopItem } from '../types';
 
 interface PointsShopProps {
@@ -46,13 +46,17 @@ const mockPointsItems: PointsShopItem[] = [
 ];
 
 export const PointsShop: React.FC<PointsShopProps> = ({
-  initialPoints = 5348,
+  initialPoints = 0,
   onPointsUpdate
 }) => {
   const [points, setPoints] = useState<number>(initialPoints);
   const [items, setItems] = useState<PointsShopItem[]>(mockPointsItems);
   const [activeCategory, setActiveCategory] = useState<string>('destaques');
   const [notification, setNotification] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPoints(initialPoints);
+  }, [initialPoints]);
 
   const handlePurchase = (item: PointsShopItem) => {
     if (item.isOwned) return;

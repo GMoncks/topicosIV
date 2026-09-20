@@ -6,6 +6,8 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
   activeSubTab?: string;
   onSelectSubTab?: (tab: string) => void;
+  isGuest?: boolean;
+  onOpenAuth?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,8 +15,11 @@ export const Header: React.FC<HeaderProps> = ({
   walletBalance,
   onSearch,
   activeSubTab = 'destaques',
-  onSelectSubTab
+  onSelectSubTab,
+  isGuest = false,
+  onOpenAuth
 }) => {
+
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +90,17 @@ export const Header: React.FC<HeaderProps> = ({
           <i className="fa-solid fa-wallet text-xs text-emerald-400"></i>
           <span>{formattedBalance}</span>
         </div>
+
+        {isGuest && onOpenAuth && (
+          <button
+            onClick={onOpenAuth}
+            className="bg-brand-purple hover:bg-brand-purpleDark text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+          >
+            Iniciar Sessão
+          </button>
+        )}
       </div>
     </header>
   );
 };
+
