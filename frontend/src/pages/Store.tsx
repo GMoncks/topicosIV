@@ -9,7 +9,7 @@ interface StoreProps {
   onSelectGame?: (game: GameItem) => void;
 }
 
-const mockGames: GameItem[] = [
+export const mockGames: GameItem[] = [
   {
     id: '1',
     title: 'Heavy Duty Expansion',

@@ -3,23 +3,37 @@
     "runner": "playwright",
     "historico": [
       {
-        "run_id": "2026-09-19T19:00:18.830Z",
-        "status": "pending",
-        "duracao_ms": 0,
-        "erro": null,
-        "origem": "execucao"
-      },
-      {
-        "run_id": "2026-09-19T20:06:49.914Z",
-        "status": "pass",
-        "duracao_ms": 2474,
-        "erro": null,
-        "origem": "execucao"
-      },
-      {
         "run_id": "2026-09-19T20:07:23.957Z",
         "status": "pass",
         "duracao_ms": 16445,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 11548,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:51:13.774Z",
+        "status": "pass",
+        "duracao_ms": 38814,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 23498,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 18161,
         "erro": null,
         "origem": "execucao"
       }
@@ -34,6 +48,34 @@
         "duracao_ms": 2079,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 2138,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 7902,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3762,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 3263,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -44,6 +86,440 @@
         "run_id": "2026-09-19T20:15:18.317Z",
         "status": "pass",
         "duracao_ms": 2900,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 1770,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3375,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 3427,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 1667,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 4096,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 2539,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 2656,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-02": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 2626,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 5573,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3148,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 3221,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-03": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 1936,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 5906,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3073,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 3537,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "GATEWAY-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 912,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:50:41.927Z",
+        "status": "pass",
+        "duracao_ms": 2599,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 1503,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 1702,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 2583,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:50:41.927Z",
+        "status": "pass",
+        "duracao_ms": 7832,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 5411,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 4656,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-LIB-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:50:41.927Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-FLOW-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:51:13.774Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-AUTH-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pass",
+        "duracao_ms": 11327,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-19T22:51:13.774Z",
+        "status": "pass",
+        "duracao_ms": 35315,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 24380,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 19730,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SMOKE-HEALTH-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T21:54:06.730Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 3394,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 1585,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 1438,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-04": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 5746,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3329,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 4105,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-05": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 5517,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3430,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 4079,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-06": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-19T22:49:45.817Z",
+        "status": "pass",
+        "duracao_ms": 5289,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pass",
+        "duracao_ms": 3237,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 3850,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-20T01:20:55.936Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pass",
+        "duracao_ms": 1475,
         "erro": null,
         "origem": "execucao"
       }

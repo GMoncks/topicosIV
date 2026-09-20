@@ -17,9 +17,9 @@ test.describe('Navegação e Ciclo de Vida (E2E-NAV-01)', () => {
     const pointsButton = page.locator('button[title="Loja de Pontos"]');
     await pointsButton.click();
 
-    // Valida que a Loja de Pontos carregou seu catálogo e saldo de pontos
+    // Valida que a Loja de Pontos carregou seu catálogo e saldo de pontos (iniciando em 0 para visitantes)
     await expect(page.getByRole('heading', { name: 'A LOJA DE PONTOS' })).toBeVisible();
-    await expect(page.locator('text=5.348')).toBeVisible();
+    await expect(page.locator('text=Saldo de Pontos')).toBeVisible();
     await expect(page.locator('text=MARÉ CREPUSCULAR')).toBeVisible();
 
     // 4. Retorna para a Loja
