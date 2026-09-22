@@ -112,3 +112,57 @@ def test_gateway_public_route_passthrough(client):
         )
         assert response.status_code == 201
         assert response.json()["access_token"] == "mock_token"
+
+
+@pytest.mark.integration
+def test_gateway_store_games_proxy_passthrough(client):
+    """GATEWAY-INT-02: Valida encaminhamento de consulta do catálogo da Store via Gateway."""
+    mock_resp = httpx.Response(
+        status_code=200,
+        json=[{"id": 1, "title": "Orbitals", "price": 90.0}],
+        headers={"content-type": "application/json"}
+    )
+
+    captured_url = []
+
+    async def mock_request(method, url, **kwargs):
+        captured_url.append(str(url))
+        return mock_resp
+
+    with patch.object(gateway_main.http_client, "request", new=AsyncMock(side_effect=mock_request)):
+        response = client.get("/api/games?category=Simulação")
+        assert response.status_code == 200
+        assert len(response.json()) == 1
+        assert response.json()[0]["title"] == "Orbitals"
+        assert len(captured_url) == 1
+        assert "/games" in captured_url[0]
+
+
+@pytest.mark.integration
+def test_gateway_library_my_games_proxy(client):
+    """GATEWAY-INT-03: Valida autenticação centralizada e injeção de X-User-Id no proxy da Library."""
+    # 1. Sem token JWT -> 401 Unauthorized
+    res_no_token = client.get("/api/library/my-games")
+    assert res_no_token.status_code == 401
+
+    # 2. Com token JWT válido -> Encaminha com X-User-Id
+    token = jwt.encode({"sub": "42", "username": "gamer42"}, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    mock_resp = httpx.Response(
+        status_code=200,
+        json=[{"id": 1, "user_id": 42, "game_id": 10, "playtime_minutes": 120}],
+        headers={"content-type": "application/json"}
+    )
+
+    captured_headers = {}
+
+    async def mock_request(method, url, **kwargs):
+        captured_headers.update(kwargs.get("headers", {}))
+        return mock_resp
+
+    with patch.object(gateway_main.http_client, "request", new=AsyncMock(side_effect=mock_request)):
+        response = client.get("/api/library/my-games", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        assert response.json()[0]["user_id"] == 42
+        assert captured_headers.get("X-User-Id") == "42"
+
+

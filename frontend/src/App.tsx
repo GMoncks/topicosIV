@@ -4,7 +4,7 @@ import { Header } from './components/Header';
 import { DownloadBar } from './components/DownloadBar';
 import { AuthModal } from './components/AuthModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Store, mockGames } from './pages/Store';
+import { Store } from './pages/Store';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
 import { News } from './pages/News';
@@ -50,7 +50,7 @@ function AppContent() {
 
   // Se autenticado, usa os dados reais do usuário; se visitante, usa perfil de demonstração com saldos zerados
   const currentUser: UserProfile = user || defaultGuestUser;
-  const wishlistCount = mockGames.filter((g) => g.isWishlist).length;
+  const wishlistCount = 0; // TODO: buscar da API de wishlist
 
   const handlePointsUpdate = (newBalance: number) => {
     updateUserBalance(undefined, newBalance);

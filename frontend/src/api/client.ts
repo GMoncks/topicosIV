@@ -143,3 +143,55 @@ export const authApi = {
   },
 };
 
+// ========================================
+// Store API — Catálogo de Jogos
+// ========================================
+
+export interface GameApiResponse {
+  id: number;
+  title: string;
+  price: number;
+  tags: string[];
+  category: string;
+  banner_url: string;
+  release_date: string;
+  publisher: string;
+  review_score: number;
+}
+
+export interface GameDetailApiResponse extends GameApiResponse {
+  description: string;
+  screenshots: string[];
+}
+
+export interface ListGamesParams {
+  category?: string;
+  tag?: string;
+  min_price?: number;
+  max_price?: number;
+  search?: string;
+  sort_by?: string;
+  order?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export const storeApi = {
+  async listGames(params?: ListGamesParams): Promise<GameApiResponse[]> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          query.set(key, String(value));
+        }
+      });
+    }
+    const qs = query.toString();
+    const endpoint = qs ? `/api/games?${qs}` : '/api/games';
+    return fetchApi<GameApiResponse[]>(endpoint, { method: 'GET' });
+  },
+
+  async getGameDetails(gameId: number): Promise<GameDetailApiResponse> {
+    return fetchApi<GameDetailApiResponse>(`/api/games/${gameId}`, { method: 'GET' });
+  },
+};

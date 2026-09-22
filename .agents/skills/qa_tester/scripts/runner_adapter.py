@@ -20,7 +20,7 @@ import datetime
 import subprocess
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parents[3]
+ROOT_DIR = Path(__file__).resolve().parents[4]
 TESTS_MD_PATH = ROOT_DIR / "TESTS.md"
 RESULTADOS_JSON_PATH = ROOT_DIR / "resultados.json"
 
@@ -98,11 +98,17 @@ def parse_tests_md(category_filter=None, test_id_filter=None):
 
 def run_command(command, runner_name, cwd=ROOT_DIR):
     start_time = time.perf_counter()
+    env = os.environ.copy()
+    venv_bin = ROOT_DIR / ".venv" / ("Scripts" if os.name == "nt" else "bin")
+    if venv_bin.exists():
+        env["PATH"] = str(venv_bin) + os.pathsep + env.get("PATH", "")
+
     try:
         proc = subprocess.run(
             command,
             shell=True,
             cwd=cwd,
+            env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -194,7 +200,7 @@ def execute_suite(category=None, test_id=None, origem="execucao"):
                 "erro": exec_res["erro"],
                 "origem": origem
             }
-            print(f"   └─ Resultado: {entry['status'].upper()} em {entry['duracao_ms']}ms")
+            print(f"   |-> Resultado: {entry['status'].upper()} em {entry['duracao_ms']}ms")
 
         # Manter histórico FIFO das últimas 10 execuções
         historico = resultados[t_id].get("historico", [])
