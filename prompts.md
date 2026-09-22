@@ -614,6 +614,122 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 7. **[`services/auth-service/tests/test_auth.py`](./services/auth-service/tests/test_auth.py)** & **[`TESTS.md`](./TESTS.md)** & **[`resultados.json`](./resultados.json)**: Catalogado e validado o teste `AUTH-UNIT-03`.
 8. **Reconstrução Docker**: Todos os contêineres reconstruídos e ativos (`docker compose up -d --build`).
 
+---
 
+## 2026-09-22 — Prompt 21
 
+**Prompt do usuário:**
+
+> Agora iremos implementar a Store, definido em 4 etapas a serem implementadas em pipeline (uma depois da outra):
+> - Implementar modelo SQLAlchemy Game: id, title, description, price, tags, category, banner_url, screenshots, release_date, publisher, review_score
+> - Criar seed de 10–15 jogos com dados realistas para popular o catálogo.
+> - Implementar endpoint GET /games — lista com filtros por categoria, tag, preço, busca textual e ordenação
+> - Implementar endpoint GET /games/{id} com detalhes completos do jogo
+> 
+> Para a seed de jogos, use os seguintes dados:
+> - The Blood of the Dawnwalker - 03/09/2026 - R$ 275,00
+> - Orbitals - 03/09/2026 - R$ 90,00
+> - Onimusha: Way of the Sword - 04/09/2026 - R$ 200,00
+> - Marvel's Wolverine - 15/09/2026 - R$ 400,00
+> - Fire Emblem: Fortune's Weave - 17/09/2026 - R$ 150,00
+> - Silent Hill: Townfall - 24/09/2026 - R$ 250,00
+> - Control Resonant - 24/09/2026 - R$ 350,00
+> - The Witcher 3: Wild Hunt — Remastered - 29/09/2026 - R$ 300,00
+> - Wardogs - 10/09/2026 - R$ 199,00
+
+**Decisões Arquiteturais e Técnicas:**
+
+- **Pipeline Sequencial de 4 Etapas**:
+  1. *Etapa 1 (Modelo Game e Schemas)*: Definido o modelo SQLAlchemy `Game` contendo todos os 11 atributos exigidos (`id`, `title`, `description`, `price`, `tags`, `category`, `banner_url`, `screenshots`, `release_date`, `publisher`, `review_score`). Os campos `tags` e `screenshots` utilizam `sa.JSON` com serialização UTF-8 sem escape ASCII (`ensure_ascii=False`) para compatibilidade e queries de texto flexíveis. Criados schemas Pydantic segregados (`GameListItemResponse` para listagens performáticas e `GameDetailResponse` para visão detalhada com sinopse e screenshots).
+  2. *Etapa 2 (Seed do Catálogo)*: Criado módulo de seed populando exatamente os 9 títulos obrigatórios com datas e preços estritos conforme especificado, acrescidos de 4 títulos de alto renome (totalizando 13 jogos no catálogo, atendendo à faixa de 10–15 jogos). A seed é executada no lifespan da aplicação FastAPI com checagem de idempotência (não duplica se já existirem).
+  3. *Etapa 3 (Endpoint `GET /games`)*: Implementada filtragem combinada via SQLAlchemy:
+     - Por categoria (`category`, insensível a maiúsculas).
+     - Por tag (`tag`, com correspondência resiliente no array JSON tanto em UTF-8 quanto em unicode escapado).
+     - Por faixa de preço (`min_price` e `max_price`).
+     - Busca textual (`search` ou `q`) abrangendo título, sinopse e desenvolvedora/publicadora (`title`, `description`, `publisher`).
+     - Ordenação (`sort_by` por preço, data de lançamento, avaliação ou título; e `order` asc/desc).
+     - Paginação segura com `skip` e `limit`.
+  4. *Etapa 4 (Endpoint `GET /games/{id}`)*: Implementada rota de detalhe com retorno de objeto completo `GameDetailResponse` e tratamento defensivo de erro 404 (`"Jogo não encontrado"`).
+- **Integração de Rede e Roteamento Reverso no API Gateway**:
+  - Adicionadas rotas de proxy reverso no `gateway/app/main.py` para `/api/games` e `/api/games/{path:path}` repassando para o `store-service` na porta 8002, além de proxy genérico `/api/store/{path:path}`.
+  - Inclusão do contêiner `mist-store-service` no [`docker-compose.yml`](./docker-compose.yml) com isolamento na porta `127.0.0.1:8002:8002`, rede interna `mist-network` e volume dedicado `store_data`.
+- **Qualidade e Pirâmide de Testes (QA)**:
+  - Criados testes unitários e de integração com cobertura total em `services/store-service/tests/test_games.py` e teste de integração no Gateway (`test_gateway_store_games_proxy_passthrough`).
+  - Atualizado o catálogo [`TESTS.md`](./TESTS.md) com 5 novos casos: `STORE-UNIT-01`, `STORE-UNIT-02`, `GATEWAY-INT-02`, `STORE-INT-01`, `STORE-INT-02`.
+  - Execução e registro atômico com 100% de aprovação no [`resultados.json`](./resultados.json).
+
+**Resultado e Modificações:**
+
+1. **[`services/store-service/requirements.txt`](./services/store-service/requirements.txt)**: Dependências do microsserviço (FastAPI, SQLAlchemy, Uvicorn, Pydantic, HTTPX).
+2. **[`services/store-service/Dockerfile`](./services/store-service/Dockerfile)**: Imagem base containerizada para porta 8002.
+3. **[`services/store-service/app/db/database.py`](./services/store-service/app/db/database.py)**: Engine SQLite com sessão e suporte a serialização JSON sem escape ASCII.
+4. **[`services/store-service/app/models/game.py`](./services/store-service/app/models/game.py)**: Modelo SQLAlchemy `Game` com 11 campos e método `to_dict()`.
+5. **[`services/store-service/app/schemas/game.py`](./services/store-service/app/schemas/game.py)**: Schemas Pydantic para validação, listagem e detalhe.
+6. **[`services/store-service/app/db/seed.py`](./services/store-service/app/db/seed.py)**: Catálogo com 13 jogos realistas incluindo os 9 títulos obrigatórios solicitados.
+7. **[`services/store-service/app/services/store_service.py`](./services/store-service/app/services/store_service.py)**: Camada de regras com filtros combinados e ordenação.
+8. **[`services/store-service/app/api/routes.py`](./services/store-service/app/api/routes.py)**: Rotas FastAPI `GET /health`, `GET /games` e `GET /games/{id}`.
+9. **[`services/store-service/app/main.py`](./services/store-service/app/main.py)**: App principal da Store com CORS e auto-seed no ciclo de vida.
+10. **[`gateway/app/main.py`](./gateway/app/main.py)**: Proxy reverso de `/api/games` e `/api/store` para o `STORE_SERVICE_URL`.
+11. **[`docker-compose.yml`](./docker-compose.yml)** & **[`.env.example`](./.env.example)**: Configuração do serviço `store-service` na porta 8002 e volume `store_data`.
+12. **[`services/store-service/tests/test_games.py`](./services/store-service/tests/test_games.py)** & **[`gateway/tests/test_gateway.py`](./gateway/tests/test_gateway.py)**: 10 testes unitários/integrados da Store + teste de proxy no Gateway.
+13. **[`TESTS.md`](./TESTS.md)** & **[`resultados.json`](./resultados.json)**: Novos testes catalogados e validados com 100% de sucesso.
+
+---
+
+## Prompt 22 — Conectar frontend Store.tsx à API real (task C-07)
+- **Data**: 2026-09-22
+- **Prompt de entrada**: "Eu não deveria ser capaz de ver na aplicação web (pelo localhost:3000) os jogos que foram inicializados na seed?"
+
+### Decisões Técnicas
+1. Remover o array `mockGames` hardcoded de `Store.tsx` e substituir por `useEffect` + chamada real à API via `storeApi.listGames()`.
+2. Criar interfaces `GameApiResponse`, `GameDetailApiResponse` e `ListGamesParams` em `client.ts` para tipagem da API do backend.
+3. Implementar mapeamento `mapApiToGameItem()` para converter schema do backend (id: number, price, banner_url, tags: string[], publisher) para o schema do frontend (id: string, currentPrice, image, tags: string, publisherOrParent).
+4. Adicionar estados de `loading` e `error` com UX de retry.
+5. Remover importação de `mockGames` em `App.tsx`, substituir `wishlistCount` por placeholder `0` (será conectado à API de wishlist futuramente).
+6. Rebuild de containers Docker para incluir store-service + frontend com código atualizado.
+
+### Arquivos Modificados
+1. **[`frontend/src/api/client.ts`](./frontend/src/api/client.ts)**: Adicionado `storeApi` com `listGames()` e `getGameDetails()`, interfaces `GameApiResponse`, `GameDetailApiResponse`, `ListGamesParams`.
+2. **[`frontend/src/pages/Store.tsx`](./frontend/src/pages/Store.tsx)**: Reescrito — removido `mockGames`, implementado `useEffect` + `fetchGames()` com busca da API, estados loading/error, retry.
+3. **[`frontend/src/App.tsx`](./frontend/src/App.tsx)**: Removido import de `mockGames`, `wishlistCount = 0` placeholder.
+
+---
+
+## Prompt 23 — Implementação dos Tickets D-01 até D-03: Library Service
+- **Data**: 2026-09-22
+- **Prompt de entrada**: "Agora vamos implementar os tickets D-01 até D-03 do planejamento para a library. Faça o planejamento necessário das ações antes de fazer código" / "Considerando a recomendação de seguir com a Opção A, pode implementar a solução proposta"
+
+### Decisões Arquiteturais e Técnicas
+1. **D-01 (Modelo `LibraryItem`)**:
+   - Desenvolvido modelo SQLAlchemy `LibraryItem` com `id`, `user_id`, `game_id`, `acquired_at` (UTC timezone-aware), `playtime_minutes` (default 0), `is_installed` (default False) e `last_played`.
+   - Adicionada restrição única `UniqueConstraint('user_id', 'game_id', name='uq_user_game')` para garantir integridade a nível de banco de dados e evitar compras/concessões duplicadas.
+   - Utilizado SQLite local isolado (`library.db`) com `DATABASE_URL` customizável e `init_db()` automático no lifespan da aplicação.
+2. **D-02 (Endpoint interno `POST /library/grant`)**:
+   - Endpoint idempotente: se o par `(user_id, game_id)` já possuir licença, retorna HTTP 200 com `created=False`; se for novo, cria e retorna HTTP 201 com `created=True`.
+   - Validação com Pydantic `GrantRequest` exigindo `user_id > 0` e `game_id > 0`.
+3. **D-03 (Endpoint `GET /library/my-games`)**:
+   - Identificação segura do usuário via cabeçalho `X-User-Id` injetado pelo API Gateway a partir do JWT.
+   - Rejeição imediata com HTTP 401 para requisições sem identificação ou com IDs inválidos.
+   - **Opção A aprovada**: Enriquecimento de dados dos jogos via chamadas assíncronas HTTP internas para o `store-service` (`GET /games/{id}`), com cache em memória por requisição e fallback gracioso com degradação controlada.
+4. **Gateway & Infraestrutura**:
+   - Adicionada rota de proxy reverso `/api/library/{path:path}` no API Gateway com sanitização de headers anti-spoofing e validação centralizada de JWT.
+   - Configurado serviço `library-service` no `docker-compose.yml` (porta interna 8003, volume `library_data`, rede `mist-network`) e atualizado `.env.example`.
+5. **Garantia de Qualidade & Testes**:
+   - 7 novos casos de teste no `library-service` cobrindo unidade e integração (`LIB-UNIT-01`, `LIB-UNIT-02`, `LIB-INT-01` a `LIB-INT-05`).
+   - 1 novo teste de integração de proxy no Gateway (`GATEWAY-INT-03`).
+   - Suíte validada pelo `runner_adapter.py` com status PASS e persistida em `resultados.json`.
+
+### Arquivos Criados e Modificados
+1. **[`services/library-service/requirements.txt`](./services/library-service/requirements.txt)**: Dependências do microsserviço (FastAPI, uvicorn, SQLAlchemy, Pydantic, httpx).
+2. **[`services/library-service/Dockerfile`](./services/library-service/Dockerfile)**: Dockerfile Python 3.11-slim para porta 8003.
+3. **[`services/library-service/app/db/database.py`](./services/library-service/app/db/database.py)**: Engine, SessionLocal e gerenciamento do SQLite `library.db`.
+4. **[`services/library-service/app/models/library_item.py`](./services/library-service/app/models/library_item.py)**: Modelo `LibraryItem` com `UniqueConstraint` e serialização `to_dict()`.
+5. **[`services/library-service/app/schemas/library_item.py`](./services/library-service/app/schemas/library_item.py)**: Schemas `GrantRequest`, `GrantResponse`, `GameEnrichedData` e `LibraryItemResponse`.
+6. **[`services/library-service/app/services/library_service.py`](./services/library-service/app/services/library_service.py)**: Lógica de negócio de concessão idempotente, busca de itens e enriquecimento assíncrono via `store-service`.
+7. **[`services/library-service/app/api/routes.py`](./services/library-service/app/api/routes.py)**: Rotas FastAPI `/health`, `/library/grant` e `/library/my-games`.
+8. **[`services/library-service/app/main.py`](./services/library-service/app/main.py)**: App FastAPI com lifespan e CORS.
+9. **[`gateway/app/main.py`](./gateway/app/main.py)**: Proxy reverso `/api/library/{path:path}` com validação de JWT.
+10. **[`docker-compose.yml`](./docker-compose.yml)** & **[`.env.example`](./.env.example)**: Adicionado container `mist-library-service`, volume `library_data` e variáveis de ambiente.
+11. **[`services/library-service/tests/test_library.py`](./services/library-service/tests/test_library.py)** & **[`gateway/tests/test_gateway.py`](./gateway/tests/test_gateway.py)**: Testes unitários e de integração.
+12. **[`TESTS.md`](./TESTS.md)** & **[`resultados.json`](./resultados.json)**: Catálogo e histórico de execução dos testes atualizados.
 

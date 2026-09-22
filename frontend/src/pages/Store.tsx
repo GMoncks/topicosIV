@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HeroBanner } from '../components/HeroBanner';
 import { GameCard } from '../components/GameCard';
 import { GameItem } from '../types';
+import { storeApi, GameApiResponse } from '../api/client';
 
 interface StoreProps {
   searchQuery?: string;
@@ -9,65 +10,55 @@ interface StoreProps {
   onSelectGame?: (game: GameItem) => void;
 }
 
-export const mockGames: GameItem[] = [
-  {
-    id: '1',
-    title: 'Heavy Duty Expansion',
-    publisherOrParent: 'Survivor',
-    category: 'EXPANSÃO',
-    image: 'https://placehold.co/400x200/1e3a8a/fff?text=Survivor+DLC',
-    originalPrice: 37.49,
-    currentPrice: 29.99,
-    discountPercentage: 20
-  },
-  {
-    id: '2',
-    title: 'Space Marine 2',
-    tags: 'Ação, Violento',
-    category: 'DESEJO',
-    image: 'https://placehold.co/400x200/0f172a/fff?text=Space+Marine+2',
-    currentPrice: 49.97,
-    discountPercentage: 75,
-    isWishlist: true
-  },
-  {
-    id: '3',
-    title: 'Super Character 3-Pack',
-    publisherOrParent: 'Devil May Cry 5',
-    category: 'PACOTE',
-    image: 'https://placehold.co/400x200/4a044e/fff?text=DMC5+Pack',
-    currentPrice: 27.20,
-    discountPercentage: 20
-  },
-  {
-    id: '4',
-    title: 'Meowgic',
-    tags: 'Aventura, Gatos',
-    category: 'DESEJO',
-    image: 'https://placehold.co/400x200/14532d/fff?text=Meowgic',
-    currentPrice: 14.87,
-    discountPercentage: 38,
-    isWishlist: true
-  }
-];
+/**
+ * Mapeia a resposta da API do backend para o tipo GameItem do frontend.
+ */
+function mapApiToGameItem(apiGame: GameApiResponse): GameItem {
+  return {
+    id: String(apiGame.id),
+    title: apiGame.title,
+    category: 'JOGO',
+    publisherOrParent: apiGame.publisher,
+    tags: apiGame.tags?.join(', '),
+    image: apiGame.banner_url || `https://placehold.co/400x200/1e3a8a/fff?text=${encodeURIComponent(apiGame.title)}`,
+    currentPrice: apiGame.price,
+  };
+}
 
 export const Store: React.FC<StoreProps> = ({
   searchQuery = '',
   activeSubTab = 'destaques',
   onSelectGame
 }) => {
-  const [games] = useState<GameItem[]>(mockGames);
+  const [games, setGames] = useState<GameItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchGames = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params: Record<string, string | number> = {};
+
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+
+      const apiGames = await storeApi.listGames(params);
+      setGames(apiGames.map(mapApiToGameItem));
+    } catch (err) {
+      console.error('Erro ao carregar jogos:', err);
+      setError('Não foi possível carregar o catálogo. Verifique se os serviços estão em execução.');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
 
   const filteredGames = games.filter(game => {
-    // Filtro de busca por texto
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      const matchTitle = game.title.toLowerCase().includes(q);
-      const matchTag = game.tags?.toLowerCase().includes(q);
-      const matchPublisher = game.publisherOrParent?.toLowerCase().includes(q);
-      if (!matchTitle && !matchTag && !matchPublisher) return false;
-    }
-
     // Filtro por sub-aba
     if (activeSubTab === 'wishlist') {
       return game.category === 'DESEJO' || game.isWishlist;
@@ -109,7 +100,23 @@ export const Store: React.FC<StoreProps> = ({
       </div>
 
       {/* Grid de Cards */}
-      {filteredGames.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-12 bg-brand-card/40 rounded-2xl border border-gray-800">
+          <i className="fa-solid fa-spinner fa-spin text-4xl text-brand-purple mb-3"></i>
+          <p className="text-gray-400 font-medium">Carregando catálogo...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-brand-card/40 rounded-2xl border border-red-800/40">
+          <i className="fa-solid fa-exclamation-triangle text-4xl text-red-400 mb-3"></i>
+          <p className="text-red-300 font-medium">{error}</p>
+          <button
+            onClick={fetchGames}
+            className="mt-4 bg-brand-purple hover:bg-brand-purpleDark text-white font-bold py-2 px-6 rounded-xl transition"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      ) : filteredGames.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {filteredGames.map(game => (
             <GameCard key={game.id} game={game} onSelect={onSelectGame} />

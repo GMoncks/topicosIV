@@ -9,6 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import (
     AUTH_SERVICE_URL,
+    STORE_SERVICE_URL,
+    LIBRARY_SERVICE_URL,
     JWT_SECRET_KEY,
     JWT_ALGORITHM,
 )
@@ -126,6 +128,179 @@ async def proxy_auth(path: str, request: Request):
         )
 
 
+@app.api_route("/api/games", methods=["GET", "OPTIONS"])
+@app.api_route("/api/games/{path:path}", methods=["GET", "OPTIONS"])
+async def proxy_games(request: Request, path: str = ""):
+    """
+    Proxy reverso para consulta ao catálogo da Store (/games e /games/{id}).
+    Rotas públicas com repasse opcional de identidade autenticada caso presente.
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        except Exception:
+            pass
+
+    subpath = f"/{path}" if path else ""
+    target_url = f"{STORE_SERVICE_URL.rstrip('/')}/games{subpath}"
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço de loja temporariamente indisponível"}
+        )
+
+
+@app.api_route("/api/store/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_store(path: str, request: Request):
+    """
+    Proxy reverso genérico para rotas do store-service (/api/store/*).
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        except Exception:
+            pass
+
+    target_url = f"{STORE_SERVICE_URL.rstrip('/')}/{path}"
+    body = await request.body()
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params,
+            content=body
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço de loja temporariamente indisponível"}
+        )
+
+
+@app.api_route("/api/library/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_library(path: str, request: Request):
+    """
+    Proxy reverso para o library-service (/api/library/*).
+    - Remove qualquer header X-User-* externo para evitar spoofing.
+    - Valida o token JWT centralizadamente.
+    - Se rota protegida (ex: my-games): bloqueia 401 se ausente/inválido e injeta X-User-Id confiável.
+    - Se rota de grant ou health: permite execução repassando parâmetros.
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    # 1. Sanitização dos cabeçalhos recebidos contra spoofing
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    # 2. Validação centralizada de JWT
+    auth_header = request.headers.get("authorization")
+    user_payload: Optional[dict] = None
+
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        except Exception:
+            user_payload = None
+
+    # Rotas que exigem obrigatoriamente usuário autenticado
+    requires_auth = path.startswith("my-games")
+
+    if requires_auth:
+        if not user_payload:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Token de autenticação ausente ou inválido"}
+            )
+        forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+    elif user_payload:
+        forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+
+    subpath = f"/{path}" if path else ""
+    target_url = f"{LIBRARY_SERVICE_URL.rstrip('/')}/library{subpath}"
+    body = await request.body()
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params,
+            content=body
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço de biblioteca temporariamente indisponível"}
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+
