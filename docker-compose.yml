@@ -21,6 +21,45 @@ services:
       - mist-network
     restart: unless-stopped
 
+  store-service:
+    build:
+      context: ./services/store-service
+      dockerfile: Dockerfile
+    container_name: mist-store-service
+    ports:
+      - "127.0.0.1:${STORE_SERVICE_PORT:-8002}:8002"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8002
+      - STORE_DATABASE_URL=${STORE_DATABASE_URL:-sqlite:///app/data/store.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - store_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  library-service:
+    build:
+      context: ./services/library-service
+      dockerfile: Dockerfile
+    container_name: mist-library-service
+    ports:
+      - "127.0.0.1:${LIBRARY_SERVICE_PORT:-8003}:8003"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8003
+      - LIBRARY_DATABASE_URL=${LIBRARY_DATABASE_URL:-sqlite:///app/data/library.db}
+      - STORE_SERVICE_URL=${STORE_SERVICE_URL:-http://store-service:8002}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - library_data:/app/app/data
+    depends_on:
+      - store-service
+    networks:
+      - mist-network
+    restart: unless-stopped
+
   gateway:
     build:
       context: ./gateway
@@ -40,6 +79,8 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
     depends_on:
       - auth-service
+      - store-service
+      - library-service
     networks:
       - mist-network
     restart: unless-stopped
@@ -59,6 +100,10 @@ services:
 
 volumes:
   auth_data:
+    driver: local
+  store_data:
+    driver: local
+  library_data:
     driver: local
 
 networks:

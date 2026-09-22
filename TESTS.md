@@ -48,6 +48,60 @@
 - Resultado esperado: Falha rápida e bloqueio de inicialização insegura em produção.
 - Rastreabilidade: `services/auth-service/app/services/auth_service.py`
 
+### Loja e Catálogo (Store Service)
+#### STORE-UNIT-01 — Criação e tipagem do modelo Game
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_game_model_creation"`
+- Pré-condições: Modelo SQLAlchemy `Game` definido com todos os 11 atributos obrigatórios.
+- Passos:
+  - Dado os atributos de um jogo incluindo título, descrição, preço, tags, categoria, banner_url, screenshots, release_date, publisher e review_score
+  - Quando a entidade Game for instanciada e persistida no banco
+  - Então todos os campos e serializações para dicionário refletem os tipos e valores corretos
+- Resultado esperado: Persistência íntegra de todos os tipos e serialização ISO da data.
+- Rastreabilidade: `services/store-service/app/models/game.py`
+
+#### STORE-UNIT-02 — Integridade e idempotência do catálogo de seed de jogos
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_seed_games_catalog_integrity"`
+- Pré-condições: Função `seed_games` e lista `SEED_GAMES` implementadas.
+- Passos:
+  - Dado o banco de dados vazio
+  - Quando a função de seed for executada uma e duas vezes
+  - Então são inseridos entre 10 e 15 jogos na primeira execução, zero na segunda, e todos os 9 jogos obrigatórios possuem datas e preços exatos
+- Resultado esperado: Catálogo populado com 13 jogos com dados realistas e idempotência preservada.
+- Rastreabilidade: `services/store-service/app/db/seed.py`
+
+### Biblioteca e Licenças (Library Service)
+#### LIB-UNIT-01 — Criação e valores padrão do modelo LibraryItem
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_unit_01_create_library_item_defaults"`
+- Pré-condições: Modelo SQLAlchemy `LibraryItem` implementado.
+- Passos:
+  - Dado um `user_id` e `game_id`
+  - Quando a entidade `LibraryItem` for instanciada e persistida no banco SQLite
+  - Então o ID é gerado, `playtime_minutes` inicia em 0, `is_installed` inicia como False, `last_played` é None e `acquired_at` é preenchido automaticamente
+- Resultado esperado: Valores padrão persistidos e serialização para dict íntegra.
+- Rastreabilidade: `services/library-service/app/models/library_item.py`
+
+#### LIB-UNIT-02 — Restrição de unicidade (user_id, game_id) em LibraryItem
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_unit_02_unique_constraint_user_game"`
+- Pré-condições: UniqueConstraint configurada na tabela `library_items`.
+- Passos:
+  - Dado um item de biblioteca existente para o par (user_id=1, game_id=10)
+  - Quando houver tentativa de persistir outro item com o mesmo par
+  - Então o banco de dados rejeita a operação com `IntegrityError`
+- Resultado esperado: Violação de chave única impedindo duplicação de posse no nível de banco de dados.
+- Rastreabilidade: `services/library-service/app/models/library_item.py`
+
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
 - Prioridade: P1
@@ -135,13 +189,41 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest gateway/tests/test_gateway.py`
+- Comando: `pytest gateway/tests/test_gateway.py -k "test_gateway_strips_spoofed_x_user_headers_and_injects_trusted_identity"`
 - Pré-condições: API Gateway instanciado em ambiente de teste com FastAPI TestClient.
 - Passos:
   - Dado um token JWT válido emitido pelo Auth Service e tentativas de spoofing com `X-User-Id`
   - Quando o cliente envia uma requisição através do Gateway
   - Então o Gateway descarta headers de spoofing externos, valida o JWT e encaminha injetando o header seguro `X-User-Id` downstream
 - Resultado esperado: Código HTTP 200 e recebimento do header `X-User-Id` genuíno no serviço interno.
+- Rastreabilidade: `gateway/app/main.py`
+
+#### GATEWAY-INT-02 — Encaminhamento de consulta do catálogo da Store via Gateway
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_gateway.py -k "test_gateway_store_games_proxy_passthrough"`
+- Pré-condições: API Gateway com rotas de proxy reverso `/api/games`.
+- Passos:
+  - Dado uma requisição GET para `/api/games?category=Simulação`
+  - Quando o Gateway processar a requisição
+  - Então ela é repassada para a URL do store-service mantendo parâmetros de consulta e retornando os dados
+- Resultado esperado: Código HTTP 200 e payload serializado corretamente.
+- Rastreabilidade: `gateway/app/main.py`
+
+#### GATEWAY-INT-03 — Autenticação centralizada e injeção de X-User-Id no proxy da Library
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_gateway.py -k "test_gateway_library_my_games_proxy"`
+- Pré-condições: API Gateway com rotas de proxy reverso `/api/library/my-games`.
+- Passos:
+  - Dado uma requisição sem JWT para `/api/library/my-games`
+  - Quando o Gateway processar a requisição
+  - Então retorna 401 Unauthorized
+  - E quando a requisição contiver um Bearer JWT válido
+  - Então o Gateway valida o JWT e encaminha a chamada para o library-service injetando o header seguro `X-User-Id`
+- Resultado esperado: Código HTTP 401 para requisições anônimas e 200 com repasse correto de identidade para usuários autenticados.
 - Rastreabilidade: `gateway/app/main.py`
 
 ### Autenticação e Persistência
@@ -158,6 +240,98 @@
 - Resultado esperado: Persistência no SQLite, concessão de R$ 200,00 e validação completa de login.
 - Rastreabilidade: `services/auth-service/app/api/routes.py`
 
+### Catálogo de Jogos (Store Service)
+#### STORE-INT-01 — Listagem completa e filtros do catálogo de jogos (GET /games)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_get_games_unfiltered or test_get_games_filter_by_category or test_get_games_filter_by_tag or test_get_games_filter_by_price_range or test_get_games_text_search or test_get_games_sorting"`
+- Pré-condições: Endpoints da Store ativos com banco SQLite populado pela seed.
+- Passos:
+  - Dado parâmetros de filtro por categoria, tag, faixa de preço, texto de busca e ordenação
+  - Quando o endpoint `GET /games` for acionado
+  - Então a resposta contém estritamente os jogos correspondentes aos critérios, ordenados conforme solicitado
+- Resultado esperado: Retorno HTTP 200 com lista JSON em conformidade com o schema `GameListItemResponse`.
+- Rastreabilidade: `services/store-service/app/api/routes.py`
+
+#### STORE-INT-02 — Consulta de detalhes completos de um jogo por ID (GET /games/{id})
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_get_game_details_success or test_get_game_details_not_found"`
+- Pré-condições: Endpoints da Store ativos com catálogo inicial cadastrado.
+- Passos:
+  - Dado um ID válido existente e um ID inexistente
+  - Quando o endpoint `GET /games/{id}` for requisitado
+  - Então o ID válido retorna HTTP 200 com sinopse e capturas de tela, e o ID inexistente retorna HTTP 404 com mensagem amigável
+- Resultado esperado: HTTP 200 com schema `GameDetailResponse` para ID existente e HTTP 404 para ID inválido.
+- Rastreabilidade: `services/store-service/app/api/routes.py`
+
+### Biblioteca e Licenças (Library Service)
+#### LIB-INT-01 — Concessão de licença via POST /library/grant
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_int_01_grant_game_creates_item"`
+- Pré-condições: Endpoint `/library/grant` ativo e banco SQLite configurado.
+- Passos:
+  - Dado um payload com `{"user_id": 1, "game_id": 5}`
+  - Quando a requisição POST para `/library/grant` for executada
+  - Então o status retornado é 201 Created com campo `created=True` e timestamp de aquisição
+- Resultado esperado: Retorno HTTP 201 e persistência da posse do jogo.
+- Rastreabilidade: `services/library-service/app/api/routes.py`
+
+#### LIB-INT-02 — Idempotência da concessão de licença (POST /library/grant)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_int_02_grant_game_idempotent"`
+- Pré-condições: Item de biblioteca previamente concedido ao usuário.
+- Passos:
+  - Dado uma licença já concedida para o usuário 2 do jogo 8
+  - Quando o endpoint `/library/grant` for acionado novamente com os mesmos dados
+  - Então o status retornado é 200 OK com `created=False` mantendo o mesmo registro
+- Resultado esperado: Retorno HTTP 200 sem criação de duplicata.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`
+
+#### LIB-INT-03 — Consulta de jogos do usuário com autenticação (GET /library/my-games)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_int_03_get_my_games_success"`
+- Pré-condições: Usuário autenticado com jogos concedidos em sua biblioteca.
+- Passos:
+  - Dado o usuário 3 com 2 jogos adquiridos
+  - Quando a requisição `GET /library/my-games` for enviada com header `X-User-Id: 3`
+  - Então são retornados exatamente os 2 jogos com dados de playtime e status
+- Resultado esperado: Retorno HTTP 200 com lista serializada de itens da biblioteca.
+- Rastreabilidade: `services/library-service/app/api/routes.py`
+
+#### LIB-INT-04 — Rejeição de consulta sem credenciais em GET /library/my-games
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_int_04_get_my_games_unauthorized_when_missing_header"`
+- Pré-condições: Endpoint `/library/my-games` protegido por identidade.
+- Passos:
+  - Dado requisições sem o header `X-User-Id` ou com valores inválidos (não numérico ou negativo)
+  - Quando o endpoint for acionado
+  - Então retorna HTTP 401 Unauthorized com mensagem detalhada
+- Resultado esperado: Retorno HTTP 401 impedindo acesso anônimo ou corrompido.
+- Rastreabilidade: `services/library-service/app/api/routes.py`
+
+#### LIB-INT-05 — Retorno de lista vazia para usuário sem jogos adquiridos
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_library.py -k "test_lib_int_05_get_my_games_empty_for_user_without_games"`
+- Pré-condições: Usuário recém-cadastrado sem aquisições de jogos.
+- Passos:
+  - Dado uma consulta com `X-User-Id: 999`
+  - Quando o endpoint `GET /library/my-games` for processado
+  - Então retorna HTTP 200 com lista vazia `[]`
+- Resultado esperado: Retorno HTTP 200 com array vazio.
+- Rastreabilidade: `services/library-service/app/api/routes.py`
 
 ### Compra e Concessão de Licença
 #### STORE-LIB-INT-01 — Chamada síncrona HTTP de concessão de posse após compra

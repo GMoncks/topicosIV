@@ -36,6 +36,13 @@
         "duracao_ms": 18161,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 52108,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -76,6 +83,13 @@
         "duracao_ms": 3263,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 9653,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -107,6 +121,13 @@
         "run_id": "2026-09-20T01:22:29.246Z",
         "status": "pass",
         "duracao_ms": 3427,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 2679,
         "erro": null,
         "origem": "execucao"
       }
@@ -142,6 +163,13 @@
         "duracao_ms": 2656,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1854,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -173,6 +201,13 @@
         "run_id": "2026-09-20T01:22:29.246Z",
         "status": "pass",
         "duracao_ms": 3221,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 2241,
         "erro": null,
         "origem": "execucao"
       }
@@ -208,6 +243,13 @@
         "duracao_ms": 3537,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 3595,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -239,6 +281,20 @@
         "run_id": "2026-09-20T01:22:29.246Z",
         "status": "pass",
         "duracao_ms": 1702,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "fail",
+        "duracao_ms": 945,
+        "erro": "============================== warnings summary ===============================\n.venv\\Lib\\site-packages\\fastapi\\testclient.py:1\n  E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\.venv\\Lib\\site-packages\\fastapi\\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\n.venv\\Lib\\site-packages\\starlette\\testclient.py:53\n  E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\.venv\\Lib\\site-packages\\starlette\\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.\n    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n7 deselected, 2 warnings in 0.25s",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:40:06.123108+00:00",
+        "status": "pass",
+        "duracao_ms": 816,
         "erro": null,
         "origem": "execucao"
       }
@@ -274,6 +330,13 @@
         "duracao_ms": 4656,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 2785,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -303,6 +366,13 @@
       },
       {
         "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pending",
         "duracao_ms": 0,
         "erro": null,
@@ -340,6 +410,13 @@
         "duracao_ms": 0,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -373,6 +450,13 @@
         "duracao_ms": 19730,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 18202,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -395,6 +479,13 @@
       },
       {
         "run_id": "2026-09-20T01:22:29.246Z",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pending",
         "duracao_ms": 0,
         "erro": null,
@@ -425,6 +516,13 @@
         "duracao_ms": 1438,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1254,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -449,6 +547,13 @@
         "run_id": "2026-09-20T01:22:29.246Z",
         "status": "pass",
         "duracao_ms": 4105,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 3338,
         "erro": null,
         "origem": "execucao"
       }
@@ -477,6 +582,13 @@
         "duracao_ms": 4079,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 3317,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -503,6 +615,13 @@
         "duracao_ms": 3850,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 3412,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -520,6 +639,211 @@
         "run_id": "2026-09-20T01:22:29.246Z",
         "status": "pass",
         "duracao_ms": 1475,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1224,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-UNIT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T03:58:56.081096+00:00",
+        "status": "fail",
+        "duracao_ms": 56,
+        "erro": "'pytest' não é reconhecido como um comando interno\nou externo, um programa operável ou um arquivo em lotes.",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T03:59:25.281090+00:00",
+        "status": "pass",
+        "duracao_ms": 1163,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1335,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-UNIT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T03:59:38.501397+00:00",
+        "status": "pass",
+        "duracao_ms": 1104,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1263,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "GATEWAY-INT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T03:59:59.317357+00:00",
+        "status": "pass",
+        "duracao_ms": 886,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1076,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:00:29.380191+00:00",
+        "status": "pass",
+        "duracao_ms": 1117,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1649,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-INT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:00:43.316092+00:00",
+        "status": "pass",
+        "duracao_ms": 1029,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1467,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-UNIT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1280,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-UNIT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1786,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "GATEWAY-INT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 974,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1279,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-INT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1250,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-INT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 2126,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-INT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1405,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-INT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pass",
+        "duracao_ms": 1647,
         "erro": null,
         "origem": "execucao"
       }
