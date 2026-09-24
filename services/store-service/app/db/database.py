@@ -31,10 +31,24 @@ def get_db():
 
 def init_db():
     import app.models.game  # noqa: F401
+    import app.models.wishlist  # noqa: F401
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
         try:
-            conn.execute(text("ALTER TABLE games ADD COLUMN game_file VARCHAR(255)"))
+            columns_info = conn.execute(text("PRAGMA table_info(games)")).fetchall()
+            existing_columns = {col[1] for col in columns_info}
+
+            column_definitions = {
+                "developer": "VARCHAR(100) DEFAULT 'Steam Imported'",
+                "publisher": "VARCHAR(100) DEFAULT 'Steam Imported'",
+                "review_score": "FLOAT DEFAULT 0.0",
+                "game_file": "VARCHAR(255) DEFAULT NULL",
+            }
+
+            for col_name, col_def in column_definitions.items():
+                if col_name not in existing_columns:
+                    conn.execute(text(f"ALTER TABLE games ADD COLUMN {col_name} {col_def}"))
+
             conn.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[store-service] Aviso na sincronização de colunas de games: {e}")

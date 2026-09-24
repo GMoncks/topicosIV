@@ -68,6 +68,7 @@ class LibraryService:
                             "title": data.get("title", f"Jogo #{gid}"),
                             "category": data.get("category"),
                             "banner_url": data.get("banner_url"),
+                            "developer": data.get("developer"),
                             "publisher": data.get("publisher"),
                         }
                     else:

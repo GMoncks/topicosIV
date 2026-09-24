@@ -150,3 +150,32 @@ class StoreService:
         slug = re.sub(r"[^a-zA-Z0-9_\-]", "_", game.title.lower()).strip("_")
         filename = f"{slug}.zip"
         return zip_buffer, filename
+
+    @staticmethod
+    def add_to_wishlist(db: Session, user_id: int, game_id: int):
+        from app.models.wishlist import Wishlist
+        existing = db.query(Wishlist).filter(Wishlist.user_id == user_id, Wishlist.game_id == game_id).first()
+        if existing:
+            return existing, False
+        
+        new_wishlist = Wishlist(user_id=user_id, game_id=game_id)
+        db.add(new_wishlist)
+        db.commit()
+        db.refresh(new_wishlist)
+        return new_wishlist, True
+
+    @staticmethod
+    def remove_from_wishlist(db: Session, user_id: int, game_id: int) -> bool:
+        from app.models.wishlist import Wishlist
+        item = db.query(Wishlist).filter(Wishlist.user_id == user_id, Wishlist.game_id == game_id).first()
+        if not item:
+            return False
+        
+        db.delete(item)
+        db.commit()
+        return True
+
+    @staticmethod
+    def get_user_wishlist(db: Session, user_id: int):
+        from app.models.wishlist import Wishlist
+        return db.query(Wishlist).filter(Wishlist.user_id == user_id).order_by(desc(Wishlist.added_at)).all()

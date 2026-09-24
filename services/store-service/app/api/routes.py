@@ -106,3 +106,73 @@ def download_game_package(
             "Access-Control-Expose-Headers": "Content-Disposition",
         }
     )
+
+
+from app.schemas.wishlist import WishlistAddResponse, WishlistItemResponse
+from fastapi.responses import JSONResponse
+
+@router.post("/wishlist/{game_id}", response_model=WishlistAddResponse)
+def add_to_wishlist(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    game = StoreService.get_game_by_id(db, game_id)
+    if not game:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Jogo não encontrado")
+    
+    wishlist_item, created = StoreService.add_to_wishlist(db, user_id, game_id)
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        content={
+            "id": wishlist_item.id,
+            "user_id": wishlist_item.user_id,
+            "game_id": wishlist_item.game_id,
+            "added_at": wishlist_item.added_at.isoformat() if wishlist_item.added_at else None,
+            "created": created
+        }
+    )
+
+@router.delete("/wishlist/{game_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_from_wishlist(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    success = StoreService.remove_from_wishlist(db, user_id, game_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item não encontrado na wishlist")
+    
+    return None
+
+@router.get("/wishlist", response_model=List[WishlistItemResponse])
+def get_wishlist(
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    items = StoreService.get_user_wishlist(db, user_id)
+    
+    response_items = []
+    for item in items:
+        game = StoreService.get_game_by_id(db, item.game_id)
+        response_items.append({
+            "id": item.id,
+            "user_id": item.user_id,
+            "game_id": item.game_id,
+            "added_at": item.added_at,
+            "game": game
+        })
+        
+    return response_items

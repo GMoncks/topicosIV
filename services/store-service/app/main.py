@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import init_db, SessionLocal
 from app.db.seed import seed_games
+from app.models.wishlist import Wishlist
 from app.api.routes import router as store_router
 
 
