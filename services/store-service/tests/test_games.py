@@ -257,7 +257,8 @@ def test_get_game_details_success(client):
     assert len(data["screenshots"]) >= 2
     assert "banner_url" in data
     assert data["price"] == 400.00
-    assert data["publisher"] == "Sony Interactive Entertainment"
+    assert data["publisher"] == "Steam Imported"
+    assert data["developer"] == "Sony Interactive Entertainment"
 
 
 @pytest.mark.integration

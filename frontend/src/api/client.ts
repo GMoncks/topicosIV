@@ -87,6 +87,10 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
     throw new Error(errorData.detail || `Erro na requisição HTTP (${response.status})`);
   }
 
+  if (response.status === 204 || response.headers?.get?.('content-length') === '0') {
+    return null as T;
+  }
+
   return response.json();
 }
 
@@ -155,6 +159,7 @@ export interface GameApiResponse {
   category: string;
   banner_url: string;
   release_date: string;
+  developer: string;
   publisher: string;
   review_score: number;
 }
@@ -194,4 +199,44 @@ export const storeApi = {
   async getGameDetails(gameId: number): Promise<GameDetailApiResponse> {
     return fetchApi<GameDetailApiResponse>(`/api/games/${gameId}`, { method: 'GET' });
   },
+
+  async addToWishlist(gameId: number): Promise<{ id: number; created: boolean }> {
+    return fetchApi<{ id: number; created: boolean }>(`/api/store/wishlist/${gameId}`, { method: 'POST' });
+  },
+
+  async removeFromWishlist(gameId: number): Promise<void> {
+    return fetchApi<void>(`/api/store/wishlist/${gameId}`, { method: 'DELETE' });
+  },
+
+  async getWishlist(): Promise<any[]> {
+    return fetchApi<any[]>('/api/store/wishlist', { method: 'GET' });
+  },
 };
+
+export interface LibraryItemResponse {
+  id: number;
+  user_id: number;
+  game_id: number;
+  acquired_at: string;
+  playtime_minutes: number;
+  is_installed: boolean;
+  last_played: string | null;
+  game: {
+    title: string;
+    category: string | null;
+    banner_url: string | null;
+    developer: string | null;
+    publisher: string | null;
+  } | null;
+}
+
+export const libraryApi = {
+  async getMyGames(): Promise<LibraryItemResponse[]> {
+    return fetchApi<LibraryItemResponse[]>('/api/library/my-games', { method: 'GET' });
+  },
+
+  async getGameAchievements(gameId: number): Promise<any[]> {
+    return fetchApi<any[]>(`/api/library/games/${gameId}/achievements`, { method: 'GET' });
+  }
+};
+

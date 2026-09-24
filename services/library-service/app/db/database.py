@@ -29,4 +29,5 @@ def get_db():
 
 def init_db():
     import app.models.library_item  # noqa: F401
+    import app.models.achievement  # noqa: F401
     Base.metadata.create_all(bind=engine)

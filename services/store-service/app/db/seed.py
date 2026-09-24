@@ -10,14 +10,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 275.00,
         "tags": ["RPG", "Ação", "Fantasia Sombria", "Mundo Aberto"],
         "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/374320/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 3),
-        "publisher": "Bandai Namco",
-        "review_score": 9.1
+        "developer": "Bandai Namco",
+        "publisher": "Steam Imported",
+        "review_score": 9.1,
+        "game_file": None
     },
     {
         "title": "Orbitals",
@@ -25,14 +27,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 90.00,
         "tags": ["Simulação", "Espaço", "Ficção Científica", "Indie"],
         "category": "Simulação",
-        "banner_url": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/220200/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 3),
-        "publisher": "Frontier Wave",
-        "review_score": 8.5
+        "developer": "Frontier Wave",
+        "publisher": "Steam Imported",
+        "review_score": 8.5,
+        "game_file": None
     },
     {
         "title": "Onimusha: Way of the Sword",
@@ -40,14 +44,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 200.00,
         "tags": ["Ação", "Hack and Slash", "Samurai", "Aventura"],
         "category": "Ação",
-        "banner_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/761620/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 4),
-        "publisher": "Capcom",
-        "review_score": 8.9
+        "developer": "Capcom",
+        "publisher": "Steam Imported",
+        "review_score": 8.9,
+        "game_file": None
     },
     {
         "title": "Marvel's Wolverine",
@@ -55,14 +61,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 400.00,
         "tags": ["Ação", "Super-Herói", "Violento", "História Rica"],
         "category": "Ação",
-        "banner_url": "https://images.unsplash.com/photo-1568832359672-e36cf5d74f54?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://media.rawg.io/media/resize/640/-/games/87f/87f93fdc4f0b2a2f0f40b494ac7395ca.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 15),
-        "publisher": "Sony Interactive Entertainment",
-        "review_score": 9.4
+        "developer": "Sony Interactive Entertainment",
+        "publisher": "Steam Imported",
+        "review_score": 9.4,
+        "game_file": None
     },
     {
         "title": "Fire Emblem: Fortune's Weave",
@@ -70,14 +78,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 150.00,
         "tags": ["Estratégia", "RPG Tático", "Anime", "Turnos"],
         "category": "Estratégia",
-        "banner_url": "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://media.rawg.io/media/games/530/53081dbd5003f990fa5312404ac3d71a.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 17),
-        "publisher": "Nintendo",
-        "review_score": 8.8
+        "developer": "Nintendo",
+        "publisher": "Steam Imported",
+        "review_score": 8.8,
+        "game_file": None
     },
     {
         "title": "Silent Hill: Townfall",
@@ -85,14 +95,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 250.00,
         "tags": ["Terror", "Sobrevivência", "Psicológico", "Mistério"],
         "category": "Terror",
-        "banner_url": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1636440/0ed1cb4bc30631f95b92f7f13bb06c15d49b4afa/header.jpg",
         "screenshots": [
-            "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=800&auto=format&fit=crop&q=80",
-            "https://images.unsplash.com/photo-1481018085664-c1e04550998b?w=800&auto=format&fit=crop&q=80"
+            "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1509248961158-e54f6934749c?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 24),
-        "publisher": "Konami",
-        "review_score": 8.7
+        "developer": "Konami",
+        "publisher": "Steam Imported",
+        "review_score": 8.7,
+        "game_file": None
     },
     {
         "title": "Control Resonant",
@@ -100,14 +112,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 350.00,
         "tags": ["Ação", "Sobrenatural", "Ficção Científica", "Tiro"],
         "category": "Ação",
-        "banner_url": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://cdn.prod.website-files.com/64630b03551142e3347ae3da/6a1fd8132b48ed1533f6ad23_CONTROL_Resonant_main.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 24),
-        "publisher": "Remedy Entertainment",
-        "review_score": 9.3
+        "developer": "Remedy Entertainment",
+        "publisher": "Steam Imported",
+        "review_score": 9.3,
+        "game_file": None
     },
     {
         "title": "The Witcher 3: Wild Hunt — Remastered",
@@ -115,14 +129,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 300.00,
         "tags": ["RPG", "Mundo Aberto", "Fantasia", "História Rica"],
         "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/292030/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 29),
-        "publisher": "CD PROJEKT RED",
-        "review_score": 9.8
+        "developer": "CD PROJEKT RED",
+        "publisher": "Steam Imported",
+        "review_score": 9.8,
+        "game_file": None
     },
     {
         "title": "Wardogs",
@@ -130,14 +146,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 199.00,
         "tags": ["Tiro", "Tático", "Multijogador", "Militar"],
         "category": "Tiro",
-        "banner_url": "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/359550/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 10),
-        "publisher": "Vanguard Studios",
-        "review_score": 8.2
+        "developer": "Vanguard Studios",
+        "publisher": "Steam Imported",
+        "review_score": 8.2,
+        "game_file": None
     },
     {
         "title": "Hollow Knight: Silksong",
@@ -145,14 +163,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 89.99,
         "tags": ["Metroidvania", "Aventura", "Difícil", "Indie"],
         "category": "Aventura",
-        "banner_url": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1030300/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 8, 15),
-        "publisher": "Team Cherry",
-        "review_score": 9.7
+        "developer": "Team Cherry",
+        "publisher": "Steam Imported",
+        "review_score": 9.7,
+        "game_file": None
     },
     {
         "title": "Elden Ring: Shadow of the Erdtree",
@@ -160,14 +180,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 199.90,
         "tags": ["RPG", "Soulslike", "Difícil", "Mundo Aberto"],
         "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2778580/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 6, 21),
-        "publisher": "FromSoftware",
-        "review_score": 9.6
+        "developer": "FromSoftware",
+        "publisher": "Steam Imported",
+        "review_score": 9.6,
+        "game_file": None
     },
     {
         "title": "Cyberpunk 2077: Phantom Liberty",
@@ -175,14 +197,16 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 159.00,
         "tags": ["RPG", "Cyberpunk", "Ficção Científica", "Mundo Aberto"],
         "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/2138330/header.jpg",
         "screenshots": [
-            "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80",
-            "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&auto=format&fit=crop&q=80"
+            "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 5, 10),
-        "publisher": "CD PROJEKT RED",
-        "review_score": 9.2
+        "developer": "CD PROJEKT RED",
+        "publisher": "Steam Imported",
+        "review_score": 9.2,
+        "game_file": None
     },
     {
         "title": "Baldur's Gate 3",
@@ -190,21 +214,14 @@ SEED_GAMES: List[Dict[str, Any]] = [
         "price": 199.99,
         "tags": ["RPG", "D&D", "Turnos", "Escolhas Importam"],
         "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&auto=format&fit=crop&q=80",
-        "screenshots": [
-            "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80",
-            "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80"
-        ],
-        "price": 199.99,
-        "tags": ["RPG", "D&D", "Turnos", "Escolhas Importam"],
-        "category": "RPG",
-        "banner_url": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&auto=format&fit=crop&q=80",
+        "banner_url": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1086940/header.jpg",
         "screenshots": [
             "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 4, 1),
-        "publisher": "Larian Studios",
+        "developer": "Larian Studios",
+        "publisher": "Steam Imported",
         "review_score": 9.9,
         "game_file": None
     },
@@ -219,6 +236,7 @@ SEED_GAMES: List[Dict[str, Any]] = [
             "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 20),
+        "developer": "MIST Studios",
         "publisher": "MIST Studios",
         "review_score": 9.0,
         "game_file": "games/forca.py"
@@ -234,6 +252,7 @@ SEED_GAMES: List[Dict[str, Any]] = [
             "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 21),
+        "developer": "MIST Studios",
         "publisher": "MIST Studios",
         "review_score": 9.4,
         "game_file": "games/labirinto.py"
@@ -249,6 +268,7 @@ SEED_GAMES: List[Dict[str, Any]] = [
             "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80"
         ],
         "release_date": date(2026, 9, 22),
+        "developer": "MIST Studios",
         "publisher": "MIST Studios",
         "review_score": 9.2,
         "game_file": "games/quiz.py"
@@ -258,7 +278,7 @@ SEED_GAMES: List[Dict[str, Any]] = [
 
 def seed_games(db: Session) -> int:
     """
-    Popula o catálogo de jogos caso a tabela esteja vazia ou contenha jogos pendentes.
+    Popula ou atualiza o catálogo de jogos com as informações e imagens mais recentes.
     Retorna a quantidade de novos jogos inseridos ou atualizados.
     """
     changes_count = 0
@@ -268,9 +288,27 @@ def seed_games(db: Session) -> int:
             game = Game(**game_data)
             db.add(game)
             changes_count += 1
-        elif game_data.get("game_file") and existing.game_file != game_data.get("game_file"):
-            existing.game_file = game_data.get("game_file")
-            changes_count += 1
+        else:
+            updated = False
+            fields_to_sync = [
+                "developer",
+                "publisher",
+                "review_score",
+                "game_file",
+                "banner_url",
+                "screenshots",
+                "price",
+                "description",
+                "category",
+                "tags",
+                "release_date",
+            ]
+            for field in fields_to_sync:
+                if field in game_data and getattr(existing, field) != game_data[field]:
+                    setattr(existing, field, game_data[field])
+                    updated = True
+            if updated:
+                changes_count += 1
 
     if changes_count > 0:
         db.commit()
@@ -284,6 +322,6 @@ if __name__ == "__main__":
     db = SessionLocal()
     try:
         added = seed_games(db)
-        print(f"Seed concluída com sucesso: {added} jogos inseridos.")
+        print(f"Seed concluída com sucesso: {added} jogos inseridos/atualizados.")
     finally:
         db.close()

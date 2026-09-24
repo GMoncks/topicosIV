@@ -757,6 +757,13 @@
         "duracao_ms": 1467,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-24T04:27:30.442198+00:00",
+        "status": "pass",
+        "duracao_ms": 1294,
+        "erro": null,
+        "origem": "validacao"
       }
     ]
   },
@@ -935,6 +942,18 @@
         "run_id": "2026-09-24T02:57:04.199280+00:00",
         "status": "pass",
         "duracao_ms": 1004,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-07": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-24T04:26:59.218456+00:00",
+        "status": "pass",
+        "duracao_ms": 2563,
         "erro": null,
         "origem": "validacao"
       }

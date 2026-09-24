@@ -274,6 +274,19 @@
 - Resultado esperado: Mensagens amigáveis apresentadas ao usuário sem exposição de termos técnicos como "Failed to fetch".
 - Rastreabilidade: `frontend/src/api/client.ts`
 
+#### FRONT-UNIT-07 — Dropdown de seleção de itens por página na loja (5, 10, 15, 25, 50)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/PaginationSelector.test.tsx`
+- Pré-condições: Componente `PaginationSelector` implementado e renderizado.
+- Passos:
+  - Dado o componente PaginationSelector instanciado com valor default 10
+  - Quando as opções disponíveis forem inspecionadas e um novo valor (ex: 25) for selecionado
+  - Então o select contém exatamente os valores 5, 10, 15, 25 e 50, e o callback onChange é invocado com o número escolhido
+- Resultado esperado: Componente de paginação com opções válidas e emissão correta de eventos.
+- Rastreabilidade: `frontend/src/components/PaginationSelector.tsx`
+
 
 ## Integração
 
