@@ -71,9 +71,102 @@
 - Passos:
   - Dado o banco de dados vazio
   - Quando a função de seed for executada uma e duas vezes
-  - Então são inseridos entre 10 e 15 jogos na primeira execução, zero na segunda, e todos os 9 jogos obrigatórios possuem datas e preços exatos
-- Resultado esperado: Catálogo populado com 13 jogos com dados realistas e idempotência preservada.
+  - Então são inseridos os jogos do catálogo incluindo os mini-jogos executáveis, zero na segunda execução, e todos os jogos obrigatórios possuem datas e preços exatos
+- Resultado esperado: Catálogo populado com jogos com dados realistas e idempotência preservada.
 - Rastreabilidade: `services/store-service/app/db/seed.py`
+
+#### STORE-UNIT-03 — Download dinâmico do pacote de jogo (.zip com game.py, mist_sdk.py e session.json)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_download.py`
+- Pré-condições: Endpoints `/games/{id}/download` implementados no `store-service` com os 3 mini-jogos disponíveis.
+- Passos:
+  - Dado uma requisição de download para um jogo executável autenticada com headers `X-User-Id` e `X-User-Token`
+  - Quando o endpoint GET `/games/{id}/download` for acionado
+  - Então o servidor responde com HTTP 200, Content-Type `application/zip` e o arquivo contém `game.py`, `mist_sdk.py` e `session.json` com os dados do usuário
+- Resultado esperado: Pacote zip íntegro e executável gerado dinamicamente para o jogador.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
+
+#### STORE-UNIT-04 — Validação do SDK client-side (mist_sdk.py) e compilação dos mini-jogos
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_sdk_and_games.py`
+- Pré-condições: Módulo `mist_sdk.py` e mini-jogos `forca.py`, `labirinto.py`, `quiz.py` criados em `app/data/`.
+- Passos:
+  - Dado os scripts Python dos jogos e o módulo SDK
+  - Quando a compilação do bytecode e execução do SDK em sandbox forem testadas
+  - Então todos os arquivos compilam sem erros de sintaxe e o SDK opera com resiliência mesmo offline
+- Resultado esperado: Zero dependências externas (stdlib-only) e resiliência offline do SDK garantidas.
+- Rastreabilidade: `services/store-service/app/data/mist_sdk.py`, `services/store-service/app/data/games/`
+
+### Social e Amigos (Social Service)
+#### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_friend_request_flow"`
+- Pré-condições: Modelos `Friend`, `Message`, `Activity` e rotas `/friends/request` e `/friends/accept/{id}` implementados.
+- Passos:
+  - Dado dois usuários autenticados (User 1 e User 2)
+  - Quando User 1 envia convite de amizade e User 2 aceita
+  - Então a relação transiciona de `pending` para `accepted` e ambos passam a constar na lista mútua de amigos
+- Resultado esperado: Fluxo bilateral de amizade executado com sucesso e persistido no SQLite `social.db`.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-UNIT-02 — Validação de regras e restrições de amizade (auto-solicitação e duplicidade)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_cannot_friend_self or test_duplicate_friend_request or test_only_addressee_can_accept"`
+- Pré-condições: Validações de integridade e segurança no `SocialService`.
+- Passos:
+  - Dado tentativas de enviar pedido para si mesmo, duplicar pedido pendente ou aceitar pedido alheio
+  - Quando as rotas correspondentes forem chamadas
+  - Então o serviço rejeita com códigos HTTP 400 (Bad Request) ou 403 (Forbidden)
+- Resultado esperado: Proteção de integridade social respeitada estritamente.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-UNIT-03 — Remoção de amizade e listagem exclusiva de amigos aceitos
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_delete_friendship"`
+- Pré-condições: Endpoints `DELETE /friends/{id}` e `GET /friends` implementados.
+- Passos:
+  - Dado uma amizade ativa entre dois usuários
+  - Quando qualquer um dos participantes requisita a exclusão da amizade
+  - Então a relação é removida e a lista de amigos de ambos retorna vazia
+- Resultado esperado: Desvinculação imediata com resposta idempotente.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+### Inteligência Artificial e Agentes (MIST AI)
+#### AI-UNIT-01 — Resolução multi-provedor e fallback determinístico do AIClient
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/common/tests/test_ai_client.py -k "test_ai_client_provider_resolution or test_ai_client_mock_text_and_json_generation or test_ai_client_fallback_on_network_error"`
+- Pré-condições: Módulo `services/common/ai_client.py` implementado com suporte a Gemini, OpenAI, Groq e Mock.
+- Passos:
+  - Dado instâncias do `AIClient` configuradas com chaves distintas ou sem chaves
+  - Quando a resolução de provedor e chamadas com falha simulada de rede forem executadas
+  - Então o cliente resolve os provedores na prioridade correta e aciona o fallback mock sem propagar exceções
+- Resultado esperado: Seleção precisa e resiliência com fallback determinístico local.
+- Rastreabilidade: `services/common/ai_client.py`
+
+#### AI-UNIT-02 — Heurísticas determinísticas das personas MIST (Curator, Quest Master, Companion Bot)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/common/tests/test_ai_client.py -k "test_ai_curator_mock_recommendations or test_ai_quest_master_mock_quests or test_ai_companion_bot_mock_chat"`
+- Pré-condições: Métodos `curate_recommendations`, `generate_dynamic_quests` e `companion_chat_reply` disponíveis no `AIClient`.
+- Passos:
+  - Dado perfis de usuário, bibliotecas e histórico de chat
+  - Quando as personas forem acionadas no modo mock
+  - Então recomendações personalizadas por tags, missões semanais estruturadas e respostas conversacionais coerentes são retornadas
+- Resultado esperado: Retorno consistente e estruturado para todas as personas de IA do ecossistema MIST.
+- Rastreabilidade: `services/common/ai_client.py`
 
 ### Biblioteca e Licenças (Library Service)
 #### LIB-UNIT-01 — Criação e valores padrão do modelo LibraryItem

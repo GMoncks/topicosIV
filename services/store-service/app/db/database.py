@@ -1,6 +1,6 @@
 import os
 import json
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # Garante que o diretório data exista relativo ao serviço
@@ -32,3 +32,9 @@ def get_db():
 def init_db():
     import app.models.game  # noqa: F401
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE games ADD COLUMN game_file VARCHAR(255)"))
+            conn.commit()
+        except Exception:
+            pass

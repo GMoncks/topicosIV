@@ -733,3 +733,175 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 11. **[`services/library-service/tests/test_library.py`](./services/library-service/tests/test_library.py)** & **[`gateway/tests/test_gateway.py`](./gateway/tests/test_gateway.py)**: Testes unitários e de integração.
 12. **[`TESTS.md`](./TESTS.md)** & **[`resultados.json`](./resultados.json)**: Catálogo e histórico de execução dos testes atualizados.
 
+
+---
+
+## 2026-09-23 — Análise e Planejamento: F-01, F-02, E-01, E-03 e Prompt E-02
+
+**Prompt do usuário:**
+
+> Orquestre as mudanças necessárias para as seguintes implementações, conforme planejado: F-01 (modelos Friend/Message/Activity no social-service), F-02 (endpoints de amizade), E-01 (mist_sdk.py stdlib-only), E-03 (endpoint GET /store/games/{id}/download com .zip). Para E-02 (mini-jogos), gerar apenas um prompt para IA de criação de jogos. Não gerar código, apenas planejamento.
+
+**Decisões arquiteturais tomadas:**
+
+- **social-service bootstrap completo:** Todos os arquivos estavam vazios (stubs). O plano cobre requirements.txt, db/database.py e main.py do zero, espelhando o padrão do store-service.
+- **Autenticação no social-service:** Usa header X-User-Id injetado pelo Gateway — sem validação de JWT local, consistente com os outros serviços internos.
+- **Modelo Friend:** Campos requester_id, addressee_id, status (enum: pending/accepted/rejected/blocked) com UniqueConstraint.
+- **Modelo Activity:** Campo type (string enum) + payload JSON genérico para eventos futuros de outros serviços.
+- **mist_sdk.py (E-01):** Stdlib-only (urllib.request, json, os, pathlib). Lê session.json do diretório local. Falhas de rede silenciadas para não travar o jogo.
+- **session.json no .zip (E-03):** O store-service não tem acesso ao JWT real. Token usa placeholder REPLACE_WITH_USER_TOKEN.
+- **Localização dos artefatos:** mist_sdk.py e game.py ficam em store-service/app/data/ e são lidos em runtime com zipfile + io.BytesIO.
+- **docker-compose.yml:** O social-service não estava declarado. Deve ser adicionado na porta 8004 com volume social_data.
+
+**Saídas geradas:**
+
+- Plano de implementação detalhado em implementation_plan.md (artifact), cobrindo 14 arquivos em 6 blocos em ordem de dependência.
+- Prompt para IA de criação de mini-jogos (E-02) incluído no plano, com requisitos técnicos, estrutura esperada do game.py e 3 opções de jogos.
+- Nenhum código gerado (fase de planejamento — aguardando aprovação do usuário).
+
+---
+
+## 2026-09-23 — Revisão de Planejamento: Inclusão Direta dos 3 Jogos (Opção B), Gateway Token Injection e Testes
+
+**Prompt do usuário:**
+
+> Pode atualizar o implementation plan, considerando a inclusão direta dos 3 jogos IA generated, conforme a opção B.
+> Em anexo seguem os jogos, para inclusão direta e testes em seguida (considerar no plan também esses novos testes)
+> [Anexos: códigos dos jogos Forca (forca.py), Labirinto (labirinto.py) e Quiz (quiz.py)]
+
+**Decisões arquiteturais tomadas:**
+
+- **Opção B adotada:** Cada um dos 3 jogos de demonstração gerados por IA (orca.py, labirinto.py, quiz.py) será armazenado em store-service/app/data/games/ e terá seu respectivo registro na tabela games (via seed.py) com campo game_file.
+- **Geração de .zip específico por jogo:** O endpoint GET /store/games/{id}/download compactará dinamicamente o arquivo específico do jogo renomeado para game.py, juntamente com mist_sdk.py e o session.json contextual.
+- **Injeção do Token Real pelo Gateway:** O Gateway repassará o JWT no header interno X-User-Token, garantindo que o session.json seja gerado com a credencial real do jogador.
+- **Plano de Testes Expandido:** Incluídos testes para:
+  1. Fluxo completo do social-service (pedido, aceitação, deleção, listagem).
+  2. Geração e validação interna do pacote .zip gerado no store-service (verificação de integridade dos arquivos e do conteúdo do session.json).
+  3. Sintaxe, importação e compatibilidade do mist_sdk.py e dos 3 scripts de jogos.
+
+**Saídas geradas:**
+
+- implementation_plan.md atualizado com o detalhamento completo da Opção B, os fluxos com o Gateway e a nova suíte de testes.
+
+---
+
+## 2026-09-23 — Execução e Validação: F-01, F-02, E-01, E-02 e E-03
+
+**Prompt do usuário:**
+
+> [Aprovação do implementation_plan.md revisado para início da execução]
+
+**Decisões arquiteturais e técnicas tomadas:**
+
+- **Bootstrap do social-service:**
+  - Criação do Dockerfile Python 3.11-slim para a porta 8004.
+  - Criação de requirements.txt e conexão SQLite isolada (social.db) em app/db/database.py.
+  - Implementação dos modelos SQLAlchemy Friend, Message e Activity (F-01) com chave única bilateral e campos de auditoria.
+  - Implementação dos endpoints de amizade (F-02): POST /friends/request, POST /friends/accept/{id}, DELETE /friends/{id} e GET /friends orientados a cabeçalho X-User-Id injetado pelo Gateway.
+  - Integração do container mist-social-service e volume social_data ao docker-compose.yml.
+- **Injeção de Identidade e Token no Gateway:**
+  - Repasse do token JWT no cabeçalho X-User-Token em chamadas ao store-service e ao social-service.
+  - Rota de proxy reverso /api/social/{path:path} adicionada no Gateway.
+- **SDK e Distribuição de Mini-Jogos (E-01, E-02, E-03):**
+  - mist_sdk.py: módulo stdlib-only puro que lê session.json e executa start_session(), ping() e unlock_achievement() de modo resiliente offline.
+  - Inclusão dos 3 jogos fornecidos em store-service/app/data/games/: forca.py, labirinto.py e quiz.py.
+  - Modelo Game e schemas Pydantic estendidos com o campo game_file.
+  - seed.py atualizado para cadastrar MIST Forca, MIST Labirinto e MIST Quiz no catálogo com preenchimento de game_file.
+  - Método build_game_package() no StoreService e endpoints GET /games/{id}/download e GET /store/games/{id}/download para geração dinâmica de pacote .zip contendo game.py, mist_sdk.py e session.json contextual com o token do usuário.
+- **Validação de Testes e QA:**
+  - Criação das suítes test_social.py, test_download.py e test_sdk_and_games.py.
+  - 100% de sucesso obtido nos 47 testes executados (7 social, 18 store, 7 gateway, 8 auth, 7 library).
+  - Atualização do catálogo TESTS.md (STORE-UNIT-03, STORE-UNIT-04, SOCIAL-UNIT-01, SOCIAL-UNIT-02, SOCIAL-UNIT-03) e sincronização atômica dos resultados em resultados.json via runner_adapter.py.
+
+**Resumo de Arquivos Criados e Modificados:**
+
+1. **services/social-service/Dockerfile**: Container para a porta 8004.
+2. **services/social-service/requirements.txt**: Dependências do microsserviço social.
+3. **services/social-service/app/db/database.py**: Setup do banco social.db e engine SQLAlchemy.
+4. **services/social-service/app/models/friend.py**: Modelo Friend com restrição de unicidade e status.
+5. **services/social-service/app/models/message.py**: Modelo Message para histórico de chat.
+6. **services/social-service/app/models/activity.py**: Modelo Activity para feed social.
+7. **services/social-service/app/schemas/friend.py**: Schemas Pydantic de requisição e listagem de amizade.
+8. **services/social-service/app/schemas/message.py**: Schemas Pydantic para troca de mensagens.
+9. **services/social-service/app/services/social_service.py**: Lógica de amizades bilaterais, validação de regras e listagem.
+10. **services/social-service/app/api/routes.py**: Rotas /health e endpoints REST de amizade.
+11. **services/social-service/app/main.py**: App FastAPI com lifespan e CORS configurado.
+12. **docker-compose.yml**: Adicionado serviço mist-social-service e volume social_data.
+13. **gateway/app/main.py**: Proxy /api/social/* e injeção do header X-User-Token.
+14. **services/store-service/app/data/mist_sdk.py**: SDK stdlib-only.
+15. **services/store-service/app/data/games/forca.py**: Mini-jogo MIST Forca.
+16. **services/store-service/app/data/games/labirinto.py**: Mini-jogo MIST Labirinto.
+17. **services/store-service/app/data/games/quiz.py**: Mini-jogo MIST Quiz.
+18. **services/store-service/app/models/game.py**: Coluna game_file adicionada.
+19. **services/store-service/app/schemas/game.py**: Campo game_file adicionado aos schemas.
+20. **services/store-service/app/db/seed.py**: Seed dos 3 mini-jogos.
+21. **services/store-service/app/db/database.py**: Migração automática de schema para game_file.
+22. **services/store-service/app/services/store_service.py**: Método build_game_package().
+23. **services/store-service/app/api/routes.py**: Endpoint de download de pacote .zip.
+24. **services/social-service/tests/test_social.py**: Testes unitários do social-service.
+25. **services/store-service/tests/test_download.py**: Testes de download de pacotes zip.
+26. **services/store-service/tests/test_sdk_and_games.py**: Testes de integridade do SDK e compilação dos jogos.
+27. **services/store-service/tests/test_games.py**: Ajuste no range de asserção da seed.
+28. **TESTS.md**: Inclusão de 5 novos casos de teste.
+29. **resultados.json**: Persistência atômica das execuções via runner_adapter.py.
+
+---
+
+## 2026-09-23 — Análise e Planejamento: Ticket G-01 (Helper Unificado ai_client.py)
+
+**Prompt do usuário:**
+
+> Ótimo. Agora planeje a implementação do seguinte ticket:
+> G-01 = Criar helper unificado ai_client.py com suporte à API Gemini / OpenAI / Groq e fallback determinístico por mock local
+
+**Decisões arquiteturais e técnicas tomadas:**
+
+- **Abordagem sem dependências pesadas:** Utilização do cliente HTTP assíncrono httpx (já instalado em todos os serviços) para chamadas REST diretas às APIs públicas do Google Gemini, OpenAI e Groq, eliminando dependências de SDKs pesados de terceiros.
+- **Fallback Determinístico Automático:** Implementação de chaveamento seguro: caso nenhuma API key esteja configurada ou qualquer requisição falhe por rede, timeout ou erro HTTP, o helper chaveia de forma transparente para um mock local determinístico sem interromper o serviço.
+- **Modo Mock Dedicado para CI/Testes:** Possibilidade de forçar AI_PROVIDER=mock para testes unitários rápidos e execução 100% offline com custo zero.
+- **Suporte às Personas MIST:** Além de generate_text() e generate_json(), o helper expõe métodos de alto nível para os próximos tickets: curate_recommendations() (G-02), generate_dynamic_quests() (G-03) e companion_chat_reply() (G-04).
+- **Estratégia de Distribuição:** Criação do módulo canônico em services/common/ai_client.py e espelhamento nos microsserviços store-service, library-service e social-service.
+- **Plano de Testes:** Criação de testes cobrindo seleção de provedor, geração de texto/JSON mock, fallback em caso de erro HTTP e heurísticas determinísticas das três personas.
+
+**Saídas geradas:**
+
+- Documento implementation_plan.md (artifact) atualizado com a especificação técnica detalhada de G-01.
+
+---
+
+## 2026-09-23 — Execução e Validação: Ticket G-01 (Helper Unificado ai_client.py)
+
+**Prompt do usuário:**
+
+> [Aprovação do plano de implementação de G-01 para início da execução]
+
+**Decisões arquiteturais e técnicas tomadas:**
+
+- **Implementação do AIClient:**
+  - Criado em services/common/ai_client.py com suporte a Gemini (Google AI Studio REST), OpenAI e Groq usando o cliente assíncrono httpx.
+  - Modo auto com fallback transparente em cascata: se houver falha de rede, timeout ou credenciais inválidas em APIs externas, o cliente ativa o Mock Local Determinístico sem quebrar a aplicação.
+  - Implementação de métodos de personas de IA MIST:
+    - curate_recommendations(): pontuação heurística por sobreposição de tags e justificativas textuais em português (G-02).
+    - generate_dynamic_quests(): geração de missões semanais estruturadas com recompensas em XP (G-03).
+    - companion_chat_reply(): respostas gamers descontraídas e contextuais para o bot de chat WebSocket (G-04).
+- **Distribuição e Configuração:**
+  - Espelhamento em services/store-service/app/services/ai_client.py, services/library-service/app/services/ai_client.py e services/social-service/app/services/ai_client.py.
+  - pyproject.toml atualizado com services/common no pythonpath e services/common/tests nos testpaths.
+  - .env.example expandido com bloco de configuração completo para MIST AI.
+- **Testes e Qualidade:**
+  - Suíte test_ai_client.py cobrindo resolução de provedor, geração de texto/JSON mock, resiliência a falhas de rede com fallback simulado e as 3 personas MIST.
+  - Suíte completa do projeto executada com 100% de aprovação (53 testes passando no pytest).
+  - Atualização de TESTS.md (AI-UNIT-01, AI-UNIT-02) e registro atômico de execuções com status PASS em resultados.json via runner_adapter.py.
+
+**Resumo de Arquivos Criados e Modificados:**
+
+1. **services/common/ai_client.py**: Helper unificado de IA com suporte a Gemini, OpenAI, Groq e fallback mock.
+2. **services/common/__init__.py**: Ponto de exportação do pacote comum.
+3. **services/store-service/app/services/ai_client.py**: Proxy local de importação do AIClient para a loja.
+4. **services/library-service/app/services/ai_client.py**: Proxy local de importação do AIClient para a biblioteca.
+5. **services/social-service/app/services/ai_client.py**: Proxy local de importação do AIClient para o social.
+6. **services/common/tests/test_ai_client.py**: Suíte de 6 testes unitários para o AIClient.
+7. **pyproject.toml**: Inclusão de services/common nos paths do pytest.
+8. **.env.example**: Seção de variáveis de ambiente para MIST AI e social.db.
+9. **TESTS.md**: Novos casos de teste AI-UNIT-01 e AI-UNIT-02.
+10. **resultados.json**: Resultados registrados atomicamente com status PASS.

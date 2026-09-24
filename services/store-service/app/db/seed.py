@@ -195,9 +195,63 @@ SEED_GAMES: List[Dict[str, Any]] = [
             "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80",
             "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80"
         ],
+        "price": 199.99,
+        "tags": ["RPG", "D&D", "Turnos", "Escolhas Importam"],
+        "category": "RPG",
+        "banner_url": "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&auto=format&fit=crop&q=80",
+        "screenshots": [
+            "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800&auto=format&fit=crop&q=80",
+            "https://images.unsplash.com/photo-1563089145-599997674d42?w=800&auto=format&fit=crop&q=80"
+        ],
         "release_date": date(2026, 4, 1),
         "publisher": "Larian Studios",
-        "review_score": 9.9
+        "review_score": 9.9,
+        "game_file": None
+    },
+    {
+        "title": "MIST Forca",
+        "description": "Jogo clássico da forca no terminal integrado à plataforma MIST. Adivinhe palavras sobre computação, teste sua memória e desbloqueie conquistas exclusivas.",
+        "price": 0.0,
+        "tags": ["Casual", "Palavras", "Indie", "Retro"],
+        "category": "Casual",
+        "banner_url": "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=1200&auto=format&fit=crop&q=80",
+        "screenshots": [
+            "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80"
+        ],
+        "release_date": date(2026, 9, 20),
+        "publisher": "MIST Studios",
+        "review_score": 9.0,
+        "game_file": "games/forca.py"
+    },
+    {
+        "title": "MIST Labirinto",
+        "description": "Explore masmorras ASCII em tempo real. Navegue pelo labirinto coletando itens raros e encontre a saída enquanto acumula pontuações recordes com telemetria MIST.",
+        "price": 0.0,
+        "tags": ["Aventura", "Exploração", "Retro", "Indie"],
+        "category": "Aventura",
+        "banner_url": "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80",
+        "screenshots": [
+            "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80"
+        ],
+        "release_date": date(2026, 9, 21),
+        "publisher": "MIST Studios",
+        "review_score": 9.4,
+        "game_file": "games/labirinto.py"
+    },
+    {
+        "title": "MIST Quiz",
+        "description": "Desafie seus conhecimentos gerais e de ciência da computação neste quiz rápido de múltipla escolha. Acerte sequências perfeitas para desbloquear badges especiais.",
+        "price": 0.0,
+        "tags": ["Trivia", "Casual", "Educativo", "Indie"],
+        "category": "Casual",
+        "banner_url": "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=1200&auto=format&fit=crop&q=80",
+        "screenshots": [
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80"
+        ],
+        "release_date": date(2026, 9, 22),
+        "publisher": "MIST Studios",
+        "review_score": 9.2,
+        "game_file": "games/quiz.py"
     }
 ]
 
@@ -205,20 +259,23 @@ SEED_GAMES: List[Dict[str, Any]] = [
 def seed_games(db: Session) -> int:
     """
     Popula o catálogo de jogos caso a tabela esteja vazia ou contenha jogos pendentes.
-    Retorna a quantidade de novos jogos inseridos.
+    Retorna a quantidade de novos jogos inseridos ou atualizados.
     """
-    inserted_count = 0
+    changes_count = 0
     for game_data in SEED_GAMES:
         existing = db.query(Game).filter(Game.title == game_data["title"]).first()
         if not existing:
             game = Game(**game_data)
             db.add(game)
-            inserted_count += 1
+            changes_count += 1
+        elif game_data.get("game_file") and existing.game_file != game_data.get("game_file"):
+            existing.game_file = game_data.get("game_file")
+            changes_count += 1
 
-    if inserted_count > 0:
+    if changes_count > 0:
         db.commit()
 
-    return inserted_count
+    return changes_count
 
 
 if __name__ == "__main__":

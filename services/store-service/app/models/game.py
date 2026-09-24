@@ -16,6 +16,7 @@ class Game(Base):
     release_date = Column(Date, index=True, nullable=False)
     publisher = Column(String(100), index=True, nullable=False)
     review_score = Column(Float, nullable=False, default=0.0)
+    game_file = Column(String(255), nullable=True)
 
     def to_dict(self):
         return {
@@ -30,4 +31,5 @@ class Game(Base):
             "release_date": self.release_date.isoformat() if self.release_date else None,
             "publisher": self.publisher,
             "review_score": self.review_score,
+            "game_file": self.game_file,
         }

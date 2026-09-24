@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -62,3 +62,47 @@ def get_game_details(
             detail="Jogo não encontrado"
         )
     return game
+
+
+@router.get("/games/{game_id}/download", status_code=status.HTTP_200_OK)
+@router.get("/store/games/{game_id}/download", status_code=status.HTTP_200_OK)
+def download_game_package(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    x_user_token: Optional[str] = Header(None, alias="X-User-Token"),
+    db: Session = Depends(get_db)
+):
+    """
+    Gera dinamicamente e retorna um arquivo .zip contendo:
+    - game.py (código do jogo Python)
+    - mist_sdk.py (SDK MIST)
+    - session.json (credenciais de sessão pré-configuradas)
+    """
+    from fastapi.responses import StreamingResponse
+
+    # Se x_user_id for fornecido, converte para int; caso contrário, usa ID padrão sandbox (1)
+    user_id = 1
+    if x_user_id:
+        try:
+            user_id = int(x_user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Header X-User-Id inválido."
+            )
+
+    zip_buffer, filename = StoreService.build_game_package(
+        db=db,
+        game_id=game_id,
+        user_id=user_id,
+        user_token=x_user_token
+    )
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
+    )

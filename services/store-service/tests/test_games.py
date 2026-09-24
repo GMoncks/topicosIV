@@ -114,7 +114,7 @@ def test_seed_games_catalog_integrity(db_session):
     """STORE-UNIT-02: Valida integridade e presença de todos os jogos da seed exigida."""
     # Seed inicial
     inserted = seed_games(db_session)
-    assert 10 <= inserted <= 15, f"Esperado entre 10 e 15 jogos na seed, obtido: {inserted}"
+    assert 10 <= inserted <= 25, f"Esperado entre 10 e 25 jogos na seed, obtido: {inserted}"
 
     # Idempotência (executar novamente não duplica registros)
     second_run = seed_games(db_session)
