@@ -76,3 +76,77 @@ class StoreService:
     @staticmethod
     def get_game_by_id(db: Session, game_id: int) -> Optional[Game]:
         return db.query(Game).filter(Game.id == game_id).first()
+
+    @staticmethod
+    def build_game_package(
+        db: Session,
+        game_id: int,
+        user_id: int,
+        user_token: Optional[str] = None
+    ) -> tuple:
+        """
+        Constrói dinamicamente em memória um arquivo .zip contendo:
+        1. game.py (cópia do script correspondente do jogo)
+        2. mist_sdk.py (módulo client SDK da plataforma)
+        3. session.json (credenciais da sessão do usuário autenticado)
+        Retorna (io.BytesIO, filename).
+        """
+        import io
+        import os
+        import re
+        import zipfile
+        from fastapi import HTTPException, status
+
+        game = StoreService.get_game_by_id(db=db, game_id=game_id)
+        if not game:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Jogo não encontrado."
+            )
+
+        if not game.game_file:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Este jogo não possui pacote de download direto disponível no momento."
+            )
+
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        game_src_path = os.path.join(base_dir, "data", game.game_file)
+        sdk_src_path = os.path.join(base_dir, "data", "mist_sdk.py")
+
+        if not os.path.isfile(game_src_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Arquivo fonte do jogo '{game.game_file}' não foi encontrado no servidor."
+            )
+
+        if not os.path.isfile(sdk_src_path):
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Módulo mist_sdk.py não encontrado no servidor de distribuição."
+            )
+
+        with open(game_src_path, "r", encoding="utf-8") as f:
+            game_code = f.read()
+
+        with open(sdk_src_path, "r", encoding="utf-8") as f:
+            sdk_code = f.read()
+
+        session_data = {
+            "session_token": user_token or "offline_dev_token",
+            "user_id": user_id,
+            "game_id": game.id,
+            "game_title": game.title,
+            "library_api_url": os.getenv("LIBRARY_API_URL", "http://localhost:8003"),
+        }
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr("game.py", game_code)
+            zf.writestr("mist_sdk.py", sdk_code)
+            zf.writestr("session.json", json.dumps(session_data, indent=2, ensure_ascii=False))
+
+        zip_buffer.seek(0)
+        slug = re.sub(r"[^a-zA-Z0-9_\-]", "_", game.title.lower()).strip("_")
+        filename = f"{slug}.zip"
+        return zip_buffer, filename

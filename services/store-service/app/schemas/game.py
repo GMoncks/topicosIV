@@ -14,6 +14,7 @@ class GameBase(BaseModel):
     release_date: date = Field(..., description="Data de lançamento")
     publisher: str = Field(..., max_length=100, description="Desenvolvedora ou distribuidora")
     review_score: float = Field(default=0.0, ge=0.0, le=10.0, description="Pontuação de avaliação (0.0 a 10.0)")
+    game_file: Optional[str] = Field(default=None, description="Caminho relativo para o executável Python do jogo")
 
 
 class GameCreate(GameBase):
@@ -31,6 +32,7 @@ class GameUpdate(BaseModel):
     release_date: Optional[date] = None
     publisher: Optional[str] = None
     review_score: Optional[float] = None
+    game_file: Optional[str] = None
 
 
 class GameListItemResponse(BaseModel):
@@ -43,6 +45,7 @@ class GameListItemResponse(BaseModel):
     release_date: date
     publisher: str
     review_score: float
+    game_file: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,5 +62,6 @@ class GameDetailResponse(BaseModel):
     release_date: date
     publisher: str
     review_score: float
+    game_file: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
