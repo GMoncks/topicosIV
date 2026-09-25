@@ -37,6 +37,13 @@ class LibraryService:
         return db.query(LibraryItem).filter_by(user_id=user_id).order_by(LibraryItem.acquired_at.desc()).all()
 
     @staticmethod
+    def has_game(db: Session, user_id: int, game_id: int) -> bool:
+        """
+        Verifica se o usuário já possui a licença do jogo informado.
+        """
+        return db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first() is not None
+
+    @staticmethod
     async def enrich_library_items(
         items: List[LibraryItem],
         store_service_url: str,
@@ -87,3 +94,83 @@ class LibraryService:
             enriched_list.append(item_dict)
 
         return enriched_list
+
+    @staticmethod
+    def get_game_achievements(
+        db: Session,
+        game_id: int,
+        user_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retorna todas as conquistas cadastradas para um jogo.
+        Se um user_id for fornecido, mapeia o status de desbloqueio (is_unlocked e unlocked_at).
+        """
+        from app.models.achievement import Achievement, UserAchievement
+
+        achievements = (
+            db.query(Achievement)
+            .filter(Achievement.game_id == game_id)
+            .order_by(Achievement.id.asc())
+            .all()
+        )
+
+        unlocked_map: Dict[str, datetime] = {}
+        if user_id:
+            user_unlocks = (
+                db.query(UserAchievement)
+                .filter(
+                    UserAchievement.user_id == user_id,
+                    UserAchievement.game_id == game_id
+                )
+                .all()
+            )
+            unlocked_map = {u.achievement_id: u.unlocked_at for u in user_unlocks}
+
+        result = []
+        for ach in achievements:
+            is_unlocked = ach.achievement_id in unlocked_map
+            result.append({
+                "id": ach.id,
+                "game_id": ach.game_id,
+                "achievement_id": ach.achievement_id,
+                "name": ach.name,
+                "description": ach.description,
+                "icon_url": ach.icon_url,
+                "rarity": ach.rarity,
+                "is_unlocked": is_unlocked,
+                "unlocked_at": unlocked_map.get(ach.achievement_id) if is_unlocked else None,
+            })
+
+        return result
+
+    @staticmethod
+    def unlock_achievement(
+        db: Session,
+        user_id: int,
+        game_id: int,
+        achievement_id: str
+    ) -> Tuple[Any, bool]:
+        """
+        Desbloqueia uma conquista para o usuário especificado (idempotente).
+        Retorna (UserAchievement, created).
+        """
+        from app.models.achievement import UserAchievement
+
+        existing = (
+            db.query(UserAchievement)
+            .filter_by(user_id=user_id, game_id=game_id, achievement_id=achievement_id)
+            .first()
+        )
+        if existing:
+            return existing, False
+
+        new_unlock = UserAchievement(
+            user_id=user_id,
+            game_id=game_id,
+            achievement_id=achievement_id,
+            unlocked_at=datetime.now(timezone.utc),
+        )
+        db.add(new_unlock)
+        db.commit()
+        db.refresh(new_unlock)
+        return new_unlock, True

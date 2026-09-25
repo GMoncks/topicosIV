@@ -4,7 +4,15 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.schemas.user import UserRegisterRequest, UserLoginRequest, TokenResponse, UserProfileResponse
+from app.schemas.user import (
+    UserRegisterRequest,
+    UserLoginRequest,
+    TokenResponse,
+    UserProfileResponse,
+    WalletDebitRequest,
+    WalletCreditRequest,
+    WalletOperationResponse,
+)
 from app.services.auth_service import (
     get_user_by_username,
     get_user_by_email,
@@ -13,6 +21,8 @@ from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     decode_access_token,
+    debit_wallet,
+    credit_wallet,
 )
 
 router = APIRouter(tags=["Auth"])
@@ -100,3 +110,43 @@ def get_current_user_profile(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
 
     return user
+
+
+@router.post(
+    "/users/{user_id}/wallet/debit",
+    response_model=WalletOperationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Debita saldo da carteira do usuário (operação atômica)"
+)
+def debit_user_wallet(
+    user_id: int,
+    payload: WalletDebitRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        return debit_wallet(db=db, user_id=user_id, amount=payload.amount)
+    except ValueError as e:
+        msg = str(e)
+        if "não encontrado" in msg:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+
+@router.post(
+    "/users/{user_id}/wallet/credit",
+    response_model=WalletOperationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Credita saldo na carteira do usuário (estorno compensatório Saga ou recarga)"
+)
+def credit_user_wallet(
+    user_id: int,
+    payload: WalletCreditRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        return credit_wallet(db=db, user_id=user_id, amount=payload.amount)
+    except ValueError as e:
+        msg = str(e)
+        if "não encontrado" in msg:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)

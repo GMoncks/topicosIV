@@ -3,7 +3,9 @@ import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DownloadBar } from './components/DownloadBar';
 import { AuthModal } from './components/AuthModal';
+import { CartDrawer } from './components/CartDrawer';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import { Store } from './pages/Store';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
@@ -156,10 +158,13 @@ function AppContent() {
             <Store
               searchQuery={searchQuery}
               activeSubTab={activeSubTab}
+              onNavigateToLibrary={() => setActiveTab('library')}
             />
           )}
 
-          {activeTab === 'library' && <Library />}
+          {activeTab === 'library' && (
+            <Library onNavigateToStore={() => setActiveTab('store')} />
+          )}
 
           {activeTab === 'social' && <Social />}
 
@@ -181,6 +186,9 @@ function AppContent() {
 
         {/* Componente Flutuante de Download */}
         <DownloadBar />
+
+        {/* Gaveta do Carrinho de Compras */}
+        <CartDrawer onNavigateToLibrary={() => setActiveTab('library')} />
       </div>
     </div>
   );
@@ -189,7 +197,9 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
     </AuthProvider>
   );
 }

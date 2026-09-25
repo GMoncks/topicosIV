@@ -93,3 +93,82 @@ def create_user(db: Session, user_data: UserRegisterRequest) -> User:
     db.commit()
     db.refresh(new_user)
     return new_user
+
+
+def debit_wallet(db: Session, user_id: int, amount: float) -> Dict[str, Any]:
+    """
+    Debita saldo da carteira do usuário de forma atômica e segura contra concorrência.
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    previous_balance = float(user.wallet_balance)
+
+    # Se a compra for gratuita (amount == 0.0), não há alteração de saldo
+    if amount == 0.0:
+        return {
+            "user_id": user_id,
+            "previous_balance": round(previous_balance, 2),
+            "amount": 0.0,
+            "new_balance": round(previous_balance, 2),
+            "operation": "debit"
+        }
+
+    # Atualização atômica condicional prevenindo double-spending e saldo negativo
+    result = db.query(User).filter(
+        User.id == user_id,
+        User.wallet_balance >= amount
+    ).update(
+        {User.wallet_balance: User.wallet_balance - amount},
+        synchronize_session="fetch"
+    )
+
+    if result == 0:
+        raise ValueError("Saldo insuficiente na carteira MIST")
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "user_id": user_id,
+        "previous_balance": round(previous_balance, 2),
+        "amount": round(amount, 2),
+        "new_balance": round(float(user.wallet_balance), 2),
+        "operation": "debit"
+    }
+
+
+def credit_wallet(db: Session, user_id: int, amount: float) -> Dict[str, Any]:
+    """
+    Credita saldo na carteira do usuário (utilizado para estornos/compensações de Saga ou recargas).
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    previous_balance = float(user.wallet_balance)
+
+    if amount == 0.0:
+        return {
+            "user_id": user_id,
+            "previous_balance": round(previous_balance, 2),
+            "amount": 0.0,
+            "new_balance": round(previous_balance, 2),
+            "operation": "credit"
+        }
+
+    db.query(User).filter(User.id == user_id).update(
+        {User.wallet_balance: User.wallet_balance + amount},
+        synchronize_session="fetch"
+    )
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "user_id": user_id,
+        "previous_balance": round(previous_balance, 2),
+        "amount": round(amount, 2),
+        "new_balance": round(float(user.wallet_balance), 2),
+        "operation": "credit"
+    }

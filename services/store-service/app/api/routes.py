@@ -176,3 +176,51 @@ def get_wishlist(
         })
         
     return response_items
+
+
+from app.schemas.checkout import CheckoutRequest, CheckoutResponse
+
+
+@router.post("/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/store/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
+async def checkout(
+    payload: CheckoutRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """
+    Processa a compra de 1 jogo (unitário) ou N jogos (carrinho) de forma atômica e segura.
+    Executa a verificação prévia de posse, débito atômico na carteira e compensação Saga.
+    """
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticação necessária para realizar compras."
+        )
+
+    try:
+        user_id = int(x_user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Identificador de usuário inválido."
+        )
+
+    game_ids = []
+    if payload.game_ids:
+        game_ids.extend(payload.game_ids)
+    elif payload.game_id is not None:
+        game_ids.append(payload.game_id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Informe ao menos um jogo para realizar o checkout."
+        )
+
+    result = await StoreService.execute_checkout(
+        db=db,
+        user_id=user_id,
+        game_ids=game_ids,
+        idempotency_key=payload.idempotency_key
+    )
+    return result

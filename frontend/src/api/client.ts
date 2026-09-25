@@ -211,7 +211,35 @@ export const storeApi = {
   async getWishlist(): Promise<any[]> {
     return fetchApi<any[]>('/api/store/wishlist', { method: 'GET' });
   },
+
+  async checkout(payload: CheckoutPayload): Promise<CheckoutResponse> {
+    return fetchApi<CheckoutResponse>('/api/store/checkout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
+
+export interface CheckoutItem {
+  game_id: number;
+  title: string;
+  price_paid: number;
+}
+
+export interface CheckoutResponse {
+  status: string;
+  order_id: string;
+  items: CheckoutItem[];
+  total_paid: number;
+  new_wallet_balance: number;
+  purchased_at: string;
+}
+
+export interface CheckoutPayload {
+  game_id?: number;
+  game_ids?: number[];
+  idempotency_key?: string;
+}
 
 export interface LibraryItemResponse {
   id: number;

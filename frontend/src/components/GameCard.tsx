@@ -4,9 +4,18 @@ import { GameItem } from '../types';
 interface GameCardProps {
   game: GameItem;
   onSelect?: (game: GameItem) => void;
+  isWishlisted?: boolean;
+  isOwned?: boolean;
+  onToggleWishlist?: (gameId: number, nextState: boolean) => void;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, onSelect }) => {
+export const GameCard: React.FC<GameCardProps> = ({
+  game,
+  onSelect,
+  isWishlisted = false,
+  isOwned = false,
+  onToggleWishlist,
+}) => {
   const formattedCurrentPrice = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL'
@@ -40,6 +49,26 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onSelect }) => {
               {game.category}
             </div>
           )}
+
+          {/* Botão Flutuante de Wishlist (C-10) */}
+          {onToggleWishlist && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWishlist(Number(game.id), !isWishlisted);
+              }}
+              className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 z-10 backdrop-blur-md cursor-pointer ${
+                isWishlisted
+                  ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/40 scale-105'
+                  : 'bg-black/50 text-gray-300 hover:text-white hover:bg-black/70 hover:scale-110'
+              }`}
+              title={isWishlisted ? "Remover da Lista de Desejos" : "Adicionar à Lista de Desejos"}
+              aria-label={isWishlisted ? "Remover da Lista de Desejos" : "Adicionar à Lista de Desejos"}
+            >
+              <i className={isWishlisted ? "fa-solid fa-heart text-xs" : "fa-regular fa-heart text-xs"}></i>
+            </button>
+          )}
         </div>
 
         <div className="p-4">
@@ -56,13 +85,18 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onSelect }) => {
 
       <div className="p-4 pt-0">
         <div className="flex justify-between items-center border-t border-gray-800/60 pt-3">
-          {game.discountPercentage ? (
-            <div className="bg-brand-green text-white font-bold text-xs px-2.5 py-1 rounded border border-emerald-600/40 shadow-sm">
-              -{game.discountPercentage}%
-            </div>
-          ) : (
-            <div></div>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwned ? (
+              <span className="bg-emerald-600/90 text-white font-bold text-[11px] px-2.5 py-1 rounded border border-emerald-400/50 shadow-sm flex items-center gap-1.5">
+                <i className="fa-solid fa-check text-[10px]"></i>
+                <span>Adquirido</span>
+              </span>
+            ) : game.discountPercentage ? (
+              <div className="bg-brand-green text-white font-bold text-xs px-2.5 py-1 rounded border border-emerald-600/40 shadow-sm">
+                -{game.discountPercentage}%
+              </div>
+            ) : null}
+          </div>
 
           <div className="text-right">
             {formattedOriginalPrice && (

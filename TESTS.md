@@ -48,6 +48,32 @@
 - Resultado esperado: Falha rápida e bloqueio de inicialização insegura em produção.
 - Rastreabilidade: `services/auth-service/app/services/auth_service.py`
 
+#### AUTH-UNIT-04 — Débito com saldo suficiente e rejeição por saldo insuficiente
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_wallet.py -k "test_debit_wallet_sufficient_funds or test_debit_wallet_insufficient_funds"`
+- Pré-condições: Usuário cadastrado com saldo em carteira.
+- Passos:
+  - Dado um usuário com R$ 200,00 de saldo
+  - Quando tenta debitar R$ 47,49 (sucesso -> R$ 152,51) e posteriormente R$ 250,00 (insuficiente)
+  - Então a primeira operação deduz com precisão decimal e a segunda é rejeitada com HTTP 400 Bad Request
+- Resultado esperado: Integridade atômica do saldo da carteira MIST.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-05 — Estorno / Crédito compensatório na carteira
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_wallet.py -k "test_credit_wallet_and_compensation"`
+- Pré-condições: Usuário com histórico de débito na carteira.
+- Passos:
+  - Dado um usuário com saldo debitado previamente
+  - Quando o endpoint POST /users/{id}/wallet/credit for acionado com justificativa de Saga Rollback
+  - Então o saldo é incrementado com exatidão e retorna os saldos anterior e atual
+- Resultado esperado: Retorno HTTP 200 e reconstituição do saldo anterior.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`
+
 ### Loja e Catálogo (Store Service)
 #### STORE-UNIT-01 — Criação e tipagem do modelo Game
 - Prioridade: P0
@@ -287,6 +313,84 @@
 - Resultado esperado: Componente de paginação com opções válidas e emissão correta de eventos.
 - Rastreabilidade: `frontend/src/components/PaginationSelector.tsx`
 
+#### FRONT-UNIT-08 — Gerenciamento do estado global do Carrinho de Compras (CartContext)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/context/CartContext.test.tsx`
+- Pré-condições: CartProvider envolvendo a aplicação.
+- Passos:
+  - Dado o contexto de carrinho inicializado vazio
+  - Quando itens são adicionados, removidos, alternados via toggleCart e limpos via clearCart
+  - Então o contador total, a lista de itens e o preço acumulado são calculados reativamente e persistidos
+- Resultado esperado: Cálculo exato de subtotal e controle do estado de gaveta aberta/fechada.
+- Rastreabilidade: `frontend/src/context/CartContext.tsx`
+
+#### FRONT-UNIT-09 — Modal de Checkout Unitário com Verificação de Saldo e Extrato
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/CheckoutModal.test.tsx`
+- Pré-condições: CheckoutModal instanciado com jogo selecionado e contexto de usuário.
+- Passos:
+  - Dado o modal de checkout aberto para um jogo de R$ 50,00 com saldo de R$ 200,00 e posteriormente saldo de R$ 20,00
+  - Quando a interface renderiza o extrato pré-compra
+  - Então no primeiro caso exibe saldo restante projetado e botão habilitado; no segundo, exibe aviso de saldo insuficiente e desabilita o botão
+- Resultado esperado: Prevenção visual e desabilitação correta com base no saldo do usuário.
+- Rastreabilidade: `frontend/src/components/CheckoutModal.tsx`
+
+#### FRONT-UNIT-10 — Interatividade do Card de Loja: Wishlist e Tag "Adquirido"
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/GameCard.test.tsx`
+- Pré-condições: Componente GameCard com props de wishlist e posse.
+- Passos:
+  - Dado um card de jogo com isWishlisted e isOwned: true
+  - Quando o usuário clica no coração flutuante ou o card é renderizado com jogo já comprado
+  - Então o callback de wishlist dispara isoladamente sem acionar o clique no card, e a tag "Adquirido" é renderizada no rodapé oposta ao valor
+- Resultado esperado: Interação isolada da wishlist e badge "Adquirido" visível.
+- Rastreabilidade: `frontend/src/components/GameCard.tsx`
+
+#### FRONT-UNIT-11 — Setas Inteligentes de Navegação de Screenshots na Modal de Detalhes
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/GameDetailModal.test.tsx -t "setas inteligentes"`
+- Pré-condições: Modal de detalhes renderizada com lista de 3 capturas de tela.
+- Passos:
+  - Dado o visualizador aberto na foto 1 (índice 0)
+  - Quando o estado das setas de navegação é inspecionado
+  - Então a seta para a esquerda não é renderizada no DOM e a seta para a direita está visível; ao avançar para a foto 2 ambas ficam visíveis; ao alcançar a última foto (índice 2) a seta para a direita desaparece
+- Resultado esperado: Setas contextuais renderizadas exclusivamente quando há fotos na direção solicitada (hasPrevScreenshot e hasNextScreenshot).
+- Rastreabilidade: `frontend/src/components/GameDetailModal.tsx`
+
+#### FRONT-UNIT-12 — Alerta Toast, Fechamento de Modal e Redirecionamento sem Sobreposição para Usuário Deslogado
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/GameDetailModal.test.tsx -t "Usuário não autenticado"`
+- Pré-condições: Usuário visitante sem credenciais de autenticação ativas (isAuthenticated: false).
+- Passos:
+  - Dado o visitante com a modal de detalhes do jogo aberta
+  - Quando clica no botão "Comprar agora" ou "Lista de Desejos"
+  - Então 3 ações ocorrem: a modal de detalhes é fechada (onClose), a modal de login é aberta (onOpenAuth) sem sobreposição, e um evento global mist:toast é disparado com a mensagem exata "Usuário não autenticado. Realize o login"
+- Resultado esperado: Desmontagem limpa da modal de detalhes, disparo do toast de 5s no canto superior direito e abertura do modal de login isolado.
+- Rastreabilidade: `frontend/src/components/GameDetailModal.tsx`, `frontend/src/App.tsx`
+
+#### FRONT-UNIT-13 — Alternância Suave e Otimista da Lista de Desejos (Sem Flickering)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/GameDetailModal.test.tsx -t "Lista de Desejos"`
+- Pré-condições: Usuário logado interagindo com o botão de Lista de Desejos da modal.
+- Passos:
+  - Dado o jogo inicialmente fora da wishlist
+  - Quando o usuário clica no botão de Lista de Desejos
+  - Então o estado do botão atualiza instantaneamente para "Na Lista de Desejos" sem recarregar o layout do modal nem provocar flicker de tela, a requisição assíncrona é disparada em segundo plano e emite o evento global mist:wishlist-updated
+- Resultado esperado: Feedback visual imediato e sem repintura brusca de componentes.
+- Rastreabilidade: `frontend/src/components/GameDetailModal.tsx`
+
 
 ## Integração
 
@@ -373,6 +477,32 @@
 - Resultado esperado: HTTP 200 com schema `GameDetailResponse` para ID existente e HTTP 404 para ID inválido.
 - Rastreabilidade: `services/store-service/app/api/routes.py`
 
+#### STORE-INT-09 — Ciclo completo da Wishlist no Backend (Adicionar, Idempotência, Listar e Remover)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_wishlist_add_list_and_remove"`
+- Pré-condições: store-service em execução com banco de dados de teste.
+- Passos:
+  - Dado uma requisição autenticada com cabeçalho X-User-Id
+  - Quando o usuário envia POST /wishlist/{game_id}, depois tenta adicionar novamente, consulta GET /wishlist e em seguida DELETE /wishlist/{game_id}
+  - Então a adição inicial retorna HTTP 201 com created: true, a segunda retorna HTTP 200 com created: false (idempotência), a listagem retorna o jogo populado e a exclusão retorna HTTP 204
+- Resultado esperado: Persistência e remoção atômica da tabela de favoritos/wishlist.
+- Rastreabilidade: `services/store-service/app/api/routes.py`, `services/store-service/app/services/store_service.py`
+
+#### STORE-INT-10 — Rejeição 401 de acesso não autenticado às rotas de Wishlist
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_games.py -k "test_wishlist_unauthenticated_rejection"`
+- Pré-condições: Requisições para /wishlist emitidas sem header X-User-Id.
+- Passos:
+  - Dado tentativas de consultar GET /wishlist, adicionar POST /wishlist/1 ou remover DELETE /wishlist/1
+  - Quando processadas pelo roteador do store-service
+  - Então todas as três requisições são rejeitadas com HTTP 401 Unauthorized
+- Resultado esperado: Proteção mandatória das rotas de favoritos contra acesso não identificado.
+- Rastreabilidade: `services/store-service/app/api/routes.py`
+
 ### Biblioteca e Licenças (Library Service)
 #### LIB-INT-01 — Concessão de licença via POST /library/grant
 - Prioridade: P0
@@ -439,19 +569,84 @@
 - Resultado esperado: Retorno HTTP 200 com array vazio.
 - Rastreabilidade: `services/library-service/app/api/routes.py`
 
-### Compra e Concessão de Licença
-#### STORE-LIB-INT-01 — Chamada síncrona HTTP de concessão de posse após compra
+#### LIB-INT-06 — Endpoint de validação de posse unitária (GET /library/users/{id}/has-game/{game_id})
 - Prioridade: P0
-- Status: planejado
+- Status: aprovado
 - Runner: pytest
-- Comando: 
-- Pré-condições: Usuário autenticado e com saldo suficiente simulado.
+- Comando: `pytest services/library-service/tests/test_ownership.py -k "test_ownership_check_false_then_true_after_grant"`
+- Pré-condições: Usuário e catálogo iniciados no library-service.
 - Passos:
-  - Dado um pedido de compra finalizado com sucesso no `store-service`
-  - Quando o `store-service` emitir um POST para `/api/library/grant` do `library-service` via httpx
-  - Então o jogo é adicionado à biblioteca do usuário no banco `library.db`
-- Resultado esperado: Resposta HTTP 201/200 confirmando a inclusão da licença.
-- Rastreabilidade: `docs/architecture.md` (Seção 3.2)
+  - Dado uma consulta de posse antes da concessão
+  - Quando o endpoint GET /library/users/{user_id}/has-game/{game_id} for chamado
+  - Então retorna {"owned": false}; após concessão via /library/grant, o mesmo endpoint retorna {"owned": true}
+- Resultado esperado: Validação de posse booleana precisa e em tempo real.
+- Rastreabilidade: `services/library-service/app/api/routes.py`
+
+### Compra e Concessão de Licença
+#### STORE-LIB-INT-01 — Sincronização, concessão de posse e remoção da Wishlist após compra
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_single_game_success"`
+- Pré-condições: store-service em execução com mocks/serviços de auth-service e library-service, usuário com saldo e jogo na wishlist.
+- Passos:
+  - Dado um usuário autenticado com saldo suficiente e um jogo salvo na sua lista de desejos
+  - Quando a rota POST /checkout com {"game_id": 1} for executada
+  - Então o saldo é debitado no auth-service, a posse é concedida via POST /library/grant no library-service, a compra é persistida em purchases e o jogo é removido da wishlist
+- Resultado esperado: Retorno HTTP 201 com status completed, licença concedida e remoção confirmada da wishlist.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+#### STORE-LIB-INT-02 — Compra em lote via Carrinho de Compras (Multi-game Checkout)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_cart_multiple_games_success"`
+- Pré-condições: Múltiplos jogos válidos no catálogo e saldo de carteira suficiente.
+- Passos:
+  - Dado um usuário com múltiplos jogos no carrinho (ex: jogos 1 e 2 somando R$ 80,00)
+  - Quando a rota POST /checkout com {"game_ids": [1, 2]} for executada
+  - Então o montante total é debitado atomicamente, cada licença é concedida no library-service e registros individuais de compra são persistidos
+- Resultado esperado: Retorno HTTP 201 com array items contendo todos os jogos concedidos e novo saldo da carteira.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+#### STORE-LIB-INT-03 — Bloqueio de compra de jogo já adquirido (Prevenção de duplicidade)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_already_owned_conflict"`
+- Pré-condições: Usuário já possui o jogo na sua biblioteca (/library/users/{id}/has-game/{game_id} retorna owned: true).
+- Passos:
+  - Dado que o usuário tenta comprar um jogo já adquirido previamente
+  - Quando o checkout consulta o library-service antes do débito financeiro
+  - Então o checkout é interrompido imediatamente sem debitar saldo da carteira
+- Resultado esperado: Retorno HTTP 409 Conflict com mensagem "Você já possui o jogo '...' em sua biblioteca."
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+#### STORE-LIB-INT-04 — Compensação Saga com estorno de carteira em caso de falha de concessão
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_saga_compensation_refund"`
+- Pré-condições: Usuário com saldo e simulação de falha no endpoint de concessão do library-service.
+- Passos:
+  - Dado que o débito na carteira foi efetuado com sucesso mas a concessão da licença falhou no library-service
+  - Quando o bloco de compensação Saga do checkout for acionado
+  - Então o store-service emite um POST /users/{id}/wallet/credit devolvendo 100% do valor à carteira
+- Resultado esperado: Retorno HTTP 502 Bad Gateway informando a falha e confirmando o estorno integral para a carteira.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+#### STORE-LIB-INT-05 — Checkout direto de jogos 100% gratuitos (R$ 0,00)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_free_game_success"`
+- Pré-condições: Jogo gratuito (preço R$ 0,00) disponível no catálogo.
+- Passos:
+  - Dado um usuário autenticado realizando a compra direta de um jogo de R$ 0,00
+  - Quando a rota POST /checkout for invocada
+  - Então o fluxo não sofre erro 422/400 de valor mínimo, a licença é concedida no library-service e o saldo permanece intacto
+- Resultado esperado: Retorno HTTP 201 com total_paid: 0.0 e licença concedida.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
 
 ## E2E / Sistema completo
 
@@ -516,6 +711,23 @@
 - Resultado esperado: Estilos computados correspondem à cor `#1F4D36`.
 - Rastreabilidade: `prompts.md` (Prompt 3)
 - Observações: Regressão originada da substituição de paleta definida no Prompt 3.
+
+### Autenticação
+#### REG-AUTH-01 — Suporte a débito de R$ 0,00 para jogos gratuitos
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_wallet.py -k "test_debit_wallet_zero_amount"`
+- Causa raiz: O schema Pydantic WalletDebitRequest exigia amount: float = Field(..., gt=0.0). Compras de R$ 0,00 falhavam com erro 422 e mensagem "Falha ao processar débito na carteira MIST".
+- Reprodução original: Tentar comprar diretamente um jogo gratuito de R$ 0,00 no store-service.
+- PR/Commit relacionado: Prompt 30/31 (services/auth-service/app/schemas/user.py e auth_service.py).
+- Pré-condições: Usuário logado na plataforma.
+- Passos:
+  - Dado uma requisição de débito com amount: 0.0
+  - Quando o endpoint POST /users/{id}/wallet/debit for acionado
+  - Então o endpoint aceita a requisição com HTTP 200 sem alterar o saldo e sem disparar exceção 422
+- Resultado esperado: HTTP 200 com new_balance idêntico ao previous_balance.
+- Rastreabilidade: `services/auth-service/app/schemas/user.py`, `services/auth-service/app/services/auth_service.py`
 
 ## Smoke
 
