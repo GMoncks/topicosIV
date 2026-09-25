@@ -16,11 +16,13 @@ testpaths = [
     "services/auth-service/tests",
     "services/store-service/tests",
     "services/library-service/tests",
-    "services/social-service/tests"
+    "services/social-service/tests",
+    "services/common/tests"
 ]
 pythonpath = [
     ".",
     "gateway",
+    "services/common",
     "services/auth-service",
     "services/store-service",
     "services/library-service",

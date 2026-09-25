@@ -22,7 +22,8 @@ class GameEnrichedData(BaseModel):
     title: str = Field(..., description="Título do jogo")
     category: Optional[str] = Field(None, description="Categoria do jogo")
     banner_url: Optional[str] = Field(None, description="URL da arte/banner do jogo")
-    publisher: Optional[str] = Field(None, description="Distribuidora/desenvolvedora")
+    developer: Optional[str] = Field(None, description="Estúdio original desenvolvedor")
+    publisher: Optional[str] = Field(None, description="Distribuidora/Origem (Steam Imported ou MIST Studios)")
 
 
 class LibraryItemResponse(BaseModel):

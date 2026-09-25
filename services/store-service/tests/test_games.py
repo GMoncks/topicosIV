@@ -114,7 +114,7 @@ def test_seed_games_catalog_integrity(db_session):
     """STORE-UNIT-02: Valida integridade e presença de todos os jogos da seed exigida."""
     # Seed inicial
     inserted = seed_games(db_session)
-    assert 10 <= inserted <= 15, f"Esperado entre 10 e 15 jogos na seed, obtido: {inserted}"
+    assert 10 <= inserted <= 25, f"Esperado entre 10 e 25 jogos na seed, obtido: {inserted}"
 
     # Idempotência (executar novamente não duplica registros)
     second_run = seed_games(db_session)
@@ -257,7 +257,8 @@ def test_get_game_details_success(client):
     assert len(data["screenshots"]) >= 2
     assert "banner_url" in data
     assert data["price"] == 400.00
-    assert data["publisher"] == "Sony Interactive Entertainment"
+    assert data["publisher"] == "Steam Imported"
+    assert data["developer"] == "Sony Interactive Entertainment"
 
 
 @pytest.mark.integration
@@ -266,3 +267,51 @@ def test_get_game_details_not_found(client):
     resp = client.get("/games/999999")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Jogo não encontrado"
+
+
+# ==========================================
+# 5. Testes dos Endpoints de Wishlist
+# ==========================================
+
+@pytest.mark.integration
+def test_wishlist_add_list_and_remove(client):
+    """STORE-INT-09: Ciclo completo de adicionar, listar e remover da Wishlist."""
+    headers = {"X-User-Id": "42"}
+
+    # 1. Adiciona o jogo 1 à wishlist
+    add_resp = client.post("/wishlist/1", headers=headers)
+    assert add_resp.status_code == 201
+    add_data = add_resp.json()
+    assert add_data["game_id"] == 1
+    assert add_data["user_id"] == 42
+    assert add_data["created"] is True
+
+    # 2. Adiciona novamente (idempotência: retorna 200 com created=False)
+    add_again_resp = client.post("/wishlist/1", headers=headers)
+    assert add_again_resp.status_code == 200
+    assert add_again_resp.json()["created"] is False
+
+    # 3. Lista a wishlist do usuário
+    list_resp = client.get("/wishlist", headers=headers)
+    assert list_resp.status_code == 200
+    items = list_resp.json()
+    assert len(items) == 1
+    assert items[0]["game_id"] == 1
+
+    # 4. Remove o jogo da wishlist
+    del_resp = client.delete("/wishlist/1", headers=headers)
+    assert del_resp.status_code == 204
+
+    # 5. Lista novamente e confirma lista vazia
+    list_after_resp = client.get("/wishlist", headers=headers)
+    assert list_after_resp.status_code == 200
+    assert len(list_after_resp.json()) == 0
+
+
+@pytest.mark.integration
+def test_wishlist_unauthenticated_rejection(client):
+    """STORE-INT-10: Rejeição com 401 ao acessar wishlist sem autenticação."""
+    assert client.get("/wishlist").status_code == 401
+    assert client.post("/wishlist/1").status_code == 401
+    assert client.delete("/wishlist/1").status_code == 401
+

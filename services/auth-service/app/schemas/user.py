@@ -48,3 +48,21 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserProfileResponse
+
+
+class WalletDebitRequest(BaseModel):
+    amount: float = Field(..., ge=0.0, description="Valor a ser debitado (maior ou igual a 0)")
+    reason: Optional[str] = Field(None, description="Motivo ou identificador da transação")
+
+
+class WalletCreditRequest(BaseModel):
+    amount: float = Field(..., ge=0.0, description="Valor a ser creditado/estornado (maior ou igual a 0)")
+    reason: Optional[str] = Field(None, description="Motivo ou identificador da transação/estorno")
+
+
+class WalletOperationResponse(BaseModel):
+    user_id: int
+    previous_balance: float
+    amount: float
+    new_balance: float
+    operation: str

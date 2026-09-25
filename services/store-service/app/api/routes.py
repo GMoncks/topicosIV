@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -62,3 +62,165 @@ def get_game_details(
             detail="Jogo não encontrado"
         )
     return game
+
+
+@router.get("/games/{game_id}/download", status_code=status.HTTP_200_OK)
+@router.get("/store/games/{game_id}/download", status_code=status.HTTP_200_OK)
+def download_game_package(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    x_user_token: Optional[str] = Header(None, alias="X-User-Token"),
+    db: Session = Depends(get_db)
+):
+    """
+    Gera dinamicamente e retorna um arquivo .zip contendo:
+    - game.py (código do jogo Python)
+    - mist_sdk.py (SDK MIST)
+    - session.json (credenciais de sessão pré-configuradas)
+    """
+    from fastapi.responses import StreamingResponse
+
+    # Se x_user_id for fornecido, converte para int; caso contrário, usa ID padrão sandbox (1)
+    user_id = 1
+    if x_user_id:
+        try:
+            user_id = int(x_user_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Header X-User-Id inválido."
+            )
+
+    zip_buffer, filename = StoreService.build_game_package(
+        db=db,
+        game_id=game_id,
+        user_id=user_id,
+        user_token=x_user_token
+    )
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        }
+    )
+
+
+from app.schemas.wishlist import WishlistAddResponse, WishlistItemResponse
+from fastapi.responses import JSONResponse
+
+@router.post("/wishlist/{game_id}", response_model=WishlistAddResponse)
+def add_to_wishlist(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    game = StoreService.get_game_by_id(db, game_id)
+    if not game:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Jogo não encontrado")
+    
+    wishlist_item, created = StoreService.add_to_wishlist(db, user_id, game_id)
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        content={
+            "id": wishlist_item.id,
+            "user_id": wishlist_item.user_id,
+            "game_id": wishlist_item.game_id,
+            "added_at": wishlist_item.added_at.isoformat() if wishlist_item.added_at else None,
+            "created": created
+        }
+    )
+
+@router.delete("/wishlist/{game_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_from_wishlist(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    success = StoreService.remove_from_wishlist(db, user_id, game_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item não encontrado na wishlist")
+    
+    return None
+
+@router.get("/wishlist", response_model=List[WishlistItemResponse])
+def get_wishlist(
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    
+    user_id = int(x_user_id)
+    items = StoreService.get_user_wishlist(db, user_id)
+    
+    response_items = []
+    for item in items:
+        game = StoreService.get_game_by_id(db, item.game_id)
+        response_items.append({
+            "id": item.id,
+            "user_id": item.user_id,
+            "game_id": item.game_id,
+            "added_at": item.added_at,
+            "game": game
+        })
+        
+    return response_items
+
+
+from app.schemas.checkout import CheckoutRequest, CheckoutResponse
+
+
+@router.post("/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/store/checkout", response_model=CheckoutResponse, status_code=status.HTTP_201_CREATED)
+async def checkout(
+    payload: CheckoutRequest,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """
+    Processa a compra de 1 jogo (unitário) ou N jogos (carrinho) de forma atômica e segura.
+    Executa a verificação prévia de posse, débito atômico na carteira e compensação Saga.
+    """
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticação necessária para realizar compras."
+        )
+
+    try:
+        user_id = int(x_user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Identificador de usuário inválido."
+        )
+
+    game_ids = []
+    if payload.game_ids:
+        game_ids.extend(payload.game_ids)
+    elif payload.game_id is not None:
+        game_ids.append(payload.game_id)
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Informe ao menos um jogo para realizar o checkout."
+        )
+
+    result = await StoreService.execute_checkout(
+        db=db,
+        user_id=user_id,
+        game_ids=game_ids,
+        idempotency_key=payload.idempotency_key
+    )
+    return result

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useCart } from '../context/CartContext';
 
 interface HeaderProps {
   wishlistCount?: number;
@@ -19,7 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   isGuest = false,
   onOpenAuth
 }) => {
-
+  const { openCart, totalCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +38,26 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="sticky top-0 bg-brand-bg/95 backdrop-blur-md z-40 px-8 py-4 flex justify-between items-center border-b border-gray-800/50">
-      <div className="flex gap-6 text-sm font-medium">
+      <div className="flex items-center gap-5 text-sm font-medium">
+        {/* Botão Reativo de Carrinho de Compras no Canto Superior Esquerdo */}
+        <button
+          type="button"
+          onClick={openCart}
+          className="relative flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-300 hover:text-white transition group cursor-pointer shadow-sm"
+          title="Abrir Carrinho de Compras"
+          aria-label="Abrir Carrinho de Compras"
+        >
+          <i className="fa-solid fa-cart-shopping text-brand-purple group-hover:scale-110 transition text-sm"></i>
+          <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Carrinho</span>
+          {totalCount > 0 && (
+            <span className="bg-brand-purple text-white text-[11px] font-black min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center animate-pulse">
+              {totalCount}
+            </span>
+          )}
+        </button>
+
+        <div className="h-4 w-px bg-gray-800 hidden sm:block" />
+
         <button
           onClick={() => onSelectSubTab && onSelectSubTab('destaques')}
           className={`relative transition pb-1 ${

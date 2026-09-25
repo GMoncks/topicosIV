@@ -21,4 +21,36 @@ describe('GameCard Component (FRONT-UNIT-01)', () => {
     expect(screen.getByText('Cyberpunk Odyssey')).toBeInTheDocument();
     expect(screen.getByText('-25%')).toBeInTheDocument();
   });
+
+  it('deve disparar onToggleWishlist ao clicar no coração flutuante sem disparar onSelect', () => {
+    let toggledId: number | null = null;
+    let toggledState: boolean | null = null;
+    let selected = false;
+
+    render(
+      <GameCard
+        game={mockGame}
+        isWishlisted={false}
+        onToggleWishlist={(id, nextState) => {
+          toggledId = id;
+          toggledState = nextState;
+        }}
+        onSelect={() => {
+          selected = true;
+        }}
+      />
+    );
+
+    const wishlistButton = screen.getByTitle('Adicionar à Lista de Desejos');
+    wishlistButton.click();
+
+    expect(toggledState).toBe(true);
+    expect(selected).toBe(false);
+  });
+
+  it('deve renderizar a tag "Adquirido" quando isOwned for true', () => {
+    render(<GameCard game={mockGame} isOwned={true} />);
+
+    expect(screen.getByText('Adquirido')).toBeInTheDocument();
+  });
 });

@@ -32,7 +32,11 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8002
       - STORE_DATABASE_URL=${STORE_DATABASE_URL:-sqlite:///app/data/store.db}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:8001}
+      - LIBRARY_SERVICE_URL=${LIBRARY_SERVICE_URL:-http://library-service:8003}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    depends_on:
+      - auth-service
     volumes:
       - store_data:/app/app/data
     networks:
@@ -60,6 +64,24 @@ services:
       - mist-network
     restart: unless-stopped
 
+  social-service:
+    build:
+      context: ./services/social-service
+      dockerfile: Dockerfile
+    container_name: mist-social-service
+    ports:
+      - "127.0.0.1:${SOCIAL_SERVICE_PORT:-8004}:8004"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8004
+      - SOCIAL_DATABASE_URL=${SOCIAL_DATABASE_URL:-sqlite:///app/data/social.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - social_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
   gateway:
     build:
       context: ./gateway
@@ -81,6 +103,7 @@ services:
       - auth-service
       - store-service
       - library-service
+      - social-service
     networks:
       - mist-network
     restart: unless-stopped
@@ -104,6 +127,8 @@ volumes:
   store_data:
     driver: local
   library_data:
+    driver: local
+  social_data:
     driver: local
 
 networks:

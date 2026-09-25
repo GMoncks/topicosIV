@@ -1,7 +1,7 @@
 export interface GameItem {
   id: string;
   title: string;
-  category: 'EXPANSÃO' | 'DESEJO' | 'PACOTE' | 'JOGO';
+  category: 'EXPANSÃƒO' | 'DESEJO' | 'PACOTE' | 'JOGO';
   publisherOrParent?: string;
   tags?: string;
   image: string;
@@ -95,3 +95,28 @@ export interface PointsShopItem {
 
 export type NavigationTab = 'store' | 'library' | 'social' | 'news' | 'points' | 'profile' | 'login';
 
+export interface LibraryGame {
+  id: number;
+  gameId: number;
+  title: string;
+  bannerUrl: string | null;
+  developer: string | null;
+  publisher: string | null;
+  category: string | null;
+  playtimeMinutes: number;
+  isInstalled: boolean;
+  lastPlayed: string | null;
+  acquiredAt: string;
+}
+
+export interface AchievementResponse {
+  id: number;
+  game_id: number;
+  achievement_id: string;
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+  rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário';
+  is_unlocked: boolean;
+  unlocked_at: string | null;
+}
