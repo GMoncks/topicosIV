@@ -218,7 +218,25 @@ export const storeApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  async downloadGamePackage(gameId: number): Promise<Blob> {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_GATEWAY_URL}/api/games/${gameId}/download`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Falha ao baixar pacote do jogo');
+    }
+    return response.blob();
+  },
 };
+
 
 export interface CheckoutItem {
   game_id: number;
@@ -265,6 +283,33 @@ export const libraryApi = {
 
   async getGameAchievements(gameId: number): Promise<any[]> {
     return fetchApi<any[]>(`/api/library/games/${gameId}/achievements`, { method: 'GET' });
-  }
+  },
+
+  async startSession(gameId: number): Promise<any> {
+    return fetchApi<any>('/api/library/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1 }),
+    });
+  },
+
+  async pingSession(gameId: number, sessionId?: string): Promise<any> {
+    return fetchApi<any>('/api/library/session/ping', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1, session_id: sessionId }),
+    });
+  },
+
+  async endSession(gameId: number, sessionId?: string): Promise<any> {
+    return fetchApi<any>('/api/library/session/end', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1, session_id: sessionId }),
+    });
+  },
+
+  async getRecentAchievements(since?: string): Promise<any[]> {
+    const query = since ? `?since=${encodeURIComponent(since)}` : '';
+    return fetchApi<any[]>(`/api/library/achievements/recent${query}`, { method: 'GET' });
+  },
 };
+
 

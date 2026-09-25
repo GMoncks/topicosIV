@@ -221,6 +221,19 @@
 - Resultado esperado: Violação de chave única impedindo duplicação de posse no nível de banco de dados.
 - Rastreabilidade: `services/library-service/app/models/library_item.py`
 
+#### LIB-UNIT-03 — Modelo SQLAlchemy GameSession e ciclo de telemetria
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_lifecycle_start_ping_end"`
+- Pré-condições: Tabela `game_sessions` inicializada no SQLite.
+- Passos:
+  - Dado um registro de `GameSession` instanciado com status ativo
+  - Quando a sessão for persistida e atualizada com pings de telemetria
+  - Então o identificador `session_id` é gerado, a duração é acumulada e o status encerra com timestamp de término
+- Resultado esperado: Persistência íntegra da sessão de jogo e métodos de serialização para dict.
+- Rastreabilidade: `services/library-service/app/models/game_session.py`, `services/library-service/app/services/library_service.py`
+
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
 - Prioridade: P1
@@ -390,6 +403,59 @@
   - Então o estado do botão atualiza instantaneamente para "Na Lista de Desejos" sem recarregar o layout do modal nem provocar flicker de tela, a requisição assíncrona é disparada em segundo plano e emite o evento global mist:wishlist-updated
 - Resultado esperado: Feedback visual imediato e sem repintura brusca de componentes.
 - Rastreabilidade: `frontend/src/components/GameDetailModal.tsx`
+
+#### FRONT-UNIT-14 — Conexão do botão Baixar na Library ao download de arquivo .zip e disparo de mist:start-download (E-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "deve acionar download do pacote e emitir mist:start-download"`
+- Pré-condições: Usuário autenticado na tela da Biblioteca com jogo não instalado.
+- Passos:
+  - Dado um jogo na biblioteca com is_installed: false
+  - Quando o usuário clica no botão "Baixar"
+  - Então a requisição de download do pacote (.zip) é acionada via API de store, o download do arquivo no navegador é disparado e o evento mist:start-download é emitido com gameId e gameTitle
+- Resultado esperado: Download do binário acionado e evento de orquestração emitido para o DownloadBar.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-15 — Transição reativa para Jogar e inicialização de sessão após evento mist:game-installed (E-04 & E-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "deve transitar dinamicamente para Jogar ao receber evento mist:game-installed"`
+- Pré-condições: Biblioteca renderizada aguardando conclusão de download.
+- Passos:
+  - Dado um card de jogo com status "Pronto para baixar"
+  - Quando o evento global mist:game-installed é recebido com o gameId correspondente
+  - Então o status transita para "Instalado", o botão altera para "Jogar" e um clique em "Jogar" aciona libraryApi.startSession
+- Resultado esperado: Atualização reativa de interface sem necessidade de reload da página e inicialização de sessão.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-16 — Progresso simulado de download e emissão de evento de jogo instalado no DownloadBar (E-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/DownloadBar.test.tsx`
+- Pré-condições: Componente DownloadBar montado na interface.
+- Passos:
+  - Dado o DownloadBar ativo na aplicação
+  - Quando recebe o evento mist:start-download com metadados do jogo
+  - Então o progresso avança progressivamente em intervalos regulares até 100%, emite o evento mist:game-installed e atualiza o status para "Concluído (Instalado)"
+- Resultado esperado: Animação e telemetria de download concluídas com notificação Toast e evento de conclusão.
+- Rastreabilidade: `frontend/src/components/DownloadBar.tsx`
+
+#### FRONT-UNIT-17 — Notificação Toast de conquista desbloqueada e polling leve de telemetria (E-07)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AchievementToast.test.tsx`
+- Pré-condições: Usuário autenticado na SPA com suporte a polling leve de conquistas.
+- Passos:
+  - Dado a aplicação MIST aberta com o usuário logado
+  - Quando novas conquistas são retornadas no polling de getRecentAchievements ou via evento mist:achievement-unlocked
+  - Então uma notificação Toast estilizada em dourado é exibida com troféu, nome, descrição e tag de raridade da conquista
+- Resultado esperado: Notificação imersiva e reativa de desbloqueio de conquista na interface.
+- Rastreabilidade: `frontend/src/App.tsx`, `frontend/src/components/AchievementToast.test.tsx`
+
 
 
 ## Integração
@@ -582,6 +648,45 @@
 - Resultado esperado: Validação de posse booleana precisa e em tempo real.
 - Rastreabilidade: `services/library-service/app/api/routes.py`
 
+#### LIB-INT-07 — Ciclo de vida da sessão de jogo: início, heartbeat acumulativo e encerramento (E-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_lifecycle_start_ping_end"`
+- Pré-condições: Usuário e jogo registrados no Library Service.
+- Passos:
+  - Dado uma chamada para POST /session/start gerando uma sessão ativa e marcando is_installed: true
+  - Quando requisições POST /session/ping forem enviadas em sequência
+  - Então o playtime_minutes é incrementado proporcionalmente no LibraryItem e a sessão é encerrada via POST /session/end
+- Resultado esperado: Sessão persistida, playtime acumulado e encerramento com registro de timestamps.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
+#### LIB-INT-08 — Desbloqueio de conquistas com persistência relacional e disparo de evento ao Social Service (E-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_unlock_achievement_with_activity_dispatch"`
+- Pré-condições: Catálogo de conquistas populado no banco de dados.
+- Passos:
+  - Dado uma requisição POST /achievements/unlock com user_id, game_id e achievement_id
+  - Quando a conquista for desbloqueada com sucesso (created: true)
+  - Então persiste em user_achievements, dispara notificação de atividade para o Social Service (/activities) e responde com HTTP 200
+- Resultado esperado: Persistência relacional de conquistas e emissão resiliente do evento de atividade.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
+#### LIB-INT-09 — Consulta de telemetria de conquistas recentes para polling leve (E-07)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_recent_achievements_polling"`
+- Pré-condições: Usuário autenticado com conquistas recém-conquistadas.
+- Passos:
+  - Dado que o usuário desbloqueou conquistas recentemente
+  - Quando a rota GET /achievements/recent é consultada com header X-User-Id
+  - Então retorna a lista de conquistas desbloqueadas recentes com metadados (nome, descrição e raridade)
+- Resultado esperado: Dados formatados para consumo do polling leve do frontend.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
 ### Compra e Concessão de Licença
 #### STORE-LIB-INT-01 — Sincronização, concessão de posse e remoção da Wishlist após compra
 - Prioridade: P0
@@ -647,6 +752,20 @@
   - Então o fluxo não sofre erro 422/400 de valor mínimo, a licença é concedida no library-service e o saldo permanece intacto
 - Resultado esperado: Retorno HTTP 201 com total_paid: 0.0 e licença concedida.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+### Amizades e Atividades (Social Service)
+#### SOCIAL-INT-01 — Registro e listagem de eventos de atividade no Social Service (E-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_record_and_list_activities"`
+- Pré-condições: Banco de dados SQLite do social-service inicializado com tabela activities.
+- Passos:
+  - Dado um payload de atividade (ex: achievement_unlocked)
+  - Quando o endpoint POST /activities for acionado
+  - Então persiste na tabela activities e o evento passa a ser retornado em GET /activities e GET /feed
+- Resultado esperado: Registro de atividade com status 201 e consulta de feed com status 200.
+- Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
 
 ## E2E / Sistema completo
 

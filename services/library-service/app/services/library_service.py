@@ -1,8 +1,14 @@
-from datetime import datetime, timezone
+import os
+import asyncio
+from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Dict, Any, Optional
 import httpx
 from sqlalchemy.orm import Session
 from app.models.library_item import LibraryItem
+from app.models.game_session import GameSession
+
+
+_achievement_subscribers: Dict[int, List[asyncio.Queue]] = {}
 
 
 class LibraryService:
@@ -148,13 +154,15 @@ class LibraryService:
         db: Session,
         user_id: int,
         game_id: int,
-        achievement_id: str
+        achievement_id: str,
+        social_service_url: Optional[str] = None
     ) -> Tuple[Any, bool]:
         """
         Desbloqueia uma conquista para o usuário especificado (idempotente).
         Retorna (UserAchievement, created).
+        Dispara evento de atividade para o social-service e notifica assinantes SSE.
         """
-        from app.models.achievement import UserAchievement
+        from app.models.achievement import Achievement, UserAchievement
 
         existing = (
             db.query(UserAchievement)
@@ -173,4 +181,232 @@ class LibraryService:
         db.add(new_unlock)
         db.commit()
         db.refresh(new_unlock)
+
+        # Busca metadados da conquista para enriquecer eventos e notificações
+        ach_meta = db.query(Achievement).filter_by(game_id=game_id, achievement_id=achievement_id).first()
+        ach_name = ach_meta.name if ach_meta else achievement_id
+        rarity = ach_meta.rarity if ach_meta else "Comum"
+        icon_url = ach_meta.icon_url if ach_meta else None
+        description = ach_meta.description if ach_meta else ""
+
+        # 1. Dispara evento de atividade assíncrono para o social-service
+        activity_payload = {
+            "user_id": user_id,
+            "type": "achievement_unlocked",
+            "payload": {
+                "game_id": game_id,
+                "achievement_id": achievement_id,
+                "name": ach_name,
+                "description": description,
+                "rarity": rarity,
+                "icon_url": icon_url,
+                "unlocked_at": new_unlock.unlocked_at.isoformat() if new_unlock.unlocked_at else None,
+            }
+        }
+        LibraryService.dispatch_activity_event(activity_payload, social_service_url=social_service_url)
+
+        # 2. Notifica assinantes SSE de conquistas
+        LibraryService.publish_achievement_event(user_id, {
+            "achievement_id": achievement_id,
+            "game_id": game_id,
+            "name": ach_name,
+            "description": description,
+            "rarity": rarity,
+            "icon_url": icon_url,
+            "unlocked_at": new_unlock.unlocked_at.isoformat() if new_unlock.unlocked_at else None,
+        })
+
         return new_unlock, True
+
+    @staticmethod
+    def dispatch_activity_event(payload: dict, social_service_url: Optional[str] = None):
+        """
+        Envia evento de atividade ao social-service de forma resiliente.
+        Falha de comunicação não quebra a requisição do usuário.
+        """
+        target_url = (social_service_url or os.getenv("SOCIAL_SERVICE_URL", "http://localhost:8004")).rstrip("/") + "/activities"
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                client.post(target_url, json=payload)
+        except Exception:
+            pass
+
+    @staticmethod
+    def get_recent_unlocked_achievements(
+        db: Session,
+        user_id: int,
+        since: Optional[datetime] = None,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Retorna conquistas desbloqueadas recentemente pelo usuário informado.
+        Útil para polling leve no frontend e verificação de novas conquistas.
+        """
+        from app.models.achievement import Achievement, UserAchievement
+
+        query = db.query(UserAchievement).filter(UserAchievement.user_id == user_id)
+        if since:
+            query = query.filter(UserAchievement.unlocked_at >= since)
+        else:
+            # Fallback padrão: últimos 60 segundos se since não for especificado
+            threshold = datetime.now(timezone.utc) - timedelta(seconds=60)
+            query = query.filter(UserAchievement.unlocked_at >= threshold)
+
+        recent_unlocks = query.order_by(UserAchievement.unlocked_at.desc()).limit(limit).all()
+
+        result = []
+        for u in recent_unlocks:
+            ach = db.query(Achievement).filter_by(game_id=u.game_id, achievement_id=u.achievement_id).first()
+            result.append({
+                "achievement_id": u.achievement_id,
+                "game_id": u.game_id,
+                "name": ach.name if ach else u.achievement_id,
+                "description": ach.description if ach else "",
+                "icon_url": ach.icon_url if ach else None,
+                "rarity": ach.rarity if ach else "Comum",
+                "unlocked_at": u.unlocked_at.isoformat() if u.unlocked_at else None,
+            })
+        return result
+
+    @staticmethod
+    def register_achievement_subscriber(user_id: int) -> asyncio.Queue:
+        queue: asyncio.Queue = asyncio.Queue()
+        _achievement_subscribers.setdefault(user_id, []).append(queue)
+        return queue
+
+    @staticmethod
+    def unregister_achievement_subscriber(user_id: int, queue: asyncio.Queue):
+        if user_id in _achievement_subscribers:
+            try:
+                _achievement_subscribers[user_id].remove(queue)
+                if not _achievement_subscribers[user_id]:
+                    del _achievement_subscribers[user_id]
+            except ValueError:
+                pass
+
+    @staticmethod
+    def publish_achievement_event(user_id: int, event_data: dict):
+        queues = _achievement_subscribers.get(user_id, [])
+        for q in list(queues):
+            try:
+                q.put_nowait(event_data)
+            except Exception:
+                pass
+
+    @staticmethod
+    def start_session(
+        db: Session,
+        user_id: int,
+        game_id: int,
+        session_token: Optional[str] = None
+    ) -> Tuple[GameSession, LibraryItem]:
+        """
+        Inicializa uma sessão de jogo.
+        - Encerra sessões anteriores ativas para este usuário e jogo.
+        - Atualiza a posse da biblioteca com last_played = now e is_installed = True.
+        - Cria um novo registro GameSession ativo.
+        """
+        now = datetime.now(timezone.utc)
+
+        # Encerra eventuais sessões anteriores que ficaram pendentes/ativas
+        previous_active = (
+            db.query(GameSession)
+            .filter_by(user_id=user_id, game_id=game_id, status="active")
+            .all()
+        )
+        for s in previous_active:
+            s.status = "ended"
+            s.ended_at = now
+
+        # Garante item na biblioteca e atualiza telemetria básica
+        item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+        if not item:
+            item, _ = LibraryService.grant_game(db, user_id=user_id, game_id=game_id)
+        
+        item.is_installed = True
+        item.last_played = now
+
+        new_session = GameSession(
+            user_id=user_id,
+            game_id=game_id,
+            session_token=session_token,
+            status="active",
+            started_at=now,
+            last_ping_at=now,
+            duration_seconds=0
+        )
+        db.add(new_session)
+        db.commit()
+        db.refresh(new_session)
+        db.refresh(item)
+        return new_session, item
+
+    @staticmethod
+    def ping_session(
+        db: Session,
+        user_id: int,
+        game_id: int,
+        session_id: Optional[str] = None,
+        session_token: Optional[str] = None
+    ) -> Tuple[GameSession, int]:
+        """
+        Processa o heartbeat da sessão e acumula tempo de jogo (playtime).
+        - Incrementa playtime_minutes no LibraryItem (+1 minuto por ping).
+        - Atualiza last_ping_at e duration_seconds na GameSession.
+        """
+        now = datetime.now(timezone.utc)
+
+        query = db.query(GameSession).filter_by(user_id=user_id, game_id=game_id, status="active")
+        if session_id:
+            query = query.filter_by(session_id=session_id)
+        session = query.order_by(GameSession.started_at.desc()).first()
+
+        # Resiliência: se nenhuma sessão ativa for encontrada, inicializa uma nova
+        if not session:
+            session, item = LibraryService.start_session(db, user_id, game_id, session_token)
+        else:
+            item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+            if not item:
+                item, _ = LibraryService.grant_game(db, user_id, game_id)
+
+        # Incrementa playtime (+1 minuto por ping recebido)
+        item.playtime_minutes += 1
+        item.last_played = now
+        item.is_installed = True
+
+        session.last_ping_at = now
+        session.duration_seconds += 60
+
+        db.commit()
+        db.refresh(session)
+        db.refresh(item)
+        return session, item.playtime_minutes
+
+    @staticmethod
+    def end_session(
+        db: Session,
+        user_id: int,
+        game_id: int,
+        session_id: Optional[str] = None,
+        session_token: Optional[str] = None
+    ) -> Tuple[Optional[GameSession], int]:
+        """
+        Encerra formalmente uma sessão ativa de jogo.
+        """
+        now = datetime.now(timezone.utc)
+
+        query = db.query(GameSession).filter_by(user_id=user_id, game_id=game_id, status="active")
+        if session_id:
+            query = query.filter_by(session_id=session_id)
+        session = query.order_by(GameSession.started_at.desc()).first()
+
+        if session:
+            session.status = "ended"
+            session.ended_at = now
+            db.commit()
+            db.refresh(session)
+
+        item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+        playtime = item.playtime_minutes if item else 0
+        return session, playtime
+

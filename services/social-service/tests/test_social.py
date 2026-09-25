@@ -16,9 +16,13 @@ if SOCIAL_DIR in sys.path:
     sys.path.remove(SOCIAL_DIR)
 sys.path.insert(0, SOCIAL_DIR)
 
+import app.models.activity  # noqa: F401
+import app.models.message  # noqa: F401
+import app.models.friend  # noqa: F401
 from app.main import app
 from app.db.database import Base, get_db
 from app.models.friend import Friend
+
 
 # Banco SQLite em memória com StaticPool para isolar os testes
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -196,3 +200,35 @@ def test_delete_friendship(client):
     # Lista agora deve estar vazia
     res_friends = client.get("/friends", headers={"X-User-Id": "1"})
     assert len(res_friends.json()) == 0
+
+
+def test_record_and_list_activities(client):
+    # 1. Registra atividade de conquista desbloqueada
+    payload = {
+        "user_id": 1,
+        "type": "achievement_unlocked",
+        "payload": {
+            "game_id": 13,
+            "achievement_id": "first_word",
+            "name": "Primeira Palavra"
+        }
+    }
+    res_create = client.post("/activities", json=payload)
+    assert res_create.status_code == 201
+    act_data = res_create.json()
+    assert act_data["user_id"] == 1
+    assert act_data["type"] == "achievement_unlocked"
+    assert act_data["payload"]["achievement_id"] == "first_word"
+
+    # 2. Consulta feed de atividades filtrado por user_id
+    res_list = client.get("/activities?user_id=1")
+    assert res_list.status_code == 200
+    activities = res_list.json()
+    assert len(activities) >= 1
+    assert activities[0]["type"] == "achievement_unlocked"
+
+    # 3. Consulta feed global (/feed)
+    res_feed = client.get("/feed")
+    assert res_feed.status_code == 200
+    assert len(res_feed.json()) >= 1
+
