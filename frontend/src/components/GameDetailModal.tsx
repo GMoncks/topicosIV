@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { GameDetailApiResponse, storeApi } from '../api/client';
+import { GameItem } from '../types';
+import { useCart } from '../context/CartContext';
 
 interface GameDetailModalProps {
   gameId: number | null;
@@ -7,6 +9,7 @@ interface GameDetailModalProps {
   onBuy: (gameId: number, price: number, title: string) => void;
   onWishlistToggle?: (gameId: number, inWishlist: boolean) => void;
   isAuthenticated: boolean;
+  isOwned?: boolean;
   onOpenAuth: () => void;
 }
 
@@ -16,6 +19,7 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   onBuy,
   onWishlistToggle,
   isAuthenticated,
+  isOwned = false,
   onOpenAuth,
 }) => {
   const [game, setGame] = useState<GameDetailApiResponse | null>(null);
@@ -24,6 +28,23 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   const [selectedScreenshotIndex, setSelectedScreenshotIndex] = useState<number>(0);
   const [inWishlist, setInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  const { isInCart, toggleCart } = useCart();
+  const inCart = game ? isInCart(game.id) : false;
+
+  const handleToggleCart = useCallback(() => {
+    if (!game) return;
+    const gameItem: GameItem = {
+      id: String(game.id),
+      title: game.title,
+      category: 'JOGO',
+      publisherOrParent: game.publisher,
+      tags: game.tags?.join(', '),
+      image: game.banner_url || `https://placehold.co/400x200/1e3a8a/fff?text=${encodeURIComponent(game.title)}`,
+      currentPrice: game.price,
+    };
+    toggleCart(gameItem);
+  }, [game, toggleCart]);
 
   const hasAuthToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('mist_token');
 
@@ -189,18 +210,27 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 p-8 z-20 w-full flex flex-col md:flex-row md:items-end justify-between gap-6 pointer-events-none">
-                <div>
+                <div className="w-full">
                   <h1 className="text-4xl md:text-5xl font-display font-bold text-white mb-2">{game.title}</h1>
-                  <div className="flex flex-wrap gap-2 text-sm text-gray-300 items-center">
-                    <span className="bg-brand-surface/80 px-2 py-1 rounded text-white font-medium border border-gray-700">
-                      {game.developer}
-                    </span>
-                    <span className="bg-brand-surface/80 px-2 py-1 rounded text-brand-purple font-medium border border-gray-700">
-                      <i className="fa-solid fa-satellite-dish mr-1"></i>
-                      {game.publisher}
-                    </span>
-                    <span>•</span>
-                    <span>Lançamento: {new Date(game.release_date).toLocaleDateString()}</span>
+                  <div className="flex flex-wrap gap-2 text-sm text-gray-300 items-center justify-between w-full">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="bg-brand-surface/80 px-2 py-1 rounded text-white font-medium border border-gray-700">
+                        {game.developer}
+                      </span>
+                      <span className="bg-brand-surface/80 px-2 py-1 rounded text-brand-purple font-medium border border-gray-700">
+                        <i className="fa-solid fa-satellite-dish mr-1"></i>
+                        {game.publisher}
+                      </span>
+                      <span>•</span>
+                      <span>Lançamento: {new Date(game.release_date).toLocaleDateString()}</span>
+                    </div>
+
+                    {isOwned && (
+                      <div className="bg-emerald-600/90 text-white font-bold text-xs px-3 py-1.5 rounded-lg border border-emerald-400/50 shadow-lg flex items-center gap-1.5 ml-auto">
+                        <i className="fa-solid fa-check text-xs"></i>
+                        <span>Adquirido</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -284,26 +314,59 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                     {game.price > 0 ? `R$ ${game.price.toFixed(2)}` : 'Gratuito'}
                   </div>
                   
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      if (!isAuthenticated && !hasAuthToken) {
-                        handleUnauthenticatedAction();
-                      } else {
-                        onBuy(game.id, game.price, game.title);
-                      }
-                    }}
-                    className="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-xl text-lg transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 cursor-pointer"
-                  >
-                    <i className="fa-solid fa-cart-shopping"></i>
-                    {game.price > 0 ? 'Comprar Jogo' : 'Adicionar à Biblioteca'}
-                  </button>
+                  {/* Botão 1: Comprar agora (unitário imediato) ou Na Biblioteca */}
+                  {isOwned ? (
+                    <div className="w-full bg-emerald-600/30 border border-emerald-500/60 text-emerald-300 font-bold py-3.5 px-6 rounded-xl text-base flex items-center justify-center gap-2 select-none">
+                      <i className="fa-solid fa-circle-check text-base text-emerald-400"></i>
+                      <span>Na Biblioteca</span>
+                    </div>
+                  ) : (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        if (!isAuthenticated && !hasAuthToken) {
+                          handleUnauthenticatedAction();
+                        } else {
+                          onBuy(game.id, game.price, game.title);
+                        }
+                      }}
+                      className="w-full bg-brand-green hover:bg-emerald-600 text-white font-bold py-3.5 px-6 rounded-xl text-base transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-bolt text-sm"></i>
+                      <span>Comprar agora</span>
+                    </button>
+                  )}
 
-                  {/* Botão de Lista de Desejos Suave e Sem Flickering */}
+                  {/* Botão 2: Logo de Carrinho (Toggle Adicionar / No carrinho) */}
+                  {!isOwned && (
+                    <button
+                      type="button"
+                      onClick={handleToggleCart}
+                      className={`w-full py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-bold cursor-pointer border ${
+                        inCart
+                          ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 hover:bg-emerald-500/30'
+                          : 'bg-brand-purple/20 border-brand-purple text-white hover:bg-brand-purple/30'
+                      }`}
+                    >
+                      {inCart ? (
+                        <>
+                          <i className="fa-solid fa-check text-emerald-400"></i>
+                          <span>No carrinho</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-cart-plus text-brand-purple"></i>
+                          <span>Adicionar ao carrinho</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Botão 3: Lista de Desejos Suave e Sem Flickering */}
                   <button 
                     type="button"
                     onClick={handleWishlistToggle}
-                    className={`w-full border py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer ${
+                    className={`w-full border py-2.5 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-medium cursor-pointer ${
                       inWishlist 
                         ? 'bg-brand-purple/20 border-brand-purple text-brand-purple hover:bg-brand-purple/30' 
                         : 'bg-brand-surface border-gray-600 text-white hover:border-brand-purple hover:bg-brand-purple/10'

@@ -32,7 +32,11 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8002
       - STORE_DATABASE_URL=${STORE_DATABASE_URL:-sqlite:///app/data/store.db}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:8001}
+      - LIBRARY_SERVICE_URL=${LIBRARY_SERVICE_URL:-http://library-service:8003}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    depends_on:
+      - auth-service
     volumes:
       - store_data:/app/app/data
     networks:

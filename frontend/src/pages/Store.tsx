@@ -3,13 +3,15 @@ import { HeroBanner } from '../components/HeroBanner';
 import { GameCard } from '../components/GameCard';
 import { PaginationSelector } from '../components/PaginationSelector';
 import { GameDetailModal } from '../components/GameDetailModal';
+import { CheckoutModal } from '../components/CheckoutModal';
 import { GameItem } from '../types';
-import { storeApi, GameApiResponse } from '../api/client';
+import { storeApi, libraryApi, GameApiResponse } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 interface StoreProps {
   searchQuery?: string;
   activeSubTab?: string;
+  onNavigateToLibrary?: () => void;
 }
 
 /**
@@ -30,6 +32,7 @@ function mapApiToGameItem(apiGame: GameApiResponse): GameItem {
 export const Store: React.FC<StoreProps> = ({
   searchQuery = '',
   activeSubTab = 'destaques',
+  onNavigateToLibrary,
 }) => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
@@ -41,6 +44,27 @@ export const Store: React.FC<StoreProps> = ({
   const [pageSize, setPageSize] = useState<number>(8);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [wishlistIds, setWishlistIds] = useState<Set<number>>(new Set());
+  const [ownedGameIds, setOwnedGameIds] = useState<Set<number>>(new Set());
+
+  // Estado para Modal de Checkout Unitário
+  const [checkoutGame, setCheckoutGame] = useState<GameItem | null>(null);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+  const fetchOwnedGames = useCallback(async () => {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    if (!token) {
+      setOwnedGameIds(new Set());
+      return;
+    }
+    try {
+      const items = await libraryApi.getMyGames();
+      if (Array.isArray(items)) {
+        setOwnedGameIds(new Set(items.map(item => Number(item.game_id))));
+      }
+    } catch (err) {
+      console.error('Erro ao buscar jogos da biblioteca:', err);
+    }
+  }, []);
 
   const fetchWishlist = useCallback(async () => {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -84,7 +108,18 @@ export const Store: React.FC<StoreProps> = ({
 
   useEffect(() => {
     fetchWishlist();
-  }, [fetchWishlist, isAuthenticated]);
+    fetchOwnedGames();
+
+    const handleLibraryOrWishlistUpdate = () => {
+      fetchWishlist();
+      fetchOwnedGames();
+    };
+
+    window.addEventListener('mist:wishlist-updated', handleLibraryOrWishlistUpdate);
+    return () => {
+      window.removeEventListener('mist:wishlist-updated', handleLibraryOrWishlistUpdate);
+    };
+  }, [fetchWishlist, fetchOwnedGames, isAuthenticated]);
 
   // Reseta para a página 1 ao alternar filtros ou buscar
   useEffect(() => {
@@ -130,9 +165,21 @@ export const Store: React.FC<StoreProps> = ({
     setSelectedGameId(null);
   }, []);
 
-  const handleBuyGame = useCallback((_id: number, price: number, title: string) => {
-    alert(`[C-06 Deferido] Simulando compra de ${title} por R$${price}`);
-  }, []);
+  const handleBuyGame = useCallback((id: number, price: number, title: string) => {
+    const found = games.find(g => Number(g.id) === id);
+    if (found) {
+      setCheckoutGame(found);
+    } else {
+      setCheckoutGame({
+        id: String(id),
+        title,
+        category: 'JOGO',
+        image: `https://placehold.co/400x200/1e3a8a/fff?text=${encodeURIComponent(title)}`,
+        currentPrice: price,
+      });
+    }
+    setIsCheckoutOpen(true);
+  }, [games]);
 
   const handleWishlistToggle = useCallback((gameId: number, inWishlist: boolean) => {
     setWishlistIds(prev => {
@@ -145,6 +192,34 @@ export const Store: React.FC<StoreProps> = ({
       return next;
     });
   }, []);
+
+  const handleDirectWishlistToggle = useCallback(async (gameId: number, nextState: boolean) => {
+    if (!isAuthenticated) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:toast', {
+          detail: 'Usuário não autenticado. Realize o login',
+        }));
+      }
+      openAuthModal('login');
+      return;
+    }
+
+    handleWishlistToggle(gameId, nextState);
+
+    try {
+      if (nextState) {
+        await storeApi.addToWishlist(gameId);
+      } else {
+        await storeApi.removeFromWishlist(gameId);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:wishlist-updated'));
+      }
+    } catch (err) {
+      console.error('Erro ao alternar wishlist no card:', err);
+      handleWishlistToggle(gameId, !nextState);
+    }
+  }, [isAuthenticated, openAuthModal, handleWishlistToggle]);
 
   return (
     <main className="p-8 pb-24 max-w-[1600px] mx-auto">
@@ -215,7 +290,14 @@ export const Store: React.FC<StoreProps> = ({
       ) : paginatedGames.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {paginatedGames.map(game => (
-            <GameCard key={game.id} game={game} onSelect={() => setSelectedGameId(Number(game.id))} />
+            <GameCard
+              key={game.id}
+              game={game}
+              isWishlisted={wishlistIds.has(Number(game.id))}
+              isOwned={ownedGameIds.has(Number(game.id))}
+              onToggleWishlist={handleDirectWishlistToggle}
+              onSelect={() => setSelectedGameId(Number(game.id))}
+            />
           ))}
         </div>
       ) : (
@@ -236,7 +318,20 @@ export const Store: React.FC<StoreProps> = ({
         onBuy={handleBuyGame}
         onWishlistToggle={handleWishlistToggle}
         isAuthenticated={isAuthenticated}
+        isOwned={selectedGameId ? ownedGameIds.has(selectedGameId) : false}
         onOpenAuth={() => openAuthModal('login')}
+      />
+
+      {/* Modal de Checkout Unitário ("Comprar agora") */}
+      <CheckoutModal
+        game={checkoutGame}
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        onNavigateToLibrary={() => {
+          setIsCheckoutOpen(false);
+          setSelectedGameId(null);
+          if (onNavigateToLibrary) onNavigateToLibrary();
+        }}
       />
     </main>
   );

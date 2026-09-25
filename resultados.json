@@ -377,6 +377,13 @@
         "duracao_ms": 0,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-25T16:43:59.902801+00:00",
+        "status": "pass",
+        "duracao_ms": 3036,
+        "erro": null,
+        "origem": "validacao"
       }
     ]
   },
@@ -954,6 +961,30 @@
         "run_id": "2026-09-24T04:26:59.218456+00:00",
         "status": "pass",
         "duracao_ms": 2563,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-11": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T16:46:40.525983+00:00",
+        "status": "pass",
+        "duracao_ms": 6366,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "REG-AUTH-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T16:46:57.872127+00:00",
+        "status": "pass",
+        "duracao_ms": 2519,
         "erro": null,
         "origem": "validacao"
       }

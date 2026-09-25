@@ -1186,3 +1186,449 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 - Modificado `frontend/src/pages/Store.tsx` (memoização de handlers para performance sem reflows).
 - 17 testes de frontend + build TypeScript validados com 100% de sucesso.
 - 18 testes de backend validados com 100% de sucesso.
+
+
+---
+
+## 2026-09-24 — Prompt 23
+
+**Prompt do usuário:**
+
+> Você avalia que agora os pré-requisitos para implementar o C-06 e o C-09 estão cumpridos, ou ainda deve-se postergar um pouco a implementação desses tickets? Caso eu deva adiar mais um pouco, qual ticket ou epico deve ser finalizado?
+
+**Decisões arquiteturais e técnicas:**
+
+1. Avaliação de Pré-requisitos para C-06 e C-09:
+   - O que já está pronto: Modelo de dados `Game` ajustado (developer vs publisher), Catálogo e Modal de Detalhes (`C-08`), Wishlist funcional (`C-05`), e endpoint de concessão de licença `POST /library/grant` (`D-02`) existente no `library-service`.
+   - O que ainda falta como pré-requisito técnico direto de C-06: O `auth-service` não possui endpoint para débito atômico de carteira (`wallet_balance`) nem mecanismo de compensação/estorno para a transação Saga.
+   - O que falta para a experiência do usuário (UX): `Library.tsx` (`D-04`) ainda está com dados estáticos mockados. Se o checkout for implementado agora, a compra será realizada, mas o jogo não aparecerá visualmente na Biblioteca.
+
+2. Recomendação Arquitetural:
+   - Adiar C-06 e C-09 brevemente e priorizar a finalização imediata de **D-04 (Conectar Library.tsx à API real)** e **D-05 (Painel de Conquistas)**.
+   - Motivação: Estabelece o "destino" natural da compra. Com D-04 e D-05 prontos, a implementação subsequente de C-06 e C-09 fechará o fluxo completo ponta a ponta (Loja -> Compra/Checkout com débito de carteira -> Concessão na Biblioteca real -> Visualização de Conquistas).
+
+**Resumo das saídas:**
+
+- Análise de dependências entre serviços (`store-service`, `auth-service`, `library-service`) e cronograma do projeto.
+- Parecer técnico e plano de ação recomendando a finalização de D-04 e D-05 antes de avançar para C-06 e C-09.
+
+
+---
+
+## 2026-09-24 — Prompt 24
+
+**Prompt do usuário:**
+
+> OK. Planeje a implementação dos tickets D-04 e D-05 com base no estado atual do sistema
+
+**Decisões arquiteturais e técnicas:**
+
+1. Estratégia do Ticket D-04 (Conectar `Library.tsx` à API real):
+   - Substituição total dos mocks estáticos por integração com `GET /api/library/my-games`.
+   - Tratamento completo de 4 estados visuais: Não Autenticado (com CTA para login), Carregando (skeletons), Biblioteca Vazia (com redirecionamento para Loja) e Populada.
+   - Cada card exibirá: Banner, Título, badges de Categoria, Developer e **Publisher** ("MIST Studios" vs "Steam Imported"), Playtime formatado e Status de Instalação.
+   - Adicionada barra de busca local para filtragem em tempo real na biblioteca.
+
+2. Estratégia do Ticket D-05 (Painel de Conquistas Dinâmico):
+   - Criação de `seed_achievements.py` no `library-service`, populando conquistas de forma inteligente: jogos MIST recebem conquistas específicas com triggers mapeados, e jogos de terceiros recebem conquistas genéricas categorizadas por título.
+   - Implementação do endpoint `GET /library/games/{game_id}/achievements` com suporte a `X-User-Id` para retornar o status `is_unlocked` e `unlocked_at`.
+   - Integração do `AchievementsPanel.tsx` de forma expansível (accordion) em cada card de jogo na `Library.tsx`, com barra de progresso em gradiente e visualização detalhada de raridade.
+
+3. Testes Automatizados:
+   - Criação de testes de backend em `test_achievements.py` (pytest).
+   - Criação de testes de frontend em `Library.test.tsx` (vitest).
+
+**Resumo das saídas:**
+
+- Criado artefato `implementation_plan.md` detalhando o plano de execução para D-04 e D-05 com RequestFeedback ativado.
+
+
+---
+
+## 2026-09-24 — Prompt 25
+
+**Prompt do usuário:**
+
+> Pode implementar o planejamento.
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação Backend D-05 (`library-service`):
+   - Criado `services/library-service/app/db/seed_achievements.py` com lógica de seed dinâmica baseada no campo `publisher` retornado pelo `store-service`. Jogos "MIST Studios" recebem conquistas específicas (`first_word`, `flawless_win`, `first_move`, `speedrunner`, `first_answer`, `perfect_score`), enquanto jogos "Steam Imported" recebem template de 3 conquistas por jogo.
+   - Criados os métodos `get_game_achievements` e `unlock_achievement` no `LibraryService`, cruzando conquistas com o `UserAchievement` quando o header `X-User-Id` estiver presente.
+   - Adicionados endpoints `GET /library/games/{game_id}/achievements` e `POST /achievements/unlock` em `app/api/routes.py`.
+   - Adicionado gatilho de seed no ciclo `lifespan` do `main.py`.
+   - Criados testes unitários em `services/library-service/tests/test_achievements.py`.
+
+2. Implementação Frontend D-04 & D-05 (`frontend`):
+   - Reescreveu-se `frontend/src/pages/Library.tsx` conectando-o a `libraryApi.getMyGames()`.
+   - Implementados 5 estados completos: Visitante/Não Autenticado (com CTA para login), Carregando (6 skeletons com tema escuro), Biblioteca Vazia (com botão de explorar a loja), Busca sem resultados e Populada.
+   - Nos cards de jogos da Biblioteca: banner com efeito zoom no hover, badge de Publisher (*"MIST Studios"* vs *"Steam Imported"*), categoria, estúdio (developer), playtime formatado (`Xh Ym jogados`), status de instalação e botões de ação ("Jogar"/"Instalar" e "Conquistas").
+   - Integrado o componente `AchievementsPanel.tsx` como gaveta expansível acoplada a cada card, com barra de progresso em gradiente e grid de conquistas bloqueadas vs desbloqueadas.
+   - Em `App.tsx`, adicionado o callback `onNavigateToStore={() => setActiveTab('store')}` para o botão de explorar a loja quando a biblioteca estiver vazia.
+   - Criados testes unitários em `frontend/src/pages/Library.test.tsx`.
+
+**Resumo das saídas:**
+
+- Criado `services/library-service/app/db/seed_achievements.py`.
+- Modificado `services/library-service/app/services/library_service.py`.
+- Modificado `services/library-service/app/api/routes.py`.
+- Modificado `services/library-service/app/main.py`.
+- Criado `services/library-service/tests/test_achievements.py`.
+- Modificado `frontend/src/pages/Library.tsx`.
+- Modificado `frontend/src/App.tsx`.
+- Criado `frontend/src/pages/Library.test.tsx`.
+- Criado artefato `walkthrough.md` documentando as implementações e validações.
+- Testes backend: 27/27 aprovados (pytest).
+- Testes frontend: 21/21 aprovados (vitest).
+- Build frontend: 0 erros de compilação TypeScript e Vite bundling bem-sucedido.
+
+
+---
+
+## 2026-09-24 — Prompt 26
+
+**Prompt do usuário:**
+
+> Perfeito. Planeje a implementação dos tickets C-06 e C-09, considerando a segurança no processo de compra (simulada, já que não desejo ter integração real com pagamentos financeiros nesse momento) e outras necessidades de segurança. Além disso, avalie se o ticket C-10 (Wishlist no frontend (aba dedicada + coração nos cards) já não pode ser considerado um ticket fechado/implementado
+
+**Decisões arquiteturais e técnicas:**
+
+1. Avaliação do Ticket C-10:
+   - O ticket C-10 preconiza: *"Wishlist no frontend (aba dedicada + coração nos cards)"*.
+   - A subaba dedicada na `Store.tsx` e o botão de coração na modal `GameDetailModal.tsx` estão 100% implementados e integrados ao backend do `store-service`.
+   - No entanto, o `GameCard.tsx` possui apenas um badge estático de texto `"DESEJO"` e **ainda não tem o botão interativo de coração** flutuante para favoritar/desfavoritar diretamente na vitrine.
+   - Conclusão: C-10 está em cerca de 80% e deve ser considerado concluído após a inclusão desse botão no `GameCard.tsx`, o qual foi acoplado ao plano de trabalho desta etapa.
+
+2. Estratégia de Segurança e Arquitetura para C-06 (Backend Checkout):
+   - **Preço Autoritativo no Backend:** O cliente envia unicamente `{ "game_id": int }`. O `store-service` busca o preço no banco de dados, neutralizando qualquer manipulação pelo cliente.
+   - **Checagem Prévia de Posse:** Consulta preventiva ao `library-service` (`GET /library/users/{user_id}/has-game/{game_id}`). Se o usuário já tiver o jogo, o checkout retorna `409 Conflict: "Você já possui este jogo na sua biblioteca"`.
+   - **Débito Atômico no `auth-service`:** Implementação de `POST /users/{user_id}/wallet/debit` com cláusula atômica `UPDATE users SET wallet_balance = wallet_balance - :amount WHERE id = :user_id AND wallet_balance >= :amount`, prevenindo double-spending e saldo negativo.
+   - **Padrão Saga com Compensação:** Caso a concessão da licença (`POST /library/grant`) falhe por timeout ou erro interno após o débito da carteira, o `store-service` executa compensação imediata chamando `POST /users/{user_id}/wallet/credit` no `auth-service` para estornar o valor, informando o cliente com `502 Bad Gateway`.
+   - **Auditoria:** Gravação de transações na tabela `purchases` com status `completed` ou `refunded`.
+   - **Housekeeping:** Remoção automática do jogo da wishlist do usuário após a compra.
+
+3. Estratégia de UX e Frontend para C-09 (Modal de Checkout):
+   - Criação do componente `CheckoutModal.tsx` exibindo resumo do item, extrato comparativo de saldo antes e depois da compra, alerta de saldo insuficiente (bloqueando o botão) e estado de loading contra duplo clique.
+   - Tela de sucesso com animação de confirmação e botão com redirecionamento direto para a Biblioteca (`activeTab = 'library'`).
+   - Finalização do C-10 no `GameCard.tsx` com botão flutuante de coração com `e.stopPropagation()` e transição suave.
+
+**Resumo das saídas:**
+
+- Registrado histórico no `prompts.md`.
+- Criado o plano de implementação detalhado `implementation_plan.md` com `RequestFeedback: true` cobrindo C-06, C-09 e a finalização de C-10.
+
+
+---
+
+## 2026-09-24 — Prompt 27
+
+**Prompt do usuário:**
+
+> Gostei do planejamento, mas percebi que não consideramos a criação de um carrinho de compras, típico em e-commerces. Adicione no planejamento a criação da feature de "carrinho de compras". Os jogos devem poder ser adicionados ao carrinho ou ser comprados imediatamente (unitariamente) via botões distintos:
+> - logo de carrinho
+> - botão com texto "Comprar agora"
+> 
+> Adicionalmente, a adição ao carrinho deve gerar um toggle no botão (adicionar +/adicionado check), e um ícone reativo de Carrinho de compras deve ser adicionado ao canto superior esquerdo da tela, de modo que o usuário possa acessar o carrinho e lá escolher se finaliza a compra ou se segue adicionando mais jogos
+
+**Decisões arquiteturais e técnicas:**
+
+1. Integração da Feature de Carrinho de Compras (Shopping Cart):
+   - **Duas Modalidades de Compra Distintas:**
+     - Botão com texto **"Comprar agora"**: abre imediatamente a modal de checkout unitário (`CheckoutModal.tsx`), preservando os itens já presentes no carrinho.
+     - Botão com **logo de carrinho (Toggle)**: alterna entre adicionar ao carrinho (`fa-cart-plus`) e item já no carrinho (`fa-check` com destaque visual).
+   - **Ícone Reativo de Carrinho no Canto Superior Esquerdo:**
+     - Adicionado no canto superior esquerdo da tela / Header (`Header.tsx`), exibindo badge de contagem reativo com a quantidade de itens no carrinho.
+     - Clique abre a gaveta lateral `CartDrawer.tsx`.
+   - **Painel do Carrinho (`CartDrawer.tsx`):**
+     - Lista todos os títulos adicionados com miniatura, título, publisher e preço individual, com opção de remoção item a item ou esvaziamento total.
+     - Totalizador do carrinho, saldo atual da carteira MIST, projeção de saldo restante e bloqueio preventivo com alerta se o saldo for insuficiente para a compra de todos os itens.
+     - Botão de saída *"Seguir adicionando mais jogos"* (mantém na loja) e botão de ação *"Finalizar Compra"* (aciona o checkout em lote).
+   - **Gerenciamento de Estado no Frontend:**
+     - Criação do `CartContext.tsx` com persistência em `localStorage` para manter itens após reload e sincronização com contadores e botões de toggle.
+
+2. Ajuste na Arquitetura Backend de Checkout (C-06):
+   - O endpoint `POST /checkout` no `store-service` passa a suportar compra unitária (`game_id`) ou em lote (`game_ids: List[int]`).
+   - Validações atômicas: soma de preços autoritativos no banco da loja, checagem prévia no `library-service` para garantir que o usuário não possua nenhum dos jogos, débito atômico do valor total no `auth-service`, concessão das licenças em lote e transação compensatória (Saga) com estorno integral caso ocorra falha.
+   - Pós-compra: gravação dos registros na tabela `purchases`, esvaziamento do carrinho e remoção automática de todos os títulos adquiridos da wishlist.
+
+3. Finalização de C-10:
+   - Mantida a adição do botão flutuante de coração nos cards da vitrine (`GameCard.tsx`) com `e.stopPropagation()` para fechar integralmente o ticket.
+
+**Resumo das saídas:**
+
+- Registrado histórico no `prompts.md`.
+- Atualizado o artefato `implementation_plan.md` com `RequestFeedback: true` contemplando a feature completa de Carrinho de Compras.
+
+
+---
+
+## 2026-09-25 — Prompt 28
+
+**Prompt do usuário:**
+
+> Pode implementar o planejamento
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação Backend `auth-service`:
+   - Criados endpoints `POST /users/{user_id}/wallet/debit` e `POST /users/{user_id}/wallet/credit`.
+   - Débito implementado com operação atômica em nível de SQL (`UPDATE users SET wallet_balance = wallet_balance - :amount WHERE id = :user_id AND wallet_balance >= :amount`), prevenindo concorrência, saldo negativo e double-spending.
+   - Criada suíte de testes em `test_wallet.py` (4 testes passando).
+
+2. Implementação Backend `library-service`:
+   - Criado método `LibraryService.has_game(db, user_id, game_id)`.
+   - Adicionado endpoint `GET /library/users/{user_id}/has-game/{game_id}` para verificação prévia de posse de licença.
+   - Criado teste em `test_ownership.py` (passando).
+
+3. Implementação Backend `store-service` (Ticket C-06):
+   - Criado modelo SQLAlchemy `Purchase` em `app/models/purchase.py` para histórico e auditoria de compras.
+   - Implementado orquestrador Saga `StoreService.execute_checkout` com suporte a compra unitária ou em lote (carrinho):
+     - Preço autoritativo no banco de dados.
+     - Validação prévia de posse (retorna 409 Conflict se o usuário já possuir algum jogo do lote).
+     - Débito atômico do valor total na carteira do usuário.
+     - Concessão de licenças no `library-service`.
+     - Transação compensatória Saga: estorno integral no `auth-service` se qualquer concessão falhar (502 Bad Gateway).
+     - Housekeeping: gravação em `purchases` e remoção automática dos jogos da `wishlist`.
+   - Criados endpoints `POST /checkout` e `POST /store/checkout`.
+   - Criada suíte de testes em `test_checkout.py` (7 testes passando).
+
+4. Implementação Frontend (Tickets C-09, Carrinho de Compras e C-10):
+   - **Carrinho de Compras (`CartContext.tsx` & `CartDrawer.tsx`):**
+     - Criado contexto global com persistência no `localStorage` (`mist_shopping_cart`), métodos reativos de adicionar, remover, alternar (toggle), cálculo acumulado e abertura de gaveta.
+     - Criado `CartDrawer.tsx` com lista visual de itens, extrato financeiro, checagem de saldo com bloqueio preventivo e botões *"Seguir adicionando mais jogos"* vs *"Finalizar Compra"*.
+   - **Ícone de Carrinho no Canto Superior Esquerdo (`Header.tsx`):**
+     - Adicionado botão de carrinho no canto superior esquerdo do header com ícone e badge numérico dinâmico.
+   - **Dois Botões de Compra Distintos (`GameDetailModal.tsx`):**
+     - Botão textual em destaque **"Comprar agora"** acionando compra unitária imediata.
+     - Botão com **logo de carrinho** com comportamento toggle: *"Adicionar ao carrinho"* (`fa-cart-plus`) vs *"No carrinho"* (`fa-check` em verde neon).
+   - **Modal de Compra Unitária (`CheckoutModal.tsx`):**
+     - Resumo do jogo, extrato de débito e novo saldo, bloqueio por saldo insuficiente e confirmação de sucesso com navegação direta para a Biblioteca.
+   - **Conclusão de C-10 (`GameCard.tsx`):**
+     - Adicionado botão de coração flutuante no canto superior direito de cada card da vitrine com `e.stopPropagation()`.
+   - **Testes Frontend:**
+     - Criados `CartContext.test.tsx`, `CheckoutModal.test.tsx` e atualizado `GameCard.test.tsx` (total de 29 testes passando no vitest).
+     - Build de produção `tsc && vite build` concluído com 0 erros.
+
+**Resumo das saídas:**
+
+- Modificado `services/auth-service/app/schemas/user.py`.
+- Modificado `services/auth-service/app/services/auth_service.py`.
+- Modificado `services/auth-service/app/api/routes.py`.
+- Criado `services/auth-service/tests/test_wallet.py`.
+- Modificado `services/library-service/app/services/library_service.py`.
+- Modificado `services/library-service/app/api/routes.py`.
+- Criado `services/library-service/tests/test_ownership.py`.
+- Criado `services/store-service/app/models/purchase.py`.
+- Criado `services/store-service/app/schemas/checkout.py`.
+- Modificado `services/store-service/app/services/store_service.py`.
+- Modificado `services/store-service/app/api/routes.py`.
+- Modificado `services/store-service/app/main.py`.
+- Criado `services/store-service/tests/test_checkout.py`.
+- Modificado `frontend/src/api/client.ts`.
+- Criado `frontend/src/context/CartContext.tsx`.
+- Criado `frontend/src/context/CartContext.test.tsx`.
+- Criado `frontend/src/components/CheckoutModal.tsx`.
+- Criado `frontend/src/components/CheckoutModal.test.tsx`.
+- Criado `frontend/src/components/CartDrawer.tsx`.
+- Modificado `frontend/src/components/Header.tsx`.
+- Modificado `frontend/src/components/GameCard.tsx`.
+- Modificado `frontend/src/components/GameCard.test.tsx`.
+- Modificado `frontend/src/components/GameDetailModal.tsx`.
+- Modificado `frontend/src/pages/Store.tsx`.
+- Modificado `frontend/src/App.tsx`.
+- Criado artefato `walkthrough.md`.
+- Testes Backend: **60/60 aprovados (100%)**.
+- Testes Frontend: **29/29 aprovados (100%)**.
+- Build Frontend: **Aprovado com 0 erros**.
+
+
+---
+
+## 2026-09-25 — Prompt 29
+
+**Prompt do usuário:**
+
+> Fui testar manualmente o sistema pelo localhost (com o docker operando) e ao tentar seguir qualquer rota de compra, me deparei com o seguinte erro: Não foi possível validar posse na biblioteca: All connection attempts failed. O que pode ser?
+
+**Decisões arquiteturais e técnicas:**
+
+1. Diagnóstico da Causa Raiz:
+   - No Docker, cada contêiner opera em um namespace de rede isolado dentro da bridge `mist-network`. O endereço `localhost` ou `127.0.0.1` dentro de um contêiner referencia exclusivamente ele mesmo, e não o host ou outros contêineres.
+   - O `store-service` em `docker-compose.yml` não declarava as variáveis `LIBRARY_SERVICE_URL` nem `AUTH_SERVICE_URL` no seu bloco `environment:`.
+   - Como consequência, o `app/config.py` do `store-service` utilizava o fallback padrão para ambiente de desenvolvimento local na máquina hospedeira: `http://localhost:8003`.
+   - Ao executar a checagem prévia de posse de jogo durante o checkout (`execute_checkout`), o `store-service` tentava conectar em `http://localhost:8003/library/users/...` dentro do próprio contêiner, onde a porta 8003 não existe, gerando o erro de conexão do httpx: *"Não foi possível validar posse na biblioteca: All connection attempts failed"*.
+
+2. Correção Técnica:
+   - Atualizado o serviço `store-service` no [`docker-compose.yml`](./docker-compose.yml):
+     - Injetada a variável `LIBRARY_SERVICE_URL=${LIBRARY_SERVICE_URL:-http://library-service:8003}`.
+     - Injetada a variável `AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:8001}`.
+     - Adicionado `depends_on: [auth-service]` para ordenação de inicialização na rede `mist-network`.
+
+**Resumo das saídas:**
+
+- Modificado [`docker-compose.yml`](./docker-compose.yml).
+- Registrado histórico no [`prompts.md`](./prompts.md).
+
+
+---
+
+## 2026-09-25 — Prompt 30
+
+**Prompt do usuário:**
+
+> Ajustes a se fazer:
+> - Tentei realizar uma compra direta de um dos jogos gratuitos, mas dá erro "Falha ao processar débito na carteira MIST." Verifique se o sistema não recusa compras de 0,00 reais.
+> - Após o usuário comprar um jogo, o card/detalhes do jogo na loja deve receber uma tag de "Adquirido". Essa tag deve aparecer do lado oposto ao valor do jogo, na mesma linha, quando for o card. Quando for a modal de detalhes, a tag deve ficar na extrema direita da linha que contém o publisher e data de lançamento.
+> Confirme que entendeu minhas ordens antes de começar a mexer no código.
+
+**Decisões arquiteturais e técnicas:**
+
+1. Diagnóstico do Erro em Jogos Gratuitos (R$ 0,00):
+   - No `auth-service`, o schema Pydantic `WalletDebitRequest` foi definido com validação `amount: float = Field(..., gt=0.0)`. Ao submeter R$ 0,00, a API do `auth-service` rejeitava com `422 Unprocessable Entity` (violando `gt=0.0`), e o `store-service` propagava o erro genérico *"Falha ao processar débito na carteira MIST"*.
+   - Estratégia de correção:
+     - No `auth-service`: ajustar a validação para `ge=0.0` e, caso o montante seja R$ 0,00, realizar a operação sem decréscimo de saldo, retornando `200 OK`.
+     - No `store-service`: se `total_amount == 0.0`, ignorar a chamada desnecessária de débito ou efetuar com 0,00, concedendo a licença diretamente no `library-service`.
+
+2. Tag "Adquirido" nos Cards e Modal de Detalhes:
+   - Sincronização de posse na loja: carregar os IDs dos jogos adquiridos pelo usuário logado a partir de `libraryApi.getMyGames()` (`ownedGameIds: Set<number>`).
+   - Posicionamento no Card (`GameCard.tsx`): na mesma linha do rodapé onde fica o preço, do lado oposto (esquerda da linha), exibir a tag *"Adquirido"*.
+   - Posicionamento na Modal de Detalhes (`GameDetailModal.tsx`): na extrema direita da linha que contém o publisher e a data de lançamento.
+   - Melhoria de UX: quando o jogo já estiver adquirido, desabilitar ou adaptar o botão de compra para indicar que o jogo já está na biblioteca.
+
+**Resumo das saídas:**
+
+- Registrado histórico no [`prompts.md`](./prompts.md).
+- Resposta de confirmação de entendimento enviada ao usuário antes de alterar código.
+
+
+---
+
+## 2026-09-25 — Prompt 31
+
+**Prompt do usuário:**
+
+> Autorizo
+
+**Decisões arquiteturais e técnicas:**
+
+1. Liberação de Compras Gratuitas (R$ 0,00):
+   - Atualizados os schemas `WalletDebitRequest` e `WalletCreditRequest` em `services/auth-service/app/schemas/user.py` para utilizar validação `ge=0.0`.
+   - Implementada cláusula no `services/auth-service/app/services/auth_service.py` (`debit_wallet` e `credit_wallet`): quando `amount == 0.0`, retorna imediatamente o saldo atual sem decrementar valores ou executar escrita desnecessária.
+   - Ajustado o fluxo de compensação Saga em `services/store-service/app/services/store_service.py` (`execute_checkout`): caso ocorra falha de concessão de licença e `total_amount == 0.0`, o estorno na carteira não tenta creditar montante desnecessário.
+   - Adicionados testes de regressão:
+     - `test_debit_wallet_zero_amount` em `services/auth-service/tests/test_wallet.py`.
+     - `test_checkout_free_game_success` em `services/store-service/tests/test_checkout.py`.
+
+2. Tag "Adquirido" na Loja (Cards e Modal de Detalhes):
+   - `frontend/src/components/GameCard.tsx`: Adicionada prop `isOwned?: boolean`. Na mesma linha do rodapé onde fica o preço, do lado oposto (esquerda), exibe a tag visual estilizada `Adquirido` com ícone de check.
+   - `frontend/src/components/GameDetailModal.tsx`: Adicionada prop `isOwned?: boolean`. Na linha que contém publisher e data de lançamento, posicionada a tag `Adquirido` na extrema direita (`ml-auto`). Na seção de ações, quando o jogo já foi adquirido, o botão "Comprar agora" é substituído por um indicador "Na Biblioteca" e a adição ao carrinho é suprimida.
+   - `frontend/src/pages/Store.tsx`: Introduzido estado `ownedGameIds: Set<number>`, carregado via `libraryApi.getMyGames()`. Inscrito no evento global `mist:wishlist-updated` para sincronizar instantaneamente quando uma compra (unitária ou via carrinho) for concluída. Repassado `isOwned` para os `GameCard` e para a `GameDetailModal`.
+   - Adicionado teste de unidade para o GameCard com `isOwned` em `frontend/src/components/GameCard.test.tsx`.
+
+**Resumo das saídas:**
+
+- Modificados:
+  - [`services/auth-service/app/schemas/user.py`](./services/auth-service/app/schemas/user.py)
+  - [`services/auth-service/app/services/auth_service.py`](./services/auth-service/app/services/auth_service.py)
+  - [`services/auth-service/tests/test_wallet.py`](./services/auth-service/tests/test_wallet.py)
+  - [`services/store-service/app/services/store_service.py`](./services/store-service/app/services/store_service.py)
+  - [`services/store-service/tests/test_checkout.py`](./services/store-service/tests/test_checkout.py)
+  - [`frontend/src/components/GameCard.tsx`](./frontend/src/components/GameCard.tsx)
+  - [`frontend/src/components/GameCard.test.tsx`](./frontend/src/components/GameCard.test.tsx)
+  - [`frontend/src/components/GameDetailModal.tsx`](./frontend/src/components/GameDetailModal.tsx)
+  - [`frontend/src/pages/Store.tsx`](./frontend/src/pages/Store.tsx)
+- Testes Backend: **62/62 aprovados (100%)**.
+- Testes Frontend: **30/30 aprovados (100%)**.
+- Build Frontend: **Aprovado com 0 erros**.
+- Atualizado [`prompts.md`](./prompts.md).
+- Criado artefato [`walkthrough.md`](file:///C:/Users/Gabriel%20Torres/.gemini/antigravity/brain/05844929-f41b-40e2-8d89-e2ec0950c553/walkthrough.md).
+
+---
+
+## 2026-09-25 — Prompt 32
+
+**Prompt do usuário:**
+
+> Reuna todos os testes que você realizou durante a implementação das funcionalidades nessa conversa, para que o qa_writer possa registrar os testes a serem rodados futuramente pelo qa_tester. Percebi que provavelmente muitos dos testes realizados durante a implementação não foram registrados pela skill.
+> As funcionalidades a que me refiro foram todas relacionadas à integração entre library, store, wishlist, games, wallet, etc.
+
+**Decisões arquiteturais e técnicas:**
+
+- Levantamento exaustivo dos testes executados e implementados nas camadas de Store, Library, Wishlist e Wallet:
+  - 6 testes de integração no backend (`STORE-LIB-INT-01` a `05` e `LIB-INT-06`).
+  - 2 testes unitários no `auth-service` para carteira (`AUTH-UNIT-04` e `05`).
+  - 1 teste de regressão para débito de R$ 0,00 (`REG-AUTH-01`).
+  - 3 testes unitários no frontend (`FRONT-UNIT-08`, `09` e `10`).
+- Apresentação estruturada da proposta conforme as diretrizes do `qa_writer` aguardando aprovação explícita.
+
+**Resumo das saídas:**
+
+- Elaborada lista consolidada de 10 testes para curadoria do `TESTS.md`.
+
+---
+
+## 2026-09-25 — Prompt 33
+
+**Prompt do usuário:**
+
+> Antes de realizar a escrita desses testes, reuna os testes relacionados com a modal interativa de detalhes do jogo (flicker de favoritar e setas de navegação dos screenshots), fluxo de usuário deslogado com toast de alerta da ausencia de auth ao comprar um jogo e atualização da lista de desejos a medida que se adicionam/removem jogos (por qualquer rota)
+
+**Decisões arquiteturais e técnicas:**
+
+- Criação e execução dos testes unitários do componente `GameDetailModal` em `frontend/src/components/GameDetailModal.test.tsx`:
+  - Setas inteligentes de navegação de capturas de tela (exibição contextual).
+  - Alerta Toast global `"Usuário não autenticado. Realize o login"` com fechamento da modal e abertura limpa da tela de autenticação.
+  - Alternância suave e otimista da Wishlist sem flickering e emissão do evento global `mist:wishlist-updated`.
+  - Tag visual `"Adquirido"` e botão `"Na Biblioteca"`.
+- Implementação de testes de integração para o ciclo da Wishlist no `store-service` em `services/store-service/tests/test_games.py` (`STORE-INT-09` e `STORE-INT-10`).
+- Todos os testes foram executados e aprovados com 100% de sucesso.
+
+**Resumo das saídas:**
+
+- Criado [`frontend/src/components/GameDetailModal.test.tsx`](./frontend/src/components/GameDetailModal.test.tsx).
+- Modificado [`services/store-service/tests/test_games.py`](./services/store-service/tests/test_games.py).
+- Propostos os IDs `FRONT-UNIT-11`, `FRONT-UNIT-12`, `FRONT-UNIT-13`, `STORE-INT-09`, `STORE-INT-10` e atualização do `STORE-LIB-INT-01`.
+
+---
+
+## 2026-09-25 — Prompt 34
+
+**Prompt do usuário:**
+
+> Apenas para confirmar, liste toda a lista de testes a serem adicionados. A lista deve concatenar e conter os testes propostos nas recentes interações: 6 testes da última interação + 10 testes da interação anterior
+
+**Decisões arquiteturais e técnicas:**
+
+- Apresentação concatenada e detalhada dos 16 testes levantados cobrindo Unitários, Integração e Regressão de todas as rotas e componentes desenvolvidos na sessão.
+
+**Resumo das saídas:**
+
+- Exibida lista consolidada de 16 testes com schema padrão do MIST.
+
+---
+
+## 2026-09-25 — Prompt 35
+
+**Prompt do usuário:**
+
+> Sim, pode seguir com a inserção usando a qa_writer. Não esqueça de usar o dry-run para confirmar que o teste tem sua chamada válida, mas fora isso não precisa rodar testes adicionais nesse momento.
+
+**Decisões arquiteturais e técnicas:**
+
+1. Inserção Incremental no [`TESTS.md`](./TESTS.md) via `qa_writer`:
+   - Adicionados `AUTH-UNIT-04` e `AUTH-UNIT-05` sob `## Unitários -> ### Autenticação (Auth Service)`.
+   - Adicionados `FRONT-UNIT-08`, `FRONT-UNIT-09`, `FRONT-UNIT-10`, `FRONT-UNIT-11`, `FRONT-UNIT-12` e `FRONT-UNIT-13` sob `## Unitários -> ### Frontend Components`.
+   - Adicionados `STORE-INT-09` e `STORE-INT-10` sob `## Integração -> ### Catálogo de Jogos (Store Service)`.
+   - Adicionado `LIB-INT-06` sob `## Integração -> ### Biblioteca e Licenças (Library Service)`.
+   - Atualizado `STORE-LIB-INT-01` e inseridos `STORE-LIB-INT-02`, `STORE-LIB-INT-03`, `STORE-LIB-INT-04` e `STORE-LIB-INT-05` sob `## Integração -> ### Compra e Concessão de Licença`.
+   - Adicionado `REG-AUTH-01` sob `## Regressão -> ### Autenticação`.
+2. Validação Mecânica Dry-Run com `qa_tester`:
+   - Executado o adaptador `runner_adapter.py` com `--origem validacao` em amostras representativas dos testes adicionados (`STORE-LIB-INT-01`, `FRONT-UNIT-11`, `REG-AUTH-01`), confirmando resolução de comandos, execução sem falhas de infraestrutura e persistência atômica em [`resultados.json`](./resultados.json).
+
+**Resumo das saídas:**
+
+- Atualizado incrementalmente [`TESTS.md`](./TESTS.md) com os 16 novos testes.
+- Atualizado [`resultados.json`](./resultados.json) com os registros de validação dry-run (`origem: validacao`).
+- Registrado histórico completo no [`prompts.md`](./prompts.md).
+
