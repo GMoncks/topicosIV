@@ -99,3 +99,58 @@ def list_friends(
     Lista todos os amigos confirmados (status accepted) do usuário autenticado.
     """
     return SocialService.list_friends(db=db, user_id=user_id)
+
+
+from app.schemas.activity import ActivityCreate, ActivityResponse
+
+
+@router.post("/activities", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/social/activities", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+def create_activity(
+    payload: ActivityCreate,
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Registra um novo evento de atividade (desbloqueio de conquista, compra, etc.).
+    Pode ser acionado internamente por outros microsserviços (ex: library-service).
+    """
+    user_id = payload.user_id
+    if x_user_id:
+        try:
+            user_id = int(x_user_id)
+        except ValueError:
+            pass
+
+    activity = SocialService.record_activity(
+        db=db,
+        user_id=user_id,
+        activity_type=payload.type,
+        payload=payload.payload
+    )
+    return activity
+
+
+@router.get("/activities", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/activities", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/feed", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/feed", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+def get_activities(
+    user_id: Optional[int] = None,
+    x_user_id: Optional[str] = Header(None),
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o feed de atividades recentes. Se user_id for especificado (ou via X-User-Id),
+    filtra por esse usuário; caso contrário, retorna as atividades globais.
+    """
+    effective_user_id = user_id
+    if effective_user_id is None and x_user_id:
+        try:
+            effective_user_id = int(x_user_id)
+        except ValueError:
+            pass
+
+    return SocialService.list_activities(db=db, user_id=effective_user_id, limit=limit)
+

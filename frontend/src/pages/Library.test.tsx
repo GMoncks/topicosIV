@@ -4,13 +4,18 @@ import { Library } from './Library';
 import { libraryApi, LibraryItemResponse } from '../api/client';
 import * as AuthContextModule from '../context/AuthContext';
 
-// Mock do libraryApi
+// Mock do libraryApi e storeApi
 vi.mock('../api/client', () => ({
   libraryApi: {
     getMyGames: vi.fn(),
     getGameAchievements: vi.fn(),
+    startSession: vi.fn(),
+  },
+  storeApi: {
+    downloadGamePackage: vi.fn(),
   },
 }));
+
 
 // Mock do AchievementsPanel para isolar o teste da Library
 vi.mock('../components/AchievementsPanel', () => ({
@@ -211,4 +216,108 @@ describe('Library Page Component (D-04 & D-05)', () => {
     fireEvent.click(exploreButton);
     expect(onNavigateToStore).toHaveBeenCalledTimes(1);
   });
+
+  it('deve acionar download do pacote e emitir mist:start-download ao clicar no botão Baixar (E-06)', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      openAuthModal: openAuthModalMock,
+      user: { username: 'testuser' } as any,
+      token: 'fake-token',
+      isLoading: false,
+      sessionNotice: null,
+      isAuthModalOpen: false,
+      authModalMode: 'login',
+      closeAuthModal: vi.fn(),
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshProfile: vi.fn(),
+      clearSessionNotice: vi.fn(),
+      updateUserBalance: vi.fn(),
+    });
+
+    vi.mocked(libraryApi.getMyGames).mockResolvedValueOnce(mockGamesData);
+
+    const downloadMock = vi.fn().mockResolvedValue(new Blob(['mock-zip-content']));
+    const { storeApi } = await import('../api/client');
+    storeApi.downloadGamePackage = downloadMock;
+
+    window.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+    window.URL.revokeObjectURL = vi.fn();
+
+    const startDownloadListener = vi.fn();
+    window.addEventListener('mist:start-download', startDownloadListener as any);
+
+    render(<Library />);
+
+    await waitFor(() => {
+      expect(screen.getByText('The Blood of the Dawnwalker')).toBeInTheDocument();
+    });
+
+    // Jogo 2 (The Blood of the Dawnwalker) não está instalado -> botão "Baixar"
+    const downloadButton = screen.getByRole('button', { name: /^Baixar$/i });
+    expect(downloadButton).toBeInTheDocument();
+
+
+    fireEvent.click(downloadButton);
+
+    await waitFor(() => {
+      expect(downloadMock).toHaveBeenCalledWith(1);
+      expect(startDownloadListener).toHaveBeenCalledTimes(1);
+    });
+
+    window.removeEventListener('mist:start-download', startDownloadListener as any);
+  });
+
+  it('deve transitar dinamicamente para Jogar ao receber evento mist:game-installed e chamar startSession (E-04 & E-06)', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      openAuthModal: openAuthModalMock,
+      user: { username: 'testuser' } as any,
+      token: 'fake-token',
+      isLoading: false,
+      sessionNotice: null,
+      isAuthModalOpen: false,
+      authModalMode: 'login',
+      closeAuthModal: vi.fn(),
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshProfile: vi.fn(),
+      clearSessionNotice: vi.fn(),
+      updateUserBalance: vi.fn(),
+    });
+
+    vi.mocked(libraryApi.getMyGames).mockResolvedValueOnce(mockGamesData);
+    vi.mocked(libraryApi.startSession).mockResolvedValueOnce({ status: 'active', session_id: 'sess_123' });
+
+    render(<Library />);
+
+    await waitFor(() => {
+      expect(screen.getByText('The Blood of the Dawnwalker')).toBeInTheDocument();
+    });
+
+    // Simula conclusão do download vinda da DownloadBar
+    fireEvent(
+      window,
+      new CustomEvent('mist:game-installed', {
+        detail: { gameId: 1, gameTitle: 'The Blood of the Dawnwalker' }
+      })
+    );
+
+    // Agora o jogo 1 deve exibir "Jogar"
+    await waitFor(() => {
+      const playButtons = screen.getAllByRole('button', { name: /Jogar/i });
+      expect(playButtons.length).toBe(2);
+    });
+
+    // Clica em "Jogar" no primeiro jogo
+    const playButtons = screen.getAllByRole('button', { name: /Jogar/i });
+    fireEvent.click(playButtons[0]);
+
+    await waitFor(() => {
+      expect(libraryApi.startSession).toHaveBeenCalled();
+    });
+  });
 });
+

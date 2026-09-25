@@ -989,5 +989,125 @@
         "origem": "validacao"
       }
     ]
+  },
+  "LIB-INT-06": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:06:57.826832+00:00",
+        "status": "pass",
+        "duracao_ms": 1732,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "LIB-UNIT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:08:52.873004+00:00",
+        "status": "pass",
+        "duracao_ms": 1841,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "LIB-INT-07": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:09:06.674225+00:00",
+        "status": "pass",
+        "duracao_ms": 1538,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "LIB-INT-08": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:09:08.348415+00:00",
+        "status": "pass",
+        "duracao_ms": 1885,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "LIB-INT-09": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:09:10.494967+00:00",
+        "status": "pass",
+        "duracao_ms": 7250,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:09:18.050913+00:00",
+        "status": "pass",
+        "duracao_ms": 2012,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-14": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:10:03.712578+00:00",
+        "status": "pass",
+        "duracao_ms": 3090,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-15": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:10:06.987625+00:00",
+        "status": "pass",
+        "duracao_ms": 3445,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-16": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:10:10.814554+00:00",
+        "status": "pass",
+        "duracao_ms": 4215,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-17": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-25T22:10:15.326086+00:00",
+        "status": "pass",
+        "duracao_ms": 7293,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
   }
 }

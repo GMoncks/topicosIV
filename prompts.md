@@ -1632,3 +1632,116 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 - Atualizado [`resultados.json`](./resultados.json) com os registros de validação dry-run (`origem: validacao`).
 - Registrado histórico completo no [`prompts.md`](./prompts.md).
 
+---
+
+## 2026-09-25 — Prompt 36
+
+**Prompt do usuário:**
+
+> Planeje a implementação das seguintes funcionalidades:
+> E-04 = Implementar endpoints de sessão no library-service: POST /session/start, POST /session/ping (acumula playtime) e POST /session/end
+> E-05 = Implementar endpoint POST /achievements/unlock com registro no banco e disparo de evento de atividade
+> E-06 = Conectar botão "Baixar" na Library.tsx ao endpoint de download e acionar o DownloadBar.tsx com progresso simulado
+> E-07 = Implementar notificação Toast no frontend para conquistas desbloqueadas (SSE ou polling leve)
+
+**Decisões arquiteturais e técnicas:**
+
+- Elaboração de plano técnico completo e detalhado no artefato [`implementation_plan.md`](./implementation_plan.md):
+  - **E-04**: Criação do modelo `GameSession` no `library-service`, mapeamento das rotas de sessão (`/session/start`, `/session/ping`, `/session/end`), lógica de acúmulo de tempo de jogo no `LibraryItem` e atualização de `last_played`.
+  - **E-05**: Atualização do `POST /achievements/unlock` para buscar metadados de conquista e disparar evento assíncrono resiliente de atividade (`POST /activities`) para o `social-service`, registrando na tabela `activities`.
+  - **E-06**: Conexão do botão "Baixar" na `Library.tsx` ao endpoint de pacote `.zip` real da Store, orquestrando eventos globais `mist:start-download` e `mist:game-installed` integrados com o `DownloadBar.tsx` (progresso simulado de 0 a 100% com pausa/retomada e transição reativa para instalado).
+  - **E-07**: Arquitetura híbrida para notificações Toast de conquistas (polling leve REST com `/achievements/recent` a cada 5–8s para máxima compatibilidade com o API Gateway, além de endpoint SSE no backend) com estilização destacada (troféu dourado).
+
+**Resumo das saídas:**
+
+- Criado o plano de implementação detalhado em [`implementation_plan.md`](./implementation_plan.md) com plano de verificação e testes.
+- Atualizado o [`prompts.md`](./prompts.md) com o histórico do planejamento.
+
+---
+
+## 2026-09-25 — Prompt 37
+
+**Prompt do usuário:**
+
+> Autorizado. Ao final, /qa_writer criar os novos testes
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação Backend E-04 (`library-service` & `mist_sdk`):
+   - Criado modelo SQLAlchemy `GameSession` em `services/library-service/app/models/game_session.py` (`id`, `user_id`, `game_id`, `started_at`, `last_ping`, `ended_at`, `duration_minutes`, `is_active`).
+   - Implementados schemas em `services/library-service/app/schemas/session.py` (`SessionStartRequest`, `SessionPingRequest`, `SessionEndRequest`, `SessionResponse`).
+   - Implementados métodos `start_session`, `ping_session` (com cálculo e acúmulo incremental de playtime no `LibraryItem` e atualização de `last_played`), e `end_session` em `services/library-service/app/services/library_service.py`.
+   - Adicionados endpoints `POST /session/start`, `POST /session/ping` e `POST /session/end` em `services/library-service/app/api/routes.py`.
+   - Atualizado `services/store-service/app/data/mist_sdk.py` adicionando o método `end_session()`.
+   - Criada suíte de testes unitários e de integração `services/library-service/tests/test_sessions.py`.
+
+2. Implementação Backend E-05 (`library-service` & `social-service`):
+   - Atualizado método `unlock_achievement` no `library-service` para disparar evento assíncrono resiliente de atividade (`POST /activities` no `social-service`) com tipo `achievement_unlocked`, incluindo nome e descrição da conquista nos metadados.
+   - Criado schema `ActivityCreate` em `services/social-service/app/schemas/activity.py` e rotas `POST /activities`, `GET /activities` e `GET /feed` em `services/social-service/app/api/routes.py`.
+   - Implementada persistência de atividades sociais no modelo `Activity` em `services/social-service/app/services/social_service.py`.
+   - Implementados testes de integração em `services/social-service/tests/test_social.py`.
+
+3. Implementação Frontend E-06 (Conexão do Download e DownloadBar):
+   - Atualizado `frontend/src/api/client.ts` com o método `downloadGamePackage(gameId)` obtendo blob `.zip` real da rota `/store/games/{id}/download`.
+   - Atualizado `frontend/src/pages/Library.tsx`:
+     - O botão "Baixar" dispara o download real do pacote e emite o evento `mist:start-download` com os metadados do jogo.
+     - Implementado listener reativo para `mist:game-installed` que atualiza o estado local do jogo para `is_installed: true`, exibindo status "Instalado" e o botão "Jogar".
+     - O botão "Jogar" aciona `libraryApi.startSession` e registra a sessão ativa.
+   - Atualizado `frontend/src/components/DownloadBar.tsx`:
+     - Gerencia download ativo com progresso simulado e fluido (0% a 100%), suporte a pausar/retomar e cancelamento.
+     - Ao concluir, emite `mist:game-installed` e `mist:toast` informando a conclusão da instalação.
+   - Adicionada suíte de testes em `frontend/src/components/DownloadBar.test.tsx` e atualizado `frontend/src/pages/Library.test.tsx`.
+
+4. Implementação Frontend E-07 (Notificações Toast para Conquistas):
+   - Adicionados endpoints no `library-service`: `GET /achievements/recent` e `GET /achievements/stream` (SSE).
+   - Atualizado `frontend/src/App.tsx`:
+     - Adicionado polling leve (`libraryApi.getRecentAchievements`) a cada 6s quando o usuário estiver autenticado, além de listener global para o evento `mist:achievement-unlocked`.
+     - Implementado banner flutuante Toast estilizado de conquista desbloqueada (ícone de troféu dourado, gradiente âmbar/dourado e botão de fechar).
+   - Adicionada suíte de testes em `frontend/src/components/AchievementToast.test.tsx`.
+
+5. Curadoria e Registro de Testes via `qa_writer` & Validação Dry-run:
+   - Adicionados 9 novos testes no [`TESTS.md`](./TESTS.md):
+     - `LIB-UNIT-03`: Cálculo e acúmulo de playtime e status de sessão ativa.
+     - `FRONT-UNIT-14`: Renderização e barra de progresso simulado no `DownloadBar`.
+     - `FRONT-UNIT-15`: Pausa e retomada no `DownloadBar`.
+     - `FRONT-UNIT-16`: Notificação Toast de conquista desbloqueada com estilo troféu dourado.
+     - `FRONT-UNIT-17`: Acionamento de download e atualização para "Instalado" / "Jogar" na `Library`.
+     - `LIB-INT-07`: Ciclo de vida completo de sessão de jogo (`/session/start`, `/session/ping`, `/session/end`).
+     - `LIB-INT-08`: Desbloqueio de conquista e disparo resiliente de atividade social.
+     - `LIB-INT-09`: Consulta de conquistas recentes e stream SSE.
+     - `SOCIAL-INT-01`: Registro e recuperação de feed de atividades sociais.
+   - Executada a validação dry-run de todos os 9 novos testes via `.agents/skills/qa_tester/scripts/runner_adapter.py --origem validacao`, com todos registrando `PASS` no [`resultados.json`](./resultados.json).
+
+**Resumo das saídas:**
+
+- Arquivos Backend criados/modificados:
+  - `services/library-service/app/models/game_session.py` (novo)
+  - `services/library-service/app/schemas/session.py` (novo)
+  - `services/library-service/app/services/library_service.py` (atualizado)
+  - `services/library-service/app/api/routes.py` (atualizado)
+  - `services/library-service/app/db/database.py` (atualizado)
+  - `services/library-service/tests/test_sessions.py` (novo)
+  - `services/social-service/app/schemas/activity.py` (novo)
+  - `services/social-service/app/services/social_service.py` (atualizado)
+  - `services/social-service/app/api/routes.py` (atualizado)
+  - `services/social-service/tests/test_social.py` (atualizado)
+  - `services/store-service/app/data/mist_sdk.py` (atualizado)
+- Arquivos Frontend criados/modificados:
+  - `frontend/src/api/client.ts` (atualizado)
+  - `frontend/src/pages/Library.tsx` (atualizado)
+  - `frontend/src/pages/Library.test.tsx` (atualizado)
+  - `frontend/src/components/DownloadBar.tsx` (atualizado)
+  - `frontend/src/components/DownloadBar.test.tsx` (novo)
+  - `frontend/src/components/AchievementToast.test.tsx` (novo)
+  - `frontend/src/App.tsx` (atualizado)
+- Documentação e Catálogo de Testes:
+  - `TESTS.md` (atualizado com 9 novos testes)
+  - `resultados.json` (atualizado com 9 validações dry-run `PASS`)
+  - `prompts.md` (atualizado incrementalmente)
+  - `walkthrough.md` (atualizado com detalhes da entrega)
+- Resultados de testes:
+  - Backend: 13/13 testes em `library-service`, 8/8 em `social-service`, 28/28 em `store-service` aprovados.
+  - Frontend: 40/40 testes aprovados em vitest.
+  - Build Frontend: 0 erros de compilação TypeScript.
+
+

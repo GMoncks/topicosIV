@@ -123,3 +123,27 @@ class SocialService:
                 "since": f.updated_at or f.created_at
             })
         return result
+
+    @staticmethod
+    def record_activity(db: Session, user_id: int, activity_type: str, payload: dict) -> dict:
+        from app.models.activity import Activity
+        activity = Activity(
+            user_id=user_id,
+            type=activity_type,
+            payload=payload,
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(activity)
+        db.commit()
+        db.refresh(activity)
+        return activity.to_dict()
+
+    @staticmethod
+    def list_activities(db: Session, user_id: Optional[int] = None, limit: int = 50) -> List[dict]:
+        from app.models.activity import Activity
+        query = db.query(Activity)
+        if user_id:
+            query = query.filter(Activity.user_id == user_id)
+        activities = query.order_by(Activity.created_at.desc()).limit(limit).all()
+        return [a.to_dict() for a in activities]
+
