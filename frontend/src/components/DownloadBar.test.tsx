@@ -7,20 +7,25 @@ describe('DownloadBar Component (E-06)', () => {
     vi.clearAllMocks();
   });
 
-  it('deve renderizar o estado inicial corretamente', () => {
+  it('não deve renderizar a barra quando não há download ativo (sem mock padrão)', () => {
+    const { container } = render(<DownloadBar />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('deve renderizar o download fornecido explicitamente via props', () => {
     render(
       <DownloadBar
         initialDownload={{
-          gameTitle: 'Space Marine 2',
-          progressPercentage: 100,
-          isPaused: true,
-          statusText: 'Pronto para jogar'
+          gameTitle: 'MIST Forca',
+          progressPercentage: 50,
+          isPaused: false,
+          statusText: 'Baixando (50%)'
         }}
       />
     );
 
-    expect(screen.getByText('Space Marine 2')).toBeInTheDocument();
-    expect(screen.getByText('Pronto para jogar')).toBeInTheDocument();
+    expect(screen.getByText('MIST Forca')).toBeInTheDocument();
+    expect(screen.getByText('Baixando (50%)')).toBeInTheDocument();
   });
 
   it('deve iniciar download simulado e emitir mist:game-installed ao atingir 100%', () => {

@@ -102,21 +102,47 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
 
   const handlePlay = async (item: LibraryItemResponse) => {
     const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const userId = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_user_id') : null;
+
     try {
-      // Inicia sessão oficial no library-service (E-04)
+      // 1. Inicia sessão oficial no library-service (E-04)
       await libraryApi.startSession(item.game_id);
-      window.dispatchEvent(
-        new CustomEvent('mist:toast', {
-          detail: `🎮 Iniciando "${gameTitle}"! Sessão iniciada com sucesso.`
-        })
-      );
     } catch {
-      window.dispatchEvent(
-        new CustomEvent('mist:toast', {
-          detail: `🎮 Iniciando "${gameTitle}" em modo de demonstração!`
-        })
-      );
+      // Falha de rede no backend não impede tentativa local
     }
+
+    // 2. Tenta disparar o jogo nativamente via MIST Local Daemon (127.0.0.1:39090)
+    try {
+      const daemonRes = await fetch('http://127.0.0.1:39090/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game_id: item.game_id,
+          session_token: token || 'local_token',
+          user_id: Number(userId) || 1,
+          library_api_url: 'http://localhost:8003'
+        }),
+      });
+
+      if (daemonRes.ok) {
+        window.dispatchEvent(
+          new CustomEvent('mist:toast', {
+            detail: `🎮 "${gameTitle}" aberto no seu computador pelo MIST Daemon!`
+          })
+        );
+        return;
+      }
+    } catch {
+      // Daemon não está em execução em segundo plano
+    }
+
+    // 3. Fallback amigável caso o daemon esteja offline
+    window.dispatchEvent(
+      new CustomEvent('mist:toast', {
+        detail: `🎮 Sessão de "${gameTitle}" iniciada! Para abrir o jogo em janela nativa, execute o iniciar_mist_daemon.bat.`
+      })
+    );
   };
 
 
