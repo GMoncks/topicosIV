@@ -173,6 +173,72 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 - Registrado Prompt 45 no arquivo diário [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
 - Artefato `implementation_plan.md` atualizado com a Etapa 3 e submetido para validação do usuário.
 
+---
 
+## 2026-09-26 — Prompt 46
 
+**Prompt do usuário:**
+
+> Autorizado
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Etapa 1 — Redesign e Interatividade das Conquistas & DownloadBar:**
+   - Criação do componente [`frontend/src/components/AchievementDetailModal.tsx`](../frontend/src/components/AchievementDetailModal.tsx): modal rico exibindo ícone grande, nome do jogo, título, badge de raridade com cores temáticas (comum, rara, épica, lendária), descrição detalhada, data de desbloqueio e fechamento por botão ou tecla Escape.
+   - Refatoração de [`frontend/src/components/AchievementsPanel.tsx`](../frontend/src/components/AchievementsPanel.tsx):
+     - Mini cards compactos contendo apenas a imagem/ícone e a badge de raridade contida sem estourar dimensões.
+     - Tooltip nativo em hover revelando o título e instrução de clique.
+     - Clique no mini card abre a modal de detalhes (`AchievementDetailModal`).
+     - Conquistas desbloqueadas ganham iluminação dourada viva (`shadow-[0_0_14px_rgba(251,191,36,0.25)]`, borda amarela e fundo destacado). Conquistas bloqueadas mantêm tom acinzentado/grayscale com ícone de cadeado.
+     - Barra de progresso percentual e contadores de conquistas tornados reativos ao evento global customizado `mist:achievement-unlocked`.
+   - Limpeza em [`frontend/src/components/DownloadBar.tsx`](../frontend/src/components/DownloadBar.tsx): remoção definitiva do mock default `"Pronto para jogar Space Marine 2"`, iniciando oculto a menos que haja download ativo ou disparado por evento `mist:start-download`.
+   - Testes unitários atualizados em `DownloadBar.test.tsx` e criados em `AchievementsPanel.test.tsx`.
+
+2. **Etapa 2 — MIST Local Daemon (Execução de Jogos no Host do Usuário):**
+   - Criação de [`runner/mist_daemon.py`](../runner/mist_daemon.py): servidor HTTP leve utilizando estritamente a biblioteca padrão do Python (`http.server`), escutando em `127.0.0.1:39090` com cabeçalhos CORS completos.
+   - Endpoints:
+     - `GET /health`: verificação de status e listagem dos jogos instalados e suportados (`mist-forca`, `mist-labirinto`, `mist-quiz`).
+     - `POST /launch`: recebe payload `{ game_id, session_token }`, descompacta ou localiza o jogo, injeta `session.json` com metadados de sessão e aciona `subprocess.Popen([python, script], creationflags=CREATE_NEW_CONSOLE)` para abrir o jogo nativamente em uma nova janela de terminal destacada.
+   - Criação do script de conveniência [`iniciar_mist_daemon.bat`](../iniciar_mist_daemon.bat) para ativação com 1 clique no Windows.
+   - Integração em [`frontend/src/pages/Library.tsx`](../frontend/src/pages/Library.tsx): o botão "Jogar" agora envia requisição ao Daemon local na porta 39090. Caso o daemon não esteja ativo, apresenta fallback amigável ao usuário instruindo como executá-lo.
+
+3. **Etapa 3 — Atualização Abrangente da Documentação de Arquitetura e Execução:**
+   - [`README.md`](../README.md): modernizado com toda a stack atual (FastAPI, React 18, Vite, Tailwind CSS, SQLite, WebSockets, Pytest, Vitest, Playwright, MIST SDK), guia detalhado de execução via Docker Compose e modo nativo (`.venv` + `npm` + Daemon), além de comandos de QA e testes.
+   - [`docs/architecture.md`](../docs/architecture.md): diagrama Mermaid atualizado incorporando Gateway, WebSockets de Presença/Chat, Saga Orchestrator, MIST Local Daemon e barramento de eventos assíncrono.
+
+4. **Validação e Garantia de Qualidade:**
+   - Execução de testes unitários frontend: 52 testes passando em 14 suítes (`vitest`).
+   - Execução de testes de backend: 14 testes de `library-service`, 44 testes de `store-service` e `social-service` passando (total de 58 testes no backend).
+   - Build do frontend concluído com sucesso e 0 erros de compilação TypeScript.
+
+**Resumo das saídas:**
+
+- Componentes criados/atualizados: `AchievementDetailModal.tsx`, `AchievementsPanel.tsx`, `DownloadBar.tsx`, `Library.tsx`.
+- Daemon e runner criados: `runner/mist_daemon.py`, `iniciar_mist_daemon.bat`.
+- Testes criados/atualizados: `AchievementsPanel.test.tsx`, `DownloadBar.test.tsx`.
+- Documentação atualizada: `README.md`, `docs/architecture.md`.
+- Registro efetuado em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+
+---
+
+## 2026-09-26 — Prompt 47
+
+**Prompt do usuário:**
+
+> Faça um commit de tudo
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Consolidação e Versionamento Atômico:**
+   - Inclusão de todas as alterações e novos arquivos gerados:
+     - Componentes visuais de conquistas e detalhamento em modal (`AchievementsPanel.tsx`, `AchievementDetailModal.tsx`, `Library.tsx`).
+     - MIST Daemon local para inicialização de jogos no Windows (`runner/mist_daemon.py`, `iniciar_mist_daemon.bat`).
+     - Atualização de testes unitários (`AchievementsPanel.test.tsx`, `DownloadBar.test.tsx`).
+     - Modernização e ampliação da documentação com guia de execução e stack (`README.md`, `docs/architecture.md`).
+     - Registro consolidado no arquivo diário [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+   - Execução do `git add -A` e `git commit` na branch `dev`.
+
+**Resumo das saídas:**
+
+- Commit com todas as alterações efetuado na branch `dev`.
 

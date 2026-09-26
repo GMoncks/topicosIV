@@ -5,16 +5,9 @@ interface DownloadBarProps {
   initialDownload?: DownloadItem;
 }
 
-export const DownloadBar: React.FC<DownloadBarProps> = ({
-  initialDownload = {
-    gameTitle: 'Space Marine 2',
-    progressPercentage: 100,
-    isPaused: true,
-    statusText: 'Pronto para jogar'
-  }
-}) => {
-  const [download, setDownload] = useState<DownloadItem>(initialDownload);
-  const [isVisible, setIsVisible] = useState<boolean>(true);
+export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => {
+  const [download, setDownload] = useState<DownloadItem | null>(initialDownload || null);
+  const [isVisible, setIsVisible] = useState<boolean>(!!initialDownload);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Listener para evento customizado de início de download vindo da Library (E-06)
@@ -35,6 +28,7 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({
 
       intervalRef.current = setInterval(() => {
         setDownload(prev => {
+          if (!prev) return null;
           if (prev.isPaused) return prev;
           const next = prev.progressPercentage + Math.floor(Math.random() * 15 + 10);
           if (next >= 100) {
@@ -78,15 +72,15 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({
   }, []);
 
   const togglePause = () => {
-    if (download.progressPercentage >= 100) return;
-    setDownload(prev => ({
+    if (!download || download.progressPercentage >= 100) return;
+    setDownload(prev => prev ? ({
       ...prev,
       isPaused: !prev.isPaused,
       statusText: prev.isPaused ? `Baixando (${prev.progressPercentage}%)` : 'Download Pausado'
-    }));
+    }) : null);
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || !download) return null;
 
   return (
     <div
