@@ -1744,4 +1744,120 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
   - Frontend: 40/40 testes aprovados em vitest.
   - Build Frontend: 0 erros de compilação TypeScript.
 
+---
+
+## 2026-09-25 — Prompt 38
+
+**Prompt do usuário:**
+
+> Planeje a implementação de todos os tickets ainda pendentes do bloco F (F-03 até F-08) descritos no arquivo development_schedule.md.
+
+**Decisões arquiteturais e técnicas:**
+
+1. Levantamento e Análise dos Tickets Pendentes do Bloco F:
+   - **F-03**: Endpoint WebSocket `WS /ws/chat/{room_id}` para chat 1:1 e salas de amigos com difusão em tempo real e indicador de digitação (*typing indicator*), além de endpoints REST para histórico de mensagens e confirmação de leitura.
+   - **F-04**: Endpoint WebSocket de presença `WS /ws/presence` para rastreamento em tempo real de status (*Online* / *Ausente* / *Jogando* / *Offline*), snapshot inicial de contatos conectados e difusão de atualizações.
+   - **F-05**: Atualização reativa de status do usuário para *"Jogando [Título do Jogo]"* ao iniciar sessão (disparado via SDK em `mist_sdk.py` e via interface em `Library.tsx` através de notificação do `library-service` para o `social-service`).
+   - **F-06**: Feed de atividades `GET /feed` no `social-service` integrado com disparo de eventos ao comprar jogos (`store-service`), desbloquear conquistas (`library-service`) e subir de nível (`auth-service`).
+   - **F-07**: Componente interativo de janela de chat `ChatWindow.tsx` integrado à `Social.tsx` com histórico, auto-scroll, balões estilizados, timestamps e indicador animado de digitação.
+   - **F-08**: Exibição reativa de status de presença em tempo real na lista de amigos da `Social.tsx`, com ordenação dinâmica (jogando > online > ausente > offline).
+
+2. Arquitetura de Roteamento WebSocket:
+   - API Gateway (`gateway`) atuará como proxy reverso de WebSockets com validação centralizada de JWT via query param e repasse bidirecional de frames para o `social-service`.
+   - O frontend implementará fallback gracioso para polling REST caso o ambiente do cliente interrompa o WebSocket.
+
+3. Criação do Artefato de Planejamento:
+   - Gerado artefato [`implementation_plan.md`](./implementation_plan.md) com `RequestFeedback: true`, detalhando a divisão de arquivos, diagramas de comunicação, dependências e plano de verificação automatizada e manual.
+
+**Resumo das saídas:**
+
+- Criado o plano detalhado de implementação no artefato [`implementation_plan.md`](./implementation_plan.md).
+- Registrado histórico incremental no [`prompts.md`](./prompts.md).
+
+---
+
+## 2026-09-25 — Prompt 39
+
+**Prompt do usuário:**
+
+> Autorizado. Ao final da implementação, chamar o qa_writer para escrever os novos testes do sistema
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação dos Tickets F-03 até F-08:
+   - **F-03 (Chat WebSocket & Histórico)**:
+     - Criado `ChatConnectionManager` (`services/social-service/app/services/chat_manager.py`) para gerenciamento de salas WebSocket (`direct_X_Y`), difusão de mensagens e indicador de digitação (*typing indicator*).
+     - Criados endpoints `WS /ws/chat/{room_id}`, `GET /chat/{room_id}/messages` e `POST /chat/{room_id}/read`.
+     - Criado seed de mensagens e atividades sociais em `services/social-service/app/db/seed_social.py`.
+   - **F-04 (Presença em Tempo Real)**:
+     - Criado `PresenceManager` (`services/social-service/app/services/presence_manager.py`) para rastreamento em memória de usuários conectados, envio de snapshot inicial no handshake e broadcast de mudanças de status.
+     - Criados endpoints `WS /ws/presence`, `GET /presence` e `POST /presence/status`.
+   - **F-05 (Status Dinâmico "Jogando [Título]")**:
+     - Atualizado `services/library-service/app/services/library_service.py` para notificar o `social-service` com `status="playing"` e título do jogo no `start_session`, e restaurar para `status="online"` no `end_session`.
+     - Atualizado `services/store-service/app/services/store_service.py` para disparar evento `game_purchased` ao `social-service/activities` após checkout bem-sucedido.
+     - Atualizado `services/auth-service/app/api/routes.py` com `GET /users/{user_id}` para resolução de perfis.
+     - Atualizado `gateway/app/main.py` com suporte a proxies reversos de WebSockets bidirecionais para `/ws/chat/{room_id}` e `/ws/presence`.
+   - **F-06 (Feed Enriquecido)**:
+     - Atualizado `services/social-service/app/api/routes.py` (`GET /feed`) para retornar feed cronológico contendo conquistas desbloqueadas, compras de jogos e progressão.
+   - **F-07 (Componente ChatWindow)**:
+     - Criado componente `frontend/src/components/ChatWindow.tsx` com WebSocket, polling de histórico de mensagens, formulário de envio com `Enter`, balões de mensagem estilizados e indicador animado de digitação.
+   - **F-08 (Lista de Amigos por Presença no Social.tsx)**:
+     - Atualizado `frontend/src/pages/Social.tsx` com WebSocket de presença em tempo real.
+     - Amigos agrupados reativamente em seções: *Jogando Agora* (com tag verde e nome do jogo), *Online* e *Offline*.
+     - Modal de envio de solicitação de amizade e abertura instantânea de `ChatWindow` ao clicar em qualquer amigo.
+
+2. Execução da Skill `qa_writer`:
+   - Escaneados todos os IDs existentes em `TESTS.md` para evitar colisões e manter numeração estritamente sequencial.
+   - Adicionados 10 novos testes no [`TESTS.md`](./TESTS.md) distribuídos entre Unitários e Integração:
+     - `SOCIAL-UNIT-04`: Conexão WebSocket de chat, envio/recebimento de mensagens e indicador de digitação (F-03).
+     - `SOCIAL-UNIT-05`: Conexão WebSocket de presença, snapshot inicial e transição para status de jogo (F-04 & F-05).
+     - `FRONT-UNIT-18`: Renderização da janela de chat (ChatWindow), histórico e indicador de digitação (F-07).
+     - `FRONT-UNIT-19`: Exibição do feed de atividades com conquistas e compras na página Social (F-06).
+     - `FRONT-UNIT-20`: Agrupamento e atualização reativa de presença em tempo real via WebSocket na página Social (F-08).
+     - `SOCIAL-INT-02`: Comunicação bidirecional via WebSocket no Chat de amigos com persistência de histórico (F-03).
+     - `SOCIAL-INT-03`: WebSocket de presença em tempo real e atualização de status de jogo (F-04 & F-05).
+     - `SOCIAL-INT-04`: Enriquecimento do Feed de Atividades com eventos multi-domínio de compras e conquistas (F-06).
+     - `LIB-SOC-INT-01`: Integração de presença: início e encerramento de sessão de jogo notificando Social Service (F-05).
+     - `STORE-SOC-INT-01`: Integração de feed: disparo automático de atividade game_purchased na conclusão do checkout (F-06).
+   - Executada validação pontual dry-run (`runner_adapter.py --origem validacao`) para cada um dos 10 testes, registrando os resultados no [`resultados.json`](./resultados.json) e promovendo todos os testes para `Status: aprovado`.
+
+**Resumo das saídas:**
+
+- Microsserviços e Gateway:
+  - `services/social-service/app/services/chat_manager.py` (novo)
+  - `services/social-service/app/services/presence_manager.py` (novo)
+  - `services/social-service/app/schemas/presence.py` (novo)
+  - `services/social-service/app/schemas/friend.py` (atualizado)
+  - `services/social-service/app/db/seed_social.py` (novo)
+  - `services/social-service/app/services/social_service.py` (atualizado)
+  - `services/social-service/app/api/routes.py` (atualizado)
+  - `services/social-service/app/main.py` (atualizado)
+  - `services/social-service/requirements.txt` (atualizado com websockets)
+  - `services/social-service/tests/test_social.py` (atualizado, 15 testes passando)
+  - `services/library-service/app/services/library_service.py` (atualizado com dispatch de presença)
+  - `services/library-service/tests/test_sessions.py` (atualizado com test_session_dispatches_presence_events)
+  - `services/store-service/app/services/store_service.py` (atualizado com dispatch de compra para feed)
+  - `services/store-service/tests/test_checkout.py` (atualizado com test_checkout_dispatches_activity_to_social_service)
+  - `services/auth-service/app/api/routes.py` (atualizado com GET /users/{user_id})
+  - `gateway/app/main.py` (atualizado com proxy WebSocket)
+  - `gateway/requirements.txt` (atualizado com websockets)
+- Frontend:
+  - `frontend/src/api/client.ts` (atualizado com socialApi)
+  - `frontend/src/components/ChatWindow.tsx` (novo)
+  - `frontend/src/components/ChatWindow.test.tsx` (novo, 4 testes passando)
+  - `frontend/src/pages/Social.tsx` (atualizado com presença WebSocket e ChatWindow)
+  - `frontend/src/pages/Social.test.tsx` (novo, 4 testes passando)
+- Catálogo de Testes e Documentação:
+  - `TESTS.md` (atualizado com 10 novos testes catalogados e aprovados)
+  - `resultados.json` (atualizado atomicamente com os 10 resultados de validação dry-run)
+  - `walkthrough.md` (atualizado com sumário das implementações)
+  - `prompts.md` (atualizado incrementalmente)
+- Status dos Testes:
+  - Pytest `social-service`: **15/15 aprovados (100%)**
+  - Pytest `library-service`: **14/14 aprovados (100%)**
+  - Pytest `store-service`: **29/29 aprovados (100%)**
+  - Vitest Frontend: **48/48 aprovados (100%)**
+  - Build Frontend: **0 erros de compilação TypeScript**
+
+
 

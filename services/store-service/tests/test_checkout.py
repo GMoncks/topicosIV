@@ -317,3 +317,40 @@ async def test_checkout_free_game_success(client, seed_games_data):
         assert len(data["items"]) == 1
         assert debit_called[0]["amount"] == 0.0
 
+
+@pytest.mark.asyncio
+async def test_checkout_dispatches_activity_to_social_service(client, seed_games_data):
+    """Valida envio do evento game_purchased para o social-service após checkout concluído (F-06)."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    activities_sent = []
+
+    async def mock_get(url, *args, **kwargs):
+        if "has-game" in str(url):
+            return httpx.Response(200, json={"owned": False})
+        return httpx.Response(404)
+
+    async def mock_post(url, json=None, *args, **kwargs):
+        if "wallet/debit" in str(url):
+            return httpx.Response(200, json={"new_balance": 150.0})
+        if "library/grant" in str(url):
+            return httpx.Response(201, json={"created": True})
+        if "activities" in str(url):
+            activities_sent.append(json)
+            return httpx.Response(201, json={"id": 1, "type": "game_purchased"})
+        return httpx.Response(404)
+
+    mock_client.get = mock_get
+    mock_client.post = mock_post
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        resp = client.post("/checkout", json={"game_id": 1}, headers={"X-User-Id": "10"})
+        assert resp.status_code == 201
+
+    assert len(activities_sent) == 1
+    act = activities_sent[0]
+    assert act["user_id"] == 10
+    assert act["type"] == "game_purchased"
+    assert act["payload"]["game_title"] == "Jogo Aventura MIST"
+    assert act["payload"]["price"] == 50.0
+
+

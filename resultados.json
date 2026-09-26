@@ -1059,6 +1059,13 @@
         "duracao_ms": 2012,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T00:27:38.012962+00:00",
+        "status": "pass",
+        "duracao_ms": 2141,
+        "erro": null,
+        "origem": "validacao"
       }
     ]
   },
@@ -1105,6 +1112,126 @@
         "run_id": "2026-09-25T22:10:15.326086+00:00",
         "status": "pass",
         "duracao_ms": 7293,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-UNIT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:35:01.610136+00:00",
+        "status": "pass",
+        "duracao_ms": 1934,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-UNIT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:35:16.734680+00:00",
+        "status": "pass",
+        "duracao_ms": 1684,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-18": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:35:45.748568+00:00",
+        "status": "pass",
+        "duracao_ms": 2917,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-19": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:35:59.547395+00:00",
+        "status": "pass",
+        "duracao_ms": 2456,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-20": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:36:50.729056+00:00",
+        "status": "pass",
+        "duracao_ms": 3124,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-INT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:37:17.793575+00:00",
+        "status": "pass",
+        "duracao_ms": 2127,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-INT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:37:36.246285+00:00",
+        "status": "pass",
+        "duracao_ms": 1577,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "SOCIAL-INT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:38:07.302447+00:00",
+        "status": "pass",
+        "duracao_ms": 1754,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "LIB-SOC-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:38:29.685256+00:00",
+        "status": "pass",
+        "duracao_ms": 1613,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "STORE-SOC-INT-01": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T00:39:35.443060+00:00",
+        "status": "pass",
+        "duracao_ms": 1518,
         "erro": null,
         "origem": "validacao"
       }

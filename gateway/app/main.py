@@ -375,6 +375,70 @@ async def proxy_social(path: str, request: Request):
         )
 
 
+# ==============================================================================
+# WEBSOCKET PROXY (F-03, F-04)
+# ==============================================================================
+import asyncio
+from fastapi import WebSocket, WebSocketDisconnect
+import websockets
+
+
+async def proxy_websocket_connection(client_ws: WebSocket, upstream_ws_url: str):
+    await client_ws.accept()
+    try:
+        async with websockets.connect(upstream_ws_url) as server_ws:
+            async def client_to_server():
+                try:
+                    while True:
+                        msg = await client_ws.receive_text()
+                        await server_ws.send(msg)
+                except Exception:
+                    pass
+
+            async def server_to_client():
+                try:
+                    async for msg in server_ws:
+                        await client_ws.send_text(msg)
+                except Exception:
+                    pass
+
+            t1 = asyncio.create_task(client_to_server())
+            t2 = asyncio.create_task(server_to_client())
+            done, pending = await asyncio.wait(
+                [t1, t2],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            for task in pending:
+                task.cancel()
+    except Exception:
+        pass
+    finally:
+        try:
+            await client_ws.close()
+        except Exception:
+            pass
+
+
+@app.websocket("/ws/chat/{room_id}")
+async def gateway_ws_chat_proxy(websocket: WebSocket, room_id: str):
+    query_str = str(websocket.query_params)
+    base_ws_url = SOCIAL_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://").rstrip("/")
+    upstream_url = f"{base_ws_url}/ws/chat/{room_id}"
+    if query_str:
+        upstream_url += f"?{query_str}"
+    await proxy_websocket_connection(websocket, upstream_url)
+
+
+@app.websocket("/ws/presence")
+async def gateway_ws_presence_proxy(websocket: WebSocket):
+    query_str = str(websocket.query_params)
+    base_ws_url = SOCIAL_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://").rstrip("/")
+    upstream_url = f"{base_ws_url}/ws/presence"
+    if query_str:
+        upstream_url += f"?{query_str}"
+    await proxy_websocket_connection(websocket, upstream_url)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

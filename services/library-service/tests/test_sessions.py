@@ -184,3 +184,41 @@ def test_recent_achievements_polling(db_session, client):
     assert recent_list[0]["achievement_id"] == "first_word"
     assert recent_list[0]["name"] == "Primeira Palavra"
     assert recent_list[0]["rarity"] == "Comum"
+
+
+def test_session_dispatches_presence_events(db_session, client):
+    """
+    Testa a integração entre library-service e social-service:
+    Início de sessão despacha presença 'playing' e encerramento despacha 'online' (F-05).
+    """
+    with patch("app.services.library_service.LibraryService.dispatch_presence_event") as mock_presence:
+        # Inicia sessão
+        start_res = client.post(
+            "/session/start",
+            json={"user_id": 1, "game_id": 13, "session_token": "token_presenca"}
+        )
+        assert start_res.status_code == 200
+        session_id = start_res.json()["session_id"]
+
+        assert mock_presence.call_count >= 1
+        args, kwargs = mock_presence.call_args
+        assert kwargs.get("user_id") == 1
+        assert kwargs.get("status") == "playing"
+        assert kwargs.get("game_id") == 13
+        assert kwargs.get("game_title") == "MIST Studios Adventure"
+
+        mock_presence.reset_mock()
+
+        # Encerra sessão
+        end_res = client.post(
+            "/session/end",
+            json={"user_id": 1, "game_id": 13, "session_id": session_id}
+        )
+        assert end_res.status_code == 200
+
+        assert mock_presence.call_count >= 1
+        args, kwargs = mock_presence.call_args
+        assert kwargs.get("user_id") == 1
+        assert kwargs.get("status") == "online"
+        assert kwargs.get("game_id") is None
+
