@@ -167,6 +167,33 @@
 - Resultado esperado: Desvinculação imediata com resposta idempotente.
 - Rastreabilidade: `services/social-service/app/services/social_service.py`
 
+#### SOCIAL-UNIT-04 — Conexão WebSocket de chat, envio/recebimento de mensagens e indicador de digitação (F-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_chat_send_receive_and_history or test_websocket_chat_typing_indicator or test_chat_mark_read"`
+- Pré-condições: ChatConnectionManager e rotas WS /ws/chat/{room_id} e POST /chat/{room_id}/read implementados.
+- Passos:
+  - Dado dois usuários conectados via WebSocket na mesma sala de chat (ex: direct_1_2)
+  - Quando um usuário envia uma mensagem de texto ou altera o status de digitação (typing)
+  - Então a mensagem é distribuída em tempo real para os membros da sala e persistida no banco com suporte a marcação de leitura
+- Resultado esperado: Comunicação bidirecional síncrona sem perda de pacotes e broadcast de indicador de digitação.
+- Rastreabilidade: `services/social-service/app/services/chat_manager.py`, `services/social-service/app/api/routes.py`
+
+#### SOCIAL-UNIT-05 — Conexão WebSocket de presença, snapshot inicial e transição para status de jogo (F-04 & F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_presence_connect_and_snapshot or test_presence_status_update_playing or test_list_friends_with_presence_and_profiles"`
+- Pré-condições: PresenceManager e endpoints WS /ws/presence e POST /presence/status ativos.
+- Passos:
+  - Dado um usuário conectado ao canal WebSocket de presença
+  - Quando conecta na plataforma e posteriormente inicia um jogo (status playing)
+  - Então recebe o snapshot inicial de amigos online e subsequentes broadcasts de atualização de status e título do jogo ativo
+- Resultado esperado: Snapshot de presença imediato e propagação reativa de status de gameplay para amigos conectados.
+- Rastreabilidade: `services/social-service/app/services/presence_manager.py`, `services/social-service/app/api/routes.py`
+
+
 ### Inteligência Artificial e Agentes (MIST AI)
 #### AI-UNIT-01 — Resolução multi-provedor e fallback determinístico do AIClient
 - Prioridade: P0
@@ -220,6 +247,19 @@
   - Então o banco de dados rejeita a operação com `IntegrityError`
 - Resultado esperado: Violação de chave única impedindo duplicação de posse no nível de banco de dados.
 - Rastreabilidade: `services/library-service/app/models/library_item.py`
+
+#### LIB-UNIT-03 — Modelo SQLAlchemy GameSession e ciclo de telemetria
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_lifecycle_start_ping_end"`
+- Pré-condições: Tabela `game_sessions` inicializada no SQLite.
+- Passos:
+  - Dado um registro de `GameSession` instanciado com status ativo
+  - Quando a sessão for persistida e atualizada com pings de telemetria
+  - Então o identificador `session_id` é gerado, a duração é acumulada e o status encerra com timestamp de término
+- Resultado esperado: Persistência íntegra da sessão de jogo e métodos de serialização para dict.
+- Rastreabilidade: `services/library-service/app/models/game_session.py`, `services/library-service/app/services/library_service.py`
 
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
@@ -390,6 +430,99 @@
   - Então o estado do botão atualiza instantaneamente para "Na Lista de Desejos" sem recarregar o layout do modal nem provocar flicker de tela, a requisição assíncrona é disparada em segundo plano e emite o evento global mist:wishlist-updated
 - Resultado esperado: Feedback visual imediato e sem repintura brusca de componentes.
 - Rastreabilidade: `frontend/src/components/GameDetailModal.tsx`
+
+#### FRONT-UNIT-14 — Conexão do botão Baixar na Library ao download de arquivo .zip e disparo de mist:start-download (E-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "deve acionar download do pacote e emitir mist:start-download"`
+- Pré-condições: Usuário autenticado na tela da Biblioteca com jogo não instalado.
+- Passos:
+  - Dado um jogo na biblioteca com is_installed: false
+  - Quando o usuário clica no botão "Baixar"
+  - Então a requisição de download do pacote (.zip) é acionada via API de store, o download do arquivo no navegador é disparado e o evento mist:start-download é emitido com gameId e gameTitle
+- Resultado esperado: Download do binário acionado e evento de orquestração emitido para o DownloadBar.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-15 — Transição reativa para Jogar e inicialização de sessão após evento mist:game-installed (E-04 & E-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "deve transitar dinamicamente para Jogar ao receber evento mist:game-installed"`
+- Pré-condições: Biblioteca renderizada aguardando conclusão de download.
+- Passos:
+  - Dado um card de jogo com status "Pronto para baixar"
+  - Quando o evento global mist:game-installed é recebido com o gameId correspondente
+  - Então o status transita para "Instalado", o botão altera para "Jogar" e um clique em "Jogar" aciona libraryApi.startSession
+- Resultado esperado: Atualização reativa de interface sem necessidade de reload da página e inicialização de sessão.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-16 — Progresso simulado de download e emissão de evento de jogo instalado no DownloadBar (E-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/DownloadBar.test.tsx`
+- Pré-condições: Componente DownloadBar montado na interface.
+- Passos:
+  - Dado o DownloadBar ativo na aplicação
+  - Quando recebe o evento mist:start-download com metadados do jogo
+  - Então o progresso avança progressivamente em intervalos regulares até 100%, emite o evento mist:game-installed e atualiza o status para "Concluído (Instalado)"
+- Resultado esperado: Animação e telemetria de download concluídas com notificação Toast e evento de conclusão.
+- Rastreabilidade: `frontend/src/components/DownloadBar.tsx`
+
+#### FRONT-UNIT-17 — Notificação Toast de conquista desbloqueada e polling leve de telemetria (E-07)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AchievementToast.test.tsx`
+- Pré-condições: Usuário autenticado na SPA com suporte a polling leve de conquistas.
+- Passos:
+  - Dado a aplicação MIST aberta com o usuário logado
+  - Quando novas conquistas são retornadas no polling de getRecentAchievements ou via evento mist:achievement-unlocked
+  - Então uma notificação Toast estilizada em dourado é exibida com troféu, nome, descrição e tag de raridade da conquista
+- Resultado esperado: Notificação imersiva e reativa de desbloqueio de conquista na interface.
+- Rastreabilidade: `frontend/src/App.tsx`, `frontend/src/components/AchievementToast.test.tsx`
+
+#### FRONT-UNIT-18 — Renderização da janela de chat (ChatWindow), histórico e indicador de digitação (F-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ChatWindow.test.tsx`
+- Pré-condições: Componente ChatWindow integrado ao WebSocket e mock de histórico de mensagens.
+- Passos:
+  - Dado o ChatWindow aberto para conversa com um amigo
+  - Quando mensagens prévias forem carregadas e um evento de digitação for recebido via WebSocket
+  - Então o histórico é exibido em balões estilizados e o indicador de digitação animado é exibido com o nome do amigo
+- Resultado esperado: Renderização de chat responsiva com auto-scroll e notificação de digitação em tempo real.
+- Rastreabilidade: `frontend/src/components/ChatWindow.tsx`, `frontend/src/components/ChatWindow.test.tsx`
+
+#### FRONT-UNIT-19 — Exibição do feed de atividades com conquistas e compras na página Social (F-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve renderizar o feed de atividades"`
+- Pré-condições: Rota Social montada com mock de feed contendo achievement_unlocked e game_purchased.
+- Passos:
+  - Dado a aba Social acessada pelo usuário
+  - Quando os dados de feed forem carregados do backend
+  - Então cards estilizados exibem as conquistas recentes com troféu dourado e compras de jogos com tag verde
+- Resultado esperado: Feed social rico e contextualizado refletindo eventos globais e de amigos.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
+#### FRONT-UNIT-20 — Agrupamento e atualização reativa de presença em tempo real via WebSocket na página Social (F-08)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve exibir amigos agrupados por presença|deve atualizar dinamicamente a presença|deve abrir a janela de ChatWindow"`
+- Pré-condições: Canal de presença WebSocket conectado na montagem da tela Social.
+- Passos:
+  - Dado a lista de amigos renderizada em categorias (Jogando Agora, Online, Offline)
+  - Quando uma mensagem de atualização de presença (presence_update) chegar via WebSocket
+  - Então o card do amigo migra reativamente para a seção correspondente exibindo o jogo atual e permite abrir o chat
+- Resultado esperado: Lista de amigos viva com transição reativa de status sem recarregamento de página.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
+
 
 
 ## Integração
@@ -582,6 +715,45 @@
 - Resultado esperado: Validação de posse booleana precisa e em tempo real.
 - Rastreabilidade: `services/library-service/app/api/routes.py`
 
+#### LIB-INT-07 — Ciclo de vida da sessão de jogo: início, heartbeat acumulativo e encerramento (E-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_lifecycle_start_ping_end"`
+- Pré-condições: Usuário e jogo registrados no Library Service.
+- Passos:
+  - Dado uma chamada para POST /session/start gerando uma sessão ativa e marcando is_installed: true
+  - Quando requisições POST /session/ping forem enviadas em sequência
+  - Então o playtime_minutes é incrementado proporcionalmente no LibraryItem e a sessão é encerrada via POST /session/end
+- Resultado esperado: Sessão persistida, playtime acumulado e encerramento com registro de timestamps.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
+#### LIB-INT-08 — Desbloqueio de conquistas com persistência relacional e disparo de evento ao Social Service (E-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_unlock_achievement_with_activity_dispatch"`
+- Pré-condições: Catálogo de conquistas populado no banco de dados.
+- Passos:
+  - Dado uma requisição POST /achievements/unlock com user_id, game_id e achievement_id
+  - Quando a conquista for desbloqueada com sucesso (created: true)
+  - Então persiste em user_achievements, dispara notificação de atividade para o Social Service (/activities) e responde com HTTP 200
+- Resultado esperado: Persistência relacional de conquistas e emissão resiliente do evento de atividade.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
+#### LIB-INT-09 — Consulta de telemetria de conquistas recentes para polling leve (E-07)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_recent_achievements_polling"`
+- Pré-condições: Usuário autenticado com conquistas recém-conquistadas.
+- Passos:
+  - Dado que o usuário desbloqueou conquistas recentemente
+  - Quando a rota GET /achievements/recent é consultada com header X-User-Id
+  - Então retorna a lista de conquistas desbloqueadas recentes com metadados (nome, descrição e raridade)
+- Resultado esperado: Dados formatados para consumo do polling leve do frontend.
+- Rastreabilidade: `services/library-service/app/api/routes.py`, `services/library-service/app/services/library_service.py`
+
 ### Compra e Concessão de Licença
 #### STORE-LIB-INT-01 — Sincronização, concessão de posse e remoção da Wishlist após compra
 - Prioridade: P0
@@ -647,6 +819,87 @@
   - Então o fluxo não sofre erro 422/400 de valor mínimo, a licença é concedida no library-service e o saldo permanece intacto
 - Resultado esperado: Retorno HTTP 201 com total_paid: 0.0 e licença concedida.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+### Amizades e Atividades (Social Service)
+#### SOCIAL-INT-01 — Registro e listagem de eventos de atividade no Social Service (E-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_record_and_list_activities"`
+- Pré-condições: Banco de dados SQLite do social-service inicializado com tabela activities.
+- Passos:
+  - Dado um payload de atividade (ex: achievement_unlocked)
+  - Quando o endpoint POST /activities for acionado
+  - Então persiste na tabela activities e o evento passa a ser retornado em GET /activities e GET /feed
+- Resultado esperado: Registro de atividade com status 201 e consulta de feed com status 200.
+- Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-INT-02 — Comunicação bidirecional via WebSocket no Chat de amigos com persistência de histórico (F-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_chat_send_receive_and_history"`
+- Pré-condições: Banco social.db com suporte a mensagens e endpoint WS /ws/chat/{room_id}.
+- Passos:
+  - Dado dois clientes conectados ao WebSocket da mesma sala de chat
+  - Quando um cliente envia uma mensagem JSON via WebSocket
+  - Então o outro cliente recebe a mensagem instantaneamente e a mesma fica disponível na consulta GET /chat/{room_id}/messages
+- Resultado esperado: Entrega de mensagens síncrona com persistência relacional imediata.
+- Rastreabilidade: `services/social-service/app/services/chat_manager.py`, `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-INT-03 — WebSocket de presença em tempo real e atualização de status de jogo (F-04 & F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_presence_connect_and_snapshot or test_presence_status_update_playing"`
+- Pré-condições: Social Service em execução com rotas WS /ws/presence e POST /presence/status.
+- Passos:
+  - Dado um cliente conectado ao WebSocket de presença
+  - Quando o endpoint interno POST /presence/status recebe alteração de status para "playing" com título do jogo
+  - Então uma notificação presence_update é imediatamente transmitida pelo socket para o cliente conectado
+- Resultado esperado: Propagação instantânea do status de jogo via broadcast WebSocket.
+- Rastreabilidade: `services/social-service/app/services/presence_manager.py`, `services/social-service/app/api/routes.py`
+
+#### SOCIAL-INT-04 — Enriquecimento do Feed de Atividades com eventos multi-domínio de compras e conquistas (F-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_feed_activities_enriched"`
+- Pré-condições: Tabela activities populada com múltiplos tipos de eventos.
+- Passos:
+  - Dado que eventos de compra (game_purchased) e conquistas (achievement_unlocked) foram registrados
+  - Quando a rota GET /feed for consultada
+  - Então retorna a lista cronológica reversa de atividades contendo todos os tipos suportados
+- Resultado esperado: Feed agregador consistente multi-domínio com status 200.
+- Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
+
+### Integração Cross-Service (Store, Library, Social)
+#### LIB-SOC-INT-01 — Integração de presença: início e encerramento de sessão de jogo notificando Social Service (F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_dispatches_presence_events"`
+- Pré-condições: Library Service configurado com URL do Social Service para dispatch de presença.
+- Passos:
+  - Dado um usuário iniciando uma sessão de jogo via POST /session/start
+  - Quando a sessão é criada e posteriormente encerrada via POST /session/end
+  - Então o library-service despacha evento de presença com status "playing" e título do jogo no start, e status "online" no encerramento
+- Resultado esperado: Notificações de presença emitidas com integridade para atualização social em tempo real.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`
+
+#### STORE-SOC-INT-01 — Integração de feed: disparo automático de atividade game_purchased na conclusão do checkout (F-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_dispatches_activity_to_social_service"`
+- Pré-condições: Store Service com rota POST /checkout funcional e integração com social-service configurada.
+- Passos:
+  - Dado um usuário com saldo completando a compra de um jogo
+  - Quando a transação é finalizada com sucesso
+  - Então o store-service emite uma requisição POST /activities para o social-service com o payload da compra
+- Resultado esperado: Registro automático no feed social sem bloquear o retorno do checkout.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
 
 ## E2E / Sistema completo
 

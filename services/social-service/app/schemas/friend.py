@@ -29,5 +29,10 @@ class FriendListItem(BaseModel):
     friend_user_id: int
     status: str
     since: datetime
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    presence_status: Optional[str] = "offline"
+    current_game: Optional[str] = None
+    current_game_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)

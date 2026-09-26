@@ -11,6 +11,13 @@ from app.api.routes import router as social_router
 async def lifespan(app: FastAPI):
     # Inicializa tabelas SQLite do social
     init_db()
+    from app.db.database import SessionLocal
+    from app.db.seed_social import seed_social_data
+    db = SessionLocal()
+    try:
+        seed_social_data(db)
+    finally:
+        db.close()
     yield
 
 

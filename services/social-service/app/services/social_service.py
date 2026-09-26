@@ -108,18 +108,107 @@ class SocialService:
 
     @staticmethod
     def list_friends(db: Session, user_id: int) -> List[dict]:
+        from app.services.presence_manager import presence_manager
+
         friendships = db.query(Friend).filter(
             Friend.status == "accepted",
             or_(Friend.requester_id == user_id, Friend.addressee_id == user_id)
         ).all()
 
+        # Mapa de nomes/avatares para exibição amigável
+        DEFAULT_PROFILES = {
+            1: {"username": "GGTorres2001", "avatar_url": "https://picsum.photos/seed/user1/100/100"},
+            2: {"username": "CyberKnight", "avatar_url": "https://picsum.photos/seed/user2/100/100"},
+            3: {"username": "Valkyrie", "avatar_url": "https://picsum.photos/seed/user3/100/100"},
+            4: {"username": "PixelMage", "avatar_url": "https://picsum.photos/seed/user4/100/100"},
+        }
+
         result = []
         for f in friendships:
             friend_uid = f.addressee_id if f.requester_id == user_id else f.requester_id
+            presence = presence_manager.get_user_status(friend_uid)
+            profile = DEFAULT_PROFILES.get(friend_uid, {
+                "username": f"Gamer_{friend_uid}",
+                "avatar_url": f"https://picsum.photos/seed/user{friend_uid}/100/100"
+            })
+
             result.append({
                 "friendship_id": f.id,
                 "friend_user_id": friend_uid,
                 "status": f.status,
-                "since": f.updated_at or f.created_at
+                "since": f.updated_at or f.created_at,
+                "username": profile.get("username"),
+                "avatar_url": profile.get("avatar_url"),
+                "presence_status": presence.get("status", "offline"),
+                "current_game": presence.get("game_title"),
+                "current_game_id": presence.get("game_id"),
             })
         return result
+
+    @staticmethod
+    def save_message(db: Session, room_id: str, sender_id: int, content: str) -> dict:
+        from app.models.message import Message
+        msg = Message(
+            room_id=room_id,
+            sender_id=sender_id,
+            content=content,
+            created_at=datetime.now(timezone.utc),
+            is_read=False
+        )
+        db.add(msg)
+        db.commit()
+        db.refresh(msg)
+        return msg.to_dict()
+
+    @staticmethod
+    def list_messages(db: Session, room_id: str, limit: int = 50, offset: int = 0) -> List[dict]:
+        from app.models.message import Message
+        messages = (
+            db.query(Message)
+            .filter(Message.room_id == room_id)
+            .order_by(Message.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+        return [m.to_dict() for m in messages]
+
+    @staticmethod
+    def mark_messages_as_read(db: Session, room_id: str, current_user_id: int) -> int:
+        from app.models.message import Message
+        # Marca como lidas apenas as mensagens recebidas (onde sender_id != current_user_id)
+        updated_count = (
+            db.query(Message)
+            .filter(
+                Message.room_id == room_id,
+                Message.sender_id != current_user_id,
+                Message.is_read == False
+            )
+            .update({"is_read": True}, synchronize_session=False)
+        )
+        db.commit()
+        return updated_count
+
+    @staticmethod
+    def record_activity(db: Session, user_id: int, activity_type: str, payload: dict) -> dict:
+        from app.models.activity import Activity
+        activity = Activity(
+            user_id=user_id,
+            type=activity_type,
+            payload=payload,
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(activity)
+        db.commit()
+        db.refresh(activity)
+        return activity.to_dict()
+
+    @staticmethod
+    def list_activities(db: Session, user_id: Optional[int] = None, limit: int = 50) -> List[dict]:
+        from app.models.activity import Activity
+        query = db.query(Activity)
+        if user_id:
+            query = query.filter(Activity.user_id == user_id)
+        activities = query.order_by(Activity.created_at.desc()).limit(limit).all()
+        return [a.to_dict() for a in activities]
+

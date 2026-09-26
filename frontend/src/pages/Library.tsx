@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { libraryApi, LibraryItemResponse } from '../api/client';
+import { libraryApi, storeApi, LibraryItemResponse } from '../api/client';
 import { AchievementsPanel } from '../components/AchievementsPanel';
 
 interface LibraryProps {
@@ -15,6 +15,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
   const [installFilter, setInstallFilter] = useState<'all' | 'installed' | 'ready'>('all');
+  const [downloadingGameIds, setDownloadingGameIds] = useState<Set<number>>(new Set());
 
   const fetchMyGames = useCallback(async () => {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -40,6 +41,84 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
   useEffect(() => {
     fetchMyGames();
   }, [fetchMyGames]);
+
+  // Listener para sincronizar em tempo real quando um download for concluído pela DownloadBar (E-06)
+  useEffect(() => {
+    const handleGameInstalled = (e: CustomEvent<{ gameId: number; gameTitle?: string }>) => {
+      const { gameId } = e.detail;
+      setItems(prevItems =>
+        prevItems.map(item => (item.game_id === gameId ? { ...item, is_installed: true } : item))
+      );
+      setDownloadingGameIds(prev => {
+        const next = new Set(prev);
+        next.delete(gameId);
+        return next;
+      });
+    };
+
+    window.addEventListener('mist:game-installed' as any, handleGameInstalled);
+    return () => {
+      window.removeEventListener('mist:game-installed' as any, handleGameInstalled);
+    };
+  }, []);
+
+  const handleDownload = async (item: LibraryItemResponse) => {
+    const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
+    try {
+      setDownloadingGameIds(prev => new Set(prev).add(item.game_id));
+
+      // 1. Notifica o início de download para acionar o DownloadBar (E-06)
+      window.dispatchEvent(
+        new CustomEvent('mist:start-download', {
+          detail: { gameId: item.game_id, gameTitle }
+        })
+      );
+
+      // 2. Dispara requisição real para o endpoint de download do pacote .zip
+      const blob = await storeApi.downloadGamePackage(item.game_id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const slug = gameTitle.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+      link.download = `${slug}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erro ao baixar pacote do jogo:', err);
+      window.dispatchEvent(
+        new CustomEvent('mist:toast', {
+          detail: `Erro ao iniciar download de ${gameTitle}. Tente novamente.`
+        })
+      );
+      setDownloadingGameIds(prev => {
+        const next = new Set(prev);
+        next.delete(item.game_id);
+        return next;
+      });
+    }
+  };
+
+  const handlePlay = async (item: LibraryItemResponse) => {
+    const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
+    try {
+      // Inicia sessão oficial no library-service (E-04)
+      await libraryApi.startSession(item.game_id);
+      window.dispatchEvent(
+        new CustomEvent('mist:toast', {
+          detail: `🎮 Iniciando "${gameTitle}"! Sessão iniciada com sucesso.`
+        })
+      );
+    } catch {
+      window.dispatchEvent(
+        new CustomEvent('mist:toast', {
+          detail: `🎮 Iniciando "${gameTitle}" em modo de demonstração!`
+        })
+      );
+    }
+  };
+
 
   // Formatação amigável do tempo de jogo em minutos
   const formatPlaytime = (minutes: number): string => {
@@ -347,19 +426,33 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
 
                   {/* Ações do Card */}
                   <div className="flex items-center gap-2 pt-2">
-                    {/* Botão Jogar / Instalar */}
+                    {/* Botão Jogar / Baixar */}
                     <button
                       type="button"
-                      onClick={() => alert(`[MIST Library] Ação para ${gameTitle}: ${item.is_installed ? 'Iniciando jogo...' : 'Iniciando download...'}`)}
+                      onClick={() => (item.is_installed ? handlePlay(item) : handleDownload(item))}
+                      disabled={downloadingGameIds.has(item.game_id)}
                       className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
                         item.is_installed
                           ? 'bg-brand-green hover:bg-emerald-600 text-white shadow-lg shadow-emerald-900/20'
+                          : downloadingGameIds.has(item.game_id)
+                          ? 'bg-brand-purple/40 text-purple-200 cursor-wait border border-brand-purple/50'
                           : 'bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-200 hover:text-white'
                       }`}
                     >
-                      <i className={`fa-solid ${item.is_installed ? 'fa-play' : 'fa-download'} text-xs`}></i>
-                      {item.is_installed ? 'Jogar' : 'Instalar'}
+                      <i className={`fa-solid ${
+                        item.is_installed
+                          ? 'fa-play'
+                          : downloadingGameIds.has(item.game_id)
+                          ? 'fa-spinner fa-spin'
+                          : 'fa-download'
+                      } text-xs`}></i>
+                      {item.is_installed
+                        ? 'Jogar'
+                        : downloadingGameIds.has(item.game_id)
+                        ? 'Baixando...'
+                        : 'Baixar'}
                     </button>
+
 
                     {/* Botão Conquistas */}
                     <button

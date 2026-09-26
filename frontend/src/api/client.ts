@@ -218,7 +218,25 @@ export const storeApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  async downloadGamePackage(gameId: number): Promise<Blob> {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_GATEWAY_URL}/api/games/${gameId}/download`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Falha ao baixar pacote do jogo');
+    }
+    return response.blob();
+  },
 };
+
 
 export interface CheckoutItem {
   game_id: number;
@@ -265,6 +283,111 @@ export const libraryApi = {
 
   async getGameAchievements(gameId: number): Promise<any[]> {
     return fetchApi<any[]>(`/api/library/games/${gameId}/achievements`, { method: 'GET' });
-  }
+  },
+
+  async startSession(gameId: number): Promise<any> {
+    return fetchApi<any>('/api/library/session/start', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1 }),
+    });
+  },
+
+  async pingSession(gameId: number, sessionId?: string): Promise<any> {
+    return fetchApi<any>('/api/library/session/ping', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1, session_id: sessionId }),
+    });
+  },
+
+  async endSession(gameId: number, sessionId?: string): Promise<any> {
+    return fetchApi<any>('/api/library/session/end', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, user_id: 1, session_id: sessionId }),
+    });
+  },
+
+  async getRecentAchievements(since?: string): Promise<any[]> {
+    const query = since ? `?since=${encodeURIComponent(since)}` : '';
+    return fetchApi<any[]>(`/api/library/achievements/recent${query}`, { method: 'GET' });
+  },
 };
+
+export interface FriendItem {
+  friendship_id: number;
+  friend_user_id: number;
+  status: string;
+  since: string;
+  username?: string;
+  avatar_url?: string;
+  presence_status?: 'online' | 'away' | 'playing' | 'offline';
+  current_game?: string;
+  current_game_id?: number;
+}
+
+export interface ActivityItem {
+  id: number;
+  user_id: number;
+  type: string;
+  payload: Record<string, any>;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: number;
+  room_id: string;
+  sender_id: number;
+  content: string;
+  created_at: string;
+  is_read: boolean;
+}
+
+export interface UserPresence {
+  user_id: number;
+  status: 'online' | 'away' | 'playing' | 'offline';
+  game_id?: number | null;
+  game_title?: string | null;
+  last_seen?: string | null;
+}
+
+export const socialApi = {
+  getChatRoomId(user1Id: number, user2Id: number): string {
+    return `direct_${Math.min(user1Id, user2Id)}_${Math.max(user1Id, user2Id)}`;
+  },
+
+  async getFriends(): Promise<FriendItem[]> {
+    return fetchApi<FriendItem[]>('/api/social/friends', { method: 'GET' });
+  },
+
+  async sendFriendRequest(addresseeId: number): Promise<any> {
+    return fetchApi<any>('/api/social/friends/request', {
+      method: 'POST',
+      body: JSON.stringify({ addressee_id: addresseeId }),
+    });
+  },
+
+  async acceptFriend(friendshipId: number): Promise<any> {
+    return fetchApi<any>(`/api/social/friends/accept/${friendshipId}`, { method: 'POST' });
+  },
+
+  async deleteFriend(friendshipId: number): Promise<any> {
+    return fetchApi<any>(`/api/social/friends/${friendshipId}`, { method: 'DELETE' });
+  },
+
+  async getFeed(limit: number = 50): Promise<ActivityItem[]> {
+    return fetchApi<ActivityItem[]>(`/api/social/feed?limit=${limit}`, { method: 'GET' });
+  },
+
+  async getChatHistory(roomId: string, limit: number = 50): Promise<ChatMessage[]> {
+    return fetchApi<ChatMessage[]>(`/api/social/chat/${roomId}/messages?limit=${limit}`, { method: 'GET' });
+  },
+
+  async markChatRead(roomId: string): Promise<any> {
+    return fetchApi<any>(`/api/social/chat/${roomId}/read`, { method: 'POST' });
+  },
+
+  async getPresenceSnapshot(): Promise<UserPresence[]> {
+    return fetchApi<UserPresence[]>('/api/social/presence', { method: 'GET' });
+  },
+};
+
 
