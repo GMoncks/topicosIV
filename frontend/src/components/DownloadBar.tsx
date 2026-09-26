@@ -14,7 +14,6 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({
   }
 }) => {
   const [download, setDownload] = useState<DownloadItem>(initialDownload);
-  const [activeGameId, setActiveGameId] = useState<number | null>(null);
   const [isVisible, setIsVisible] = useState<boolean>(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -22,7 +21,6 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({
   useEffect(() => {
     const handleStartDownload = (e: CustomEvent<{ gameId: number; gameTitle: string }>) => {
       const { gameId, gameTitle } = e.detail;
-      setActiveGameId(gameId);
       setIsVisible(true);
       setDownload({
         gameTitle,

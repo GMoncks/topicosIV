@@ -167,6 +167,33 @@
 - Resultado esperado: Desvinculação imediata com resposta idempotente.
 - Rastreabilidade: `services/social-service/app/services/social_service.py`
 
+#### SOCIAL-UNIT-04 — Conexão WebSocket de chat, envio/recebimento de mensagens e indicador de digitação (F-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_chat_send_receive_and_history or test_websocket_chat_typing_indicator or test_chat_mark_read"`
+- Pré-condições: ChatConnectionManager e rotas WS /ws/chat/{room_id} e POST /chat/{room_id}/read implementados.
+- Passos:
+  - Dado dois usuários conectados via WebSocket na mesma sala de chat (ex: direct_1_2)
+  - Quando um usuário envia uma mensagem de texto ou altera o status de digitação (typing)
+  - Então a mensagem é distribuída em tempo real para os membros da sala e persistida no banco com suporte a marcação de leitura
+- Resultado esperado: Comunicação bidirecional síncrona sem perda de pacotes e broadcast de indicador de digitação.
+- Rastreabilidade: `services/social-service/app/services/chat_manager.py`, `services/social-service/app/api/routes.py`
+
+#### SOCIAL-UNIT-05 — Conexão WebSocket de presença, snapshot inicial e transição para status de jogo (F-04 & F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_presence_connect_and_snapshot or test_presence_status_update_playing or test_list_friends_with_presence_and_profiles"`
+- Pré-condições: PresenceManager e endpoints WS /ws/presence e POST /presence/status ativos.
+- Passos:
+  - Dado um usuário conectado ao canal WebSocket de presença
+  - Quando conecta na plataforma e posteriormente inicia um jogo (status playing)
+  - Então recebe o snapshot inicial de amigos online e subsequentes broadcasts de atualização de status e título do jogo ativo
+- Resultado esperado: Snapshot de presença imediato e propagação reativa de status de gameplay para amigos conectados.
+- Rastreabilidade: `services/social-service/app/services/presence_manager.py`, `services/social-service/app/api/routes.py`
+
+
 ### Inteligência Artificial e Agentes (MIST AI)
 #### AI-UNIT-01 — Resolução multi-provedor e fallback determinístico do AIClient
 - Prioridade: P0
@@ -455,6 +482,46 @@
   - Então uma notificação Toast estilizada em dourado é exibida com troféu, nome, descrição e tag de raridade da conquista
 - Resultado esperado: Notificação imersiva e reativa de desbloqueio de conquista na interface.
 - Rastreabilidade: `frontend/src/App.tsx`, `frontend/src/components/AchievementToast.test.tsx`
+
+#### FRONT-UNIT-18 — Renderização da janela de chat (ChatWindow), histórico e indicador de digitação (F-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ChatWindow.test.tsx`
+- Pré-condições: Componente ChatWindow integrado ao WebSocket e mock de histórico de mensagens.
+- Passos:
+  - Dado o ChatWindow aberto para conversa com um amigo
+  - Quando mensagens prévias forem carregadas e um evento de digitação for recebido via WebSocket
+  - Então o histórico é exibido em balões estilizados e o indicador de digitação animado é exibido com o nome do amigo
+- Resultado esperado: Renderização de chat responsiva com auto-scroll e notificação de digitação em tempo real.
+- Rastreabilidade: `frontend/src/components/ChatWindow.tsx`, `frontend/src/components/ChatWindow.test.tsx`
+
+#### FRONT-UNIT-19 — Exibição do feed de atividades com conquistas e compras na página Social (F-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve renderizar o feed de atividades"`
+- Pré-condições: Rota Social montada com mock de feed contendo achievement_unlocked e game_purchased.
+- Passos:
+  - Dado a aba Social acessada pelo usuário
+  - Quando os dados de feed forem carregados do backend
+  - Então cards estilizados exibem as conquistas recentes com troféu dourado e compras de jogos com tag verde
+- Resultado esperado: Feed social rico e contextualizado refletindo eventos globais e de amigos.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
+#### FRONT-UNIT-20 — Agrupamento e atualização reativa de presença em tempo real via WebSocket na página Social (F-08)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve exibir amigos agrupados por presença|deve atualizar dinamicamente a presença|deve abrir a janela de ChatWindow"`
+- Pré-condições: Canal de presença WebSocket conectado na montagem da tela Social.
+- Passos:
+  - Dado a lista de amigos renderizada em categorias (Jogando Agora, Online, Offline)
+  - Quando uma mensagem de atualização de presença (presence_update) chegar via WebSocket
+  - Então o card do amigo migra reativamente para a seção correspondente exibindo o jogo atual e permite abrir o chat
+- Resultado esperado: Lista de amigos viva com transição reativa de status sem recarregamento de página.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
 
 
 
@@ -766,6 +833,73 @@
   - Então persiste na tabela activities e o evento passa a ser retornado em GET /activities e GET /feed
 - Resultado esperado: Registro de atividade com status 201 e consulta de feed com status 200.
 - Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-INT-02 — Comunicação bidirecional via WebSocket no Chat de amigos com persistência de histórico (F-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_chat_send_receive_and_history"`
+- Pré-condições: Banco social.db com suporte a mensagens e endpoint WS /ws/chat/{room_id}.
+- Passos:
+  - Dado dois clientes conectados ao WebSocket da mesma sala de chat
+  - Quando um cliente envia uma mensagem JSON via WebSocket
+  - Então o outro cliente recebe a mensagem instantaneamente e a mesma fica disponível na consulta GET /chat/{room_id}/messages
+- Resultado esperado: Entrega de mensagens síncrona com persistência relacional imediata.
+- Rastreabilidade: `services/social-service/app/services/chat_manager.py`, `services/social-service/app/services/social_service.py`
+
+#### SOCIAL-INT-03 — WebSocket de presença em tempo real e atualização de status de jogo (F-04 & F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_websocket_presence_connect_and_snapshot or test_presence_status_update_playing"`
+- Pré-condições: Social Service em execução com rotas WS /ws/presence e POST /presence/status.
+- Passos:
+  - Dado um cliente conectado ao WebSocket de presença
+  - Quando o endpoint interno POST /presence/status recebe alteração de status para "playing" com título do jogo
+  - Então uma notificação presence_update é imediatamente transmitida pelo socket para o cliente conectado
+- Resultado esperado: Propagação instantânea do status de jogo via broadcast WebSocket.
+- Rastreabilidade: `services/social-service/app/services/presence_manager.py`, `services/social-service/app/api/routes.py`
+
+#### SOCIAL-INT-04 — Enriquecimento do Feed de Atividades com eventos multi-domínio de compras e conquistas (F-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_social.py -k "test_feed_activities_enriched"`
+- Pré-condições: Tabela activities populada com múltiplos tipos de eventos.
+- Passos:
+  - Dado que eventos de compra (game_purchased) e conquistas (achievement_unlocked) foram registrados
+  - Quando a rota GET /feed for consultada
+  - Então retorna a lista cronológica reversa de atividades contendo todos os tipos suportados
+- Resultado esperado: Feed agregador consistente multi-domínio com status 200.
+- Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
+
+### Integração Cross-Service (Store, Library, Social)
+#### LIB-SOC-INT-01 — Integração de presença: início e encerramento de sessão de jogo notificando Social Service (F-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_dispatches_presence_events"`
+- Pré-condições: Library Service configurado com URL do Social Service para dispatch de presença.
+- Passos:
+  - Dado um usuário iniciando uma sessão de jogo via POST /session/start
+  - Quando a sessão é criada e posteriormente encerrada via POST /session/end
+  - Então o library-service despacha evento de presença com status "playing" e título do jogo no start, e status "online" no encerramento
+- Resultado esperado: Notificações de presença emitidas com integridade para atualização social em tempo real.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`
+
+#### STORE-SOC-INT-01 — Integração de feed: disparo automático de atividade game_purchased na conclusão do checkout (F-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_dispatches_activity_to_social_service"`
+- Pré-condições: Store Service com rota POST /checkout funcional e integração com social-service configurada.
+- Passos:
+  - Dado um usuário com saldo completando a compra de um jogo
+  - Quando a transação é finalizada com sucesso
+  - Então o store-service emite uma requisição POST /activities para o social-service com o payload da compra
+- Resultado esperado: Registro automático no feed social sem bloquear o retorno do checkout.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
 
 ## E2E / Sistema completo
 

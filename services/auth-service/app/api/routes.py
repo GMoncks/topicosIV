@@ -112,6 +112,20 @@ def get_current_user_profile(
     return user
 
 
+@router.get("/users/{user_id}", response_model=UserProfileResponse)
+def get_user_profile_by_id(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o perfil público de um usuário por ID (para lista de amigos e feeds sociais).
+    """
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
+    return user
+
+
 @router.post(
     "/users/{user_id}/wallet/debit",
     response_model=WalletOperationResponse,

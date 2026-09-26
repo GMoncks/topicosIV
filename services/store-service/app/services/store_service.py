@@ -9,7 +9,7 @@ from sqlalchemy import or_, desc, asc
 
 from app.models.game import Game
 from app.models.purchase import Purchase
-from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL
+from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL
 
 
 class StoreService:
@@ -350,6 +350,25 @@ class StoreService:
                 })
 
             db.commit()
+
+            # Dispara evento de atividade game_purchased para o social-service (F-06)
+            for g in games:
+                try:
+                    await client.post(
+                        f"{SOCIAL_SERVICE_URL.rstrip('/')}/activities",
+                        json={
+                            "user_id": user_id,
+                            "type": "game_purchased",
+                            "payload": {
+                                "game_id": g.id,
+                                "game_title": g.title,
+                                "price": float(g.price),
+                                "banner_url": g.banner_url
+                            }
+                        }
+                    )
+                except Exception:
+                    pass
 
             return {
                 "status": "success",

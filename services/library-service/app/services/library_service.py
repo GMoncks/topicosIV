@@ -232,6 +232,30 @@ class LibraryService:
             pass
 
     @staticmethod
+    def dispatch_presence_event(
+        user_id: int,
+        status: str,
+        game_id: Optional[int] = None,
+        game_title: Optional[str] = None,
+        social_service_url: Optional[str] = None
+    ):
+        """
+        Notifica o social-service sobre a alteração de presença do usuário (Jogando / Online).
+        """
+        target_url = (social_service_url or os.getenv("SOCIAL_SERVICE_URL", "http://localhost:8004")).rstrip("/") + "/presence/status"
+        payload = {
+            "user_id": user_id,
+            "status": status,
+            "game_id": game_id,
+            "game_title": game_title
+        }
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                client.post(target_url, json=payload)
+        except Exception:
+            pass
+
+    @staticmethod
     def get_recent_unlocked_achievements(
         db: Session,
         user_id: int,
@@ -339,6 +363,21 @@ class LibraryService:
         db.commit()
         db.refresh(new_session)
         db.refresh(item)
+
+        # Notifica o social-service sobre o status "playing" (F-05)
+        KNOWN_GAMES = {
+            1: "Astro Dash",
+            2: "Pixel Quest",
+            3: "Cyber Runner",
+            4: "Neon Horizon",
+            10: "Helldivers 2",
+            11: "Hollow Knight",
+            12: "Space Marine 2",
+            13: "MIST Studios Adventure",
+        }
+        game_title = KNOWN_GAMES.get(game_id, f"Jogo #{game_id}")
+        LibraryService.dispatch_presence_event(user_id=user_id, status="playing", game_id=game_id, game_title=game_title)
+
         return new_session, item
 
     @staticmethod
@@ -405,6 +444,9 @@ class LibraryService:
             session.ended_at = now
             db.commit()
             db.refresh(session)
+
+            # Notifica o social-service que o usuário voltou a ficar "online" (F-05)
+            LibraryService.dispatch_presence_event(user_id=user_id, status="online", game_id=None, game_title=None)
 
         item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
         playtime = item.playtime_minutes if item else 0
