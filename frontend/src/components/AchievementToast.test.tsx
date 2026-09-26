@@ -22,6 +22,7 @@ vi.mock('../api/client', () => ({
     getWishlist: vi.fn().mockResolvedValue([]),
     getGames: vi.fn().mockResolvedValue([]),
     listGames: vi.fn().mockResolvedValue([]),
+    getRecommendations: vi.fn().mockResolvedValue([]),
   },
   libraryApi: {
     getMyGames: vi.fn().mockResolvedValue([]),

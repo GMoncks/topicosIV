@@ -224,3 +224,30 @@ async def checkout(
         idempotency_key=payload.idempotency_key
     )
     return result
+
+
+@router.get("/recommendations", status_code=status.HTTP_200_OK)
+@router.get("/store/recommendations", status_code=status.HTTP_200_OK)
+async def get_curated_recommendations(
+    limit: int = Query(4, ge=1, le=20, description="Limite de jogos recomendados"),
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """
+    MIST AI Curator (G-02): Retorna jogos recomendados para o usuário autenticado
+    utilizando histórico de biblioteca e tags de favoritos na lista de desejos.
+    """
+    user_id_int: Optional[int] = None
+    if x_user_id:
+        try:
+            user_id_int = int(x_user_id)
+        except ValueError:
+            pass
+
+    recommendations = await StoreService.get_curated_recommendations(
+        db=db,
+        user_id=user_id_int,
+        limit=limit
+    )
+    return recommendations
+

@@ -43,6 +43,13 @@
         "duracao_ms": 52108,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "fail",
+        "duracao_ms": 20815,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/navigation.spec.ts\n\n\nRunning 3 tests using 3 workers\n\n  ok 3 [webkit] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (3.4s)\n  x  2 [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (8.3s)\n  x  1 [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (6.1s)\n\n\n  1) [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=Minha Biblioteca')\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=Minha Biblioteca') with timeout 5000ms\n      - waiting for locator('text=Minha Biblioteca')\n\n\n      12 |     const libraryButton = page.locator('button[title=\"Biblioteca\"]');\n      13 |     await libraryButton.click();\n    > 14 |     await expect(page.locator('text=Minha Biblioteca')).toBeVisible();\n         |                                                         ^\n      15 |\n      16 |     // 3. Navega para a Loja de Pontos\n      17 |     const pointsButton = page.locator('button[title=\"Loja de Pontos\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\navigation.spec.ts:14:57\n\n    Error Context: test-results\\navigation-Navegação-e-Cic-f9d14-com-preservação-do-contexto-chromium\\error-context.md\n\n  2) [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=Minha Biblioteca')\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=Minha Biblioteca') with timeout 5000ms\n      - waiting for locator('text=Minha Biblioteca')\n\n\n      12 |     const libraryButton = page.locator('button[title=\"Biblioteca\"]');\n      13 |     await libraryButton.click();\n    > 14 |     await expect(page.locator('text=Minha Biblioteca')).toBeVisible();\n         |                                                         ^\n      15 |\n      16 |     // 3. Navega para a Loja de Pontos\n      17 |     const pointsButton = page.locator('button[title=\"Loja de Pontos\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\navigation.spec.ts:14:57\n\n    Error Context: test-results\\navigation-Navegação-e-Cic-f9d14-com-preservação-do-contexto-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n    [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n  1 passed (19.5s)",
+        "origem": "execucao"
       }
     ]
   },
@@ -90,6 +97,13 @@
         "duracao_ms": 9653,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 5686,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -128,6 +142,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 2679,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3000,
         "erro": null,
         "origem": "execucao"
       }
@@ -170,6 +191,20 @@
         "duracao_ms": 1854,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:41:46.577670+00:00",
+        "status": "pass",
+        "duracao_ms": 1787,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1792,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -210,6 +245,13 @@
         "duracao_ms": 2241,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3470,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -248,6 +290,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 3595,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3320,
         "erro": null,
         "origem": "execucao"
       }
@@ -297,6 +346,13 @@
         "duracao_ms": 816,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1029,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -335,6 +391,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 2785,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3061,
         "erro": null,
         "origem": "execucao"
       }
@@ -384,6 +447,13 @@
         "duracao_ms": 3036,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1596,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -420,6 +490,13 @@
       },
       {
         "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
         "status": "pending",
         "duracao_ms": 0,
         "erro": null,
@@ -464,6 +541,13 @@
         "duracao_ms": 18202,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "fail",
+        "duracao_ms": 39325,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts\n\n\nRunning 3 tests using 3 workers\n\n  x  3 [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.4s)\n  x  2 [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.5s)\n  x  1 [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.2s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-firefox\\error-context.md\n\n  3) [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-webkit\\error-context.md\n\n  3 failed\n    [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n    [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n    [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout",
+        "origem": "execucao"
       }
     ]
   },
@@ -493,6 +577,13 @@
       },
       {
         "run_id": "2026-09-22T04:36:21.046791+00:00",
+        "status": "pending",
+        "duracao_ms": 0,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
         "status": "pending",
         "duracao_ms": 0,
         "erro": null,
@@ -530,6 +621,13 @@
         "duracao_ms": 1254,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1278,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -561,6 +659,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 3338,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3415,
         "erro": null,
         "origem": "execucao"
       }
@@ -596,6 +701,13 @@
         "duracao_ms": 3317,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3170,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -629,6 +741,13 @@
         "duracao_ms": 3412,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3043,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -653,6 +772,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 1224,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1281,
         "erro": null,
         "origem": "execucao"
       }
@@ -681,6 +807,13 @@
         "duracao_ms": 1335,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1405,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -707,6 +840,13 @@
         "duracao_ms": 2351,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1558,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -726,6 +866,13 @@
         "duracao_ms": 1076,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1204,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -743,6 +890,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 1649,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1753,
         "erro": null,
         "origem": "execucao"
       }
@@ -771,6 +925,13 @@
         "duracao_ms": 1294,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1538,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -781,6 +942,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 1280,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1585,
         "erro": null,
         "origem": "execucao"
       }
@@ -795,6 +963,13 @@
         "duracao_ms": 1786,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1520,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -805,6 +980,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 974,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1127,
         "erro": null,
         "origem": "execucao"
       }
@@ -819,6 +1001,13 @@
         "duracao_ms": 1279,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1445,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -829,6 +1018,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 1250,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1557,
         "erro": null,
         "origem": "execucao"
       }
@@ -843,6 +1039,13 @@
         "duracao_ms": 2126,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1757,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -853,6 +1056,13 @@
         "run_id": "2026-09-22T04:36:21.046791+00:00",
         "status": "pass",
         "duracao_ms": 1405,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1518,
         "erro": null,
         "origem": "execucao"
       }
@@ -867,6 +1077,13 @@
         "duracao_ms": 1647,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1642,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -879,6 +1096,13 @@
         "duracao_ms": 1800,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1507,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -891,6 +1115,13 @@
         "duracao_ms": 13113,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 7032,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -903,6 +1134,13 @@
         "duracao_ms": 1718,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1530,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -915,6 +1153,13 @@
         "duracao_ms": 1727,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1685,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -927,6 +1172,13 @@
         "duracao_ms": 1720,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1348,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -939,6 +1191,13 @@
         "duracao_ms": 1169,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 910,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -951,6 +1210,13 @@
         "duracao_ms": 1004,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 972,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -963,6 +1229,13 @@
         "duracao_ms": 2563,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2932,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -975,6 +1248,13 @@
         "duracao_ms": 6366,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2868,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -987,6 +1267,13 @@
         "duracao_ms": 2519,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2039,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -999,6 +1286,13 @@
         "duracao_ms": 1732,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1494,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1011,6 +1305,13 @@
         "duracao_ms": 1841,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 5692,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1023,6 +1324,13 @@
         "duracao_ms": 1538,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 5612,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1035,6 +1343,13 @@
         "duracao_ms": 1885,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1514,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1047,6 +1362,13 @@
         "duracao_ms": 7250,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 5118,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1066,6 +1388,13 @@
         "duracao_ms": 2141,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1365,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1078,6 +1407,13 @@
         "duracao_ms": 3090,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3182,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1090,6 +1426,13 @@
         "duracao_ms": 3445,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2815,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1102,6 +1445,13 @@
         "duracao_ms": 4215,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2360,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1114,6 +1464,13 @@
         "duracao_ms": 7293,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3480,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1126,6 +1483,13 @@
         "duracao_ms": 1934,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1548,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1138,6 +1502,13 @@
         "duracao_ms": 1684,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1758,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1150,6 +1521,13 @@
         "duracao_ms": 2917,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3122,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1162,6 +1540,13 @@
         "duracao_ms": 2456,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2428,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1174,6 +1559,13 @@
         "duracao_ms": 3124,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2586,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1186,6 +1578,13 @@
         "duracao_ms": 2127,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1460,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1198,6 +1597,13 @@
         "duracao_ms": 1577,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1488,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1210,6 +1616,13 @@
         "duracao_ms": 1754,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1537,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1222,6 +1635,13 @@
         "duracao_ms": 1613,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1944,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -1234,6 +1654,277 @@
         "duracao_ms": 1518,
         "erro": null,
         "origem": "validacao"
+      },
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1499,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1864,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1499,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-UNIT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1782,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-UNIT-06": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1862,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOCIAL-UNIT-06": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1687,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOCIAL-UNIT-07": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1505,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-UNIT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2105,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-UNIT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1485,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-08": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2693,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-09": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 4162,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-10": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3260,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-12": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3171,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-13": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 3105,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-21": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2576,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-22": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 4787,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-23": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 2531,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-INT-09": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1478,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-INT-10": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1525,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-LIB-INT-02": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1455,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-LIB-INT-03": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1516,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-LIB-INT-04": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1348,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "STORE-LIB-INT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-09-26T21:47:18.152318+00:00",
+        "status": "pass",
+        "duracao_ms": 1529,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   }

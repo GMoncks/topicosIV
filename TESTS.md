@@ -127,6 +127,32 @@
 - Resultado esperado: Zero dependências externas (stdlib-only) e resiliência offline do SDK garantidas.
 - Rastreabilidade: `services/store-service/app/data/mist_sdk.py`, `services/store-service/app/data/games/`
 
+#### STORE-UNIT-05 — Recomendações do AI Curator para visitante sem autenticação (G-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_curator.py -k "test_curator_recommendations_guest"`
+- Pré-condições: Catálogo de jogos inicializado e rota `GET /store/recommendations` disponível.
+- Passos:
+  - Dado uma requisição anônima sem credenciais de autenticação
+  - Quando a rota de recomendações for consultada com parâmetro `limit=4`
+  - Então o serviço retorna os 4 melhores jogos do catálogo enriquecidos com score de afinidade e justificativa em português
+- Resultado esperado: Retorno HTTP 200 com array de jogos decorados por `recommendation_score` e `recommendation_reason`.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
+
+#### STORE-UNIT-06 — Recomendações personalizadas do AI Curator com histórico e tags (G-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_curator.py -k "test_curator_recommendations_authenticated"`
+- Pré-condições: Usuário autenticado com jogos na biblioteca ou itens favoritados na wishlist.
+- Passos:
+  - Dado um usuário identificado via `X-User-Id`
+  - Quando a rota `GET /store/recommendations` for executada
+  - Então o Curator consulta a biblioteca e a wishlist do usuário e calcula scores personalizados
+- Resultado esperado: Retorno HTTP 200 com recomendações ajustadas ao perfil de preferências do usuário.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
+
 ### Social e Amigos (Social Service)
 #### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
 - Prioridade: P0
@@ -192,6 +218,32 @@
   - Então recebe o snapshot inicial de amigos online e subsequentes broadcasts de atualização de status e título do jogo ativo
 - Resultado esperado: Snapshot de presença imediato e propagação reativa de status de gameplay para amigos conectados.
 - Rastreabilidade: `services/social-service/app/services/presence_manager.py`, `services/social-service/app/api/routes.py`
+
+#### SOCIAL-UNIT-06 — Injeção permanente do MIST Companion Bot na lista de amigos (G-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_companion_bot.py -k "test_bot_presence_in_friend_list"`
+- Pré-condições: Serviço Social ativo e endpoint `GET /friends`.
+- Passos:
+  - Dado um usuário autenticado consultando a lista de amigos
+  - Quando a rota `GET /friends` for chamada
+  - Então o contato virtual MIST Bot (`friend_user_id: 0`, `is_bot: True`) está presente com status online
+- Resultado esperado: Presença garantida do MIST Bot para qualquer usuário sem necessidade de solicitação manual.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/schemas/friend.py`
+
+#### SOCIAL-UNIT-07 — Auto-resposta do Companion Bot via endpoint REST e WebSocket (G-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_companion_bot.py -k "test_bot_chat_message_auto_reply_rest or test_bot_websocket_chat_flow"`
+- Pré-condições: Sala de chat direta com o bot (`direct_0_{user_id}`).
+- Passos:
+  - Dado uma mensagem enviada pelo usuário para a sala do bot
+  - Quando a mensagem for recebida via REST ou WebSocket
+  - Então o servidor emite indicador de digitação, chama o `AIClient.companion_chat_reply` e persiste/transmite a resposta do bot (`sender_id: 0`)
+- Resultado esperado: Conversação fluida e automática do bot com respostas contextuais em tempo real.
+- Rastreabilidade: `services/social-service/app/api/routes.py`, `services/common/ai_client.py`
 
 
 ### Inteligência Artificial e Agentes (MIST AI)
@@ -260,6 +312,32 @@
   - Então o identificador `session_id` é gerado, a duração é acumulada e o status encerra com timestamp de término
 - Resultado esperado: Persistência íntegra da sessão de jogo e métodos de serialização para dict.
 - Rastreabilidade: `services/library-service/app/models/game_session.py`, `services/library-service/app/services/library_service.py`
+
+#### LIB-UNIT-04 — Geração dinâmica e idempotência de missões semanais pelo Quest Master (G-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_quest_master.py -k "test_generate_dynamic_quests or test_idempotent_weekly_quests"`
+- Pré-condições: Tabela `dynamic_quests` inicializada e rota `GET /library/games/{game_id}/quests` implementada.
+- Passos:
+  - Dado um jogador autenticado consultando as missões de um jogo específico
+  - Quando a rota de missões semanais for acionada uma e sucessivas vezes no mesmo ciclo semanal
+  - Então exatamente 3 missões contextuais são geradas na primeira chamada e retornadas identicamente em chamadas subsequentes
+- Resultado esperado: Retorno HTTP 200 contendo lista de 3 missões estruturadas com XP, critérios e idempotência preservada.
+- Rastreabilidade: `services/library-service/app/models/quest.py`, `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+#### LIB-UNIT-05 — Ciclo de vida e resgate de recompensas de missões do Quest Master (G-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_quest_master.py -k "test_claim_quest_lifecycle"`
+- Pré-condições: Missão cadastrada no banco de dados para o usuário autenticado.
+- Passos:
+  - Dado uma missão em progresso não concluída
+  - Quando o usuário tenta resgatar a recompensa antes de completar, após completar e repetidamente
+  - Então a primeira tentativa falha com HTTP 400, a segunda conclui com sucesso concedendo o XP e marcando como claimed, e a terceira falha com HTTP 400 por duplicidade
+- Resultado esperado: Máquina de estados íntegra para claim de recompensas de missões.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
 
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
@@ -522,8 +600,44 @@
 - Resultado esperado: Lista de amigos viva com transição reativa de status sem recarregamento de página.
 - Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
 
+#### FRONT-UNIT-21 — Renderização da vitrine AI Curator com afinidade e justificativa na Store (G-05)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/CuratorSection.test.tsx`
+- Pré-condições: Componente CuratorSection montado na página Store com dados de recomendações mockados.
+- Passos:
+  - Dado a vitrine de recomendações carregada via API `storeApi.getRecommendations`
+  - Quando o componente é renderizado na tela da Loja
+  - Então a seção exibe título temático, cards com selo percentual de afinidade, título, preço e justificativa do AI Curator
+- Resultado esperado: Apresentação atraente e fluida de jogos recomendados por IA diretamente na Home da loja.
+- Rastreabilidade: `frontend/src/components/CuratorSection.tsx`, `frontend/src/pages/Store.tsx`, `frontend/src/components/CuratorSection.test.tsx`
 
+#### FRONT-UNIT-22 — Apresentação especial do MIST Bot e Quick Prompts no chat (G-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ChatWindow.test.tsx -t "Quick Prompts|badge" && npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "MIST Bot"`
+- Pré-condições: Amigo MIST Bot (`is_bot: true`) exibido na lista social e ChatWindow inicializado.
+- Passos:
+  - Dado a lista de amigos na tela Social e a abertura do chat com o MIST Bot
+  - Quando o card do bot for renderizado e a janela de chat for aberta
+  - Então o bot é fixado com badge IA e gradiente no Social, o ChatWindow exibe badge "BOT IA" e uma barra de sugestões rápidas (Quick Prompts) aciona o envio automático de mensagens com indicador de digitação da IA
+- Resultado esperado: Experiência conversacional integrada com assistente de IA amigável e acessível.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/components/ChatWindow.tsx`, `frontend/src/components/ChatWindow.test.tsx`, `frontend/src/pages/Social.test.tsx`
 
+#### FRONT-UNIT-23 — Posicionamento contextual da vitrine AI Curator por aba na Loja (Destaques no topo vs. Lista de Desejos/Promoções na base)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Store.test.tsx`
+- Pré-condições: Página Store montada com suporte a abas de navegação (destaques, wishlist, promotions).
+- Passos:
+  - Dado o usuário navegando entre as abas da Loja
+  - Quando acessa "Destaques", "Lista de Desejos" ou "Promoções"
+  - Então em "Destaques" a vitrine do AI Curator é exibida no topo, enquanto em "Lista de Desejos" e "Promoções" o foco principal é nos itens favoritados ou com desconto, deslocando a vitrine do AI Curator para a parte inferior da página
+- Resultado esperado: Layout contextualizado e priorização da intenção do usuário preservando a descoberta inteligente por IA.
+- Rastreabilidade: `frontend/src/pages/Store.tsx`, `frontend/src/pages/Store.test.tsx`
 
 ## Integração
 

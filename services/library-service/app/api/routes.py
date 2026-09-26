@@ -419,3 +419,84 @@ async def stream_achievements(
         }
     )
 
+
+@router.get(
+    "/library/users/{user_id}/games",
+    status_code=status.HTTP_200_OK,
+    summary="Lista os jogos adquiridos por um usuário específico (chamada interna do Curator)"
+)
+async def get_user_games_by_id(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    items = LibraryService.get_user_games(db=db, user_id=user_id)
+    enriched = await LibraryService.enrich_library_items(
+        items=items,
+        store_service_url=STORE_SERVICE_URL
+    )
+    result = []
+    for it in enriched:
+        g = it.get("game") or {}
+        result.append({
+            "game_id": it.get("game_id"),
+            "title": g.get("title", f"Game {it.get('game_id')}"),
+            "category": g.get("category"),
+            "tags": g.get("tags") or [],
+            "playtime_minutes": it.get("playtime_minutes", 0),
+        })
+    return result
+
+
+@router.get(
+    "/library/games/{game_id}/quests",
+    status_code=status.HTTP_200_OK,
+    summary="MIST Quest Master (G-03): Desafios e conquistas semanais dinâmicas por jogo"
+)
+async def get_game_quests(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    user_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    effective_user_id = user_id
+    if x_user_id:
+        try:
+            effective_user_id = int(x_user_id)
+        except ValueError:
+            pass
+    if not effective_user_id:
+        effective_user_id = 1
+
+    return await LibraryService.get_or_generate_weekly_quests(
+        db=db,
+        user_id=effective_user_id,
+        game_id=game_id,
+        store_service_url=STORE_SERVICE_URL
+    )
+
+
+@router.post(
+    "/library/games/{game_id}/quests/{quest_id}/claim",
+    status_code=status.HTTP_200_OK,
+    summary="Resgata recompensa de XP de um desafio completado"
+)
+def claim_quest_reward(
+    game_id: int,
+    quest_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    user_id = 1
+    if x_user_id:
+        try:
+            user_id = int(x_user_id)
+        except ValueError:
+            pass
+    return LibraryService.claim_quest(
+        db=db,
+        user_id=user_id,
+        game_id=game_id,
+        quest_id=quest_id
+    )
+
+

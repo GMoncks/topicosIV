@@ -79,10 +79,10 @@ def test_friend_request_flow(client):
     assert data["status"] == "pending"
     friendship_id = data["id"]
 
-    # Antes de aceitar, lista de amigos de ambos deve ser vazia
+    # Antes de aceitar, lista de amigos humanos de ambos deve ser vazia
     res1 = client.get("/friends", headers={"X-User-Id": "1"})
     assert res1.status_code == 200
-    assert len(res1.json()) == 0
+    assert len([f for f in res1.json() if not f.get("is_bot")]) == 0
 
     # Usuário 2 aceita o pedido de amizade
     res_accept = client.post(
@@ -95,14 +95,14 @@ def test_friend_request_flow(client):
     # Agora ambos devem ver o outro na lista de amigos
     res_friends1 = client.get("/friends", headers={"X-User-Id": "1"})
     assert res_friends1.status_code == 200
-    friends1 = res_friends1.json()
+    friends1 = [f for f in res_friends1.json() if not f.get("is_bot")]
     assert len(friends1) == 1
     assert friends1[0]["friend_user_id"] == 2
     assert friends1[0]["status"] == "accepted"
 
     res_friends2 = client.get("/friends", headers={"X-User-Id": "2"})
     assert res_friends2.status_code == 200
-    friends2 = res_friends2.json()
+    friends2 = [f for f in res_friends2.json() if not f.get("is_bot")]
     assert len(friends2) == 1
     assert friends2[0]["friend_user_id"] == 1
 
@@ -197,9 +197,10 @@ def test_delete_friendship(client):
     assert res_del.status_code == 200
     assert res_del.json()["success"] is True
 
-    # Lista agora deve estar vazia
+    # Lista de amigos humanos agora deve estar vazia
     res_friends = client.get("/friends", headers={"X-User-Id": "1"})
-    assert len(res_friends.json()) == 0
+    assert len([f for f in res_friends.json() if not f.get("is_bot")]) == 0
+
 
 
 def test_record_and_list_activities(client):

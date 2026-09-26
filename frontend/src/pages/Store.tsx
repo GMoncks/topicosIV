@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { HeroBanner } from '../components/HeroBanner';
+import { CuratorSection } from '../components/CuratorSection';
 import { GameCard } from '../components/GameCard';
 import { PaginationSelector } from '../components/PaginationSelector';
 import { GameDetailModal } from '../components/GameDetailModal';
@@ -26,6 +26,8 @@ function mapApiToGameItem(apiGame: GameApiResponse): GameItem {
     tags: apiGame.tags?.join(', '),
     image: apiGame.banner_url || `https://placehold.co/400x200/1e3a8a/fff?text=${encodeURIComponent(apiGame.title)}`,
     currentPrice: apiGame.price,
+    originalPrice: apiGame.original_price,
+    discountPercentage: apiGame.discount_percentage,
   };
 }
 
@@ -221,15 +223,35 @@ export const Store: React.FC<StoreProps> = ({
     }
   }, [isAuthenticated, openAuthModal, handleWishlistToggle]);
 
+  const isCuratorAtBottom = activeSubTab === 'wishlist' || activeSubTab === 'promotions';
+
+  const sectionTitle = useMemo(() => {
+    if (activeSubTab === 'wishlist') return 'Sua Lista de Desejos';
+    if (activeSubTab === 'promotions') return 'Ofertas e Promoções';
+    return 'Conteúdo para seus jogos';
+  }, [activeSubTab]);
+
+  const curatorElement = (
+    <CuratorSection
+      onSelectGame={(id) => setSelectedGameId(id)}
+      onBuyGame={(game) => handleBuyGame(game.id, game.price, game.title)}
+      ownedGameIds={ownedGameIds}
+    />
+  );
+
   return (
     <main className="p-8 pb-24 max-w-[1600px] mx-auto">
-      {/* Hero Imersivo */}
-      <HeroBanner onViewOffers={() => alert('Visualizando ofertas da Focus Entertainment!')} />
+      {/* Seção Recomendado para Você no topo para tela de destaques */}
+      {!isCuratorAtBottom && (
+        <div data-testid="top-curator-section">
+          {curatorElement}
+        </div>
+      )}
 
       {/* Seção Grid de Conteúdo e Controles de Paginação */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <h2 className="text-2xl font-display font-bold text-white flex items-center gap-2">
-          Conteúdo para seus jogos
+          {sectionTitle}
           <span className="text-xs bg-brand-green/80 text-emerald-200 px-2 py-0.5 rounded-full border border-emerald-500/30">
             {totalGames}
           </span>
@@ -308,6 +330,13 @@ export const Store: React.FC<StoreProps> = ({
               ? `Nenhum título encontrado para "${searchQuery}".`
               : 'Nenhum título por aqui.'}
           </p>
+        </div>
+      )}
+
+      {/* Seção Recomendado para Você — MIST AI Curator na parte inferior para Lista de Desejos e Promoções */}
+      {isCuratorAtBottom && (
+        <div className="mt-12 border-t border-gray-800/80 pt-8" data-testid="bottom-curator-section">
+          {curatorElement}
         </div>
       )}
 

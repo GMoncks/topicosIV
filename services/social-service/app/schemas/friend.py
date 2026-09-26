@@ -34,5 +34,7 @@ class FriendListItem(BaseModel):
     presence_status: Optional[str] = "offline"
     current_game: Optional[str] = None
     current_game_id: Optional[int] = None
+    is_bot: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
+

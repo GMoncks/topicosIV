@@ -142,7 +142,23 @@ class SocialService:
                 "presence_status": presence.get("status", "offline"),
                 "current_game": presence.get("game_title"),
                 "current_game_id": presence.get("game_id"),
+                "is_bot": False,
             })
+
+        # MIST Companion Bot (G-04): contato virtual inteligente fixo
+        bot_entry = {
+            "friendship_id": 0,
+            "friend_user_id": 0,
+            "status": "accepted",
+            "since": datetime(2026, 1, 1, tzinfo=timezone.utc),
+            "username": "MIST Bot",
+            "avatar_url": "https://api.dicebear.com/7.x/bottts/svg?seed=mistbot",
+            "presence_status": "online",
+            "current_game": "MIST AI Companion",
+            "current_game_id": 0,
+            "is_bot": True,
+        }
+        result.insert(0, bot_entry)
         return result
 
     @staticmethod
