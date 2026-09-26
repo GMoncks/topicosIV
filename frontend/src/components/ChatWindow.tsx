@@ -172,6 +172,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const isBot = Boolean(friend.is_bot || friend.friend_user_id === 0);
+
   return (
     <div
       data-testid="chat-window"
@@ -199,9 +201,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             />
           </div>
           <div>
-            <h4 className="font-bold text-white text-sm leading-tight">
-              {friend.username || `Jogador #${friend.friend_user_id}`}
-            </h4>
+            <div className="flex items-center gap-1.5">
+              <h4 className="font-bold text-white text-sm leading-tight">
+                {friend.username || `Jogador #${friend.friend_user_id}`}
+              </h4>
+              {isBot && (
+                <span className="text-[9px] font-extrabold bg-gradient-to-r from-brand-purple to-cyan-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                  BOT IA
+                </span>
+              )}
+            </div>
             <div className="text-xs flex items-center gap-1.5 mt-0.5">
               {friend.presence_status === 'playing' ? (
                 <span className="text-brand-purple font-semibold flex items-center gap-1">
@@ -289,13 +298,38 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="w-1.5 h-1.5 bg-brand-purple rounded-full animate-bounce [animation-delay:0.4s]"></span>
             </span>
             <span className="font-medium text-[11px]">
-              {friend.username || 'Amigo'} está digitando...
+              {isBot ? 'MIST Bot está formulando resposta...' : `${friend.username || 'Amigo'} está digitando...`}
             </span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Sugestões Rápidas (Quick Prompts) para o Bot IA */}
+      {isBot && (
+        <div className="px-3 py-2 bg-brand-surface/90 border-t border-gray-800/80 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+          <span className="text-gray-400 flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider pl-1 flex-shrink-0">
+            <i className="fa-solid fa-lightbulb text-amber-400"></i> Sugestões:
+          </span>
+          {[
+            'Recomende um jogo do catálogo',
+            'Como funcionam as conquistas?',
+            'Quais são os jogos mais jogados?',
+          ].map((promptText, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setInputText(promptText);
+              }}
+              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-dark hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
+            >
+              {promptText}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Caixa de Entrada */}
       <form onSubmit={handleSendMessage} className="p-3 bg-brand-surface border-t border-gray-800 flex gap-2">

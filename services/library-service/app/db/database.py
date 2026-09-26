@@ -31,4 +31,6 @@ def init_db():
     import app.models.library_item  # noqa: F401
     import app.models.achievement  # noqa: F401
     import app.models.game_session  # noqa: F401
+    import app.models.quest  # noqa: F401
     Base.metadata.create_all(bind=engine)
+
