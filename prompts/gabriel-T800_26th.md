@@ -88,3 +88,91 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 - Branch remota `origin/dev` atualizada com o commit de merge (`1350c90`).
 - Registro do histórico em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
 
+---
+
+## 2026-09-26 — Prompt 43
+
+**Prompt do usuário:**
+
+> Eu e minha equipe paramos na implementação do G-02 até G-06 até agora. Refaça o planejamento schedule_development.md separando em três trilhas de desenvolvimento para três desenvolvedores. Distribua os tickets de forma que possa haver o menor conflito/overlaping entre os desenvolvimentos nas etapas de commit
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Estratégia Anti-Conflito e Isolamento de Domínios:**
+   - Divisão dos tickets pendentes (Blocos H até T, pós G-06) em 3 trilhas mutuamente exclusivas:
+     - **Trilha 1 (Dev 1) — Economia, Mercado e Avaliações:** `market-service` (`market.db`), reviews no `store-service`, histórico de transações da carteira e páginas `Market.tsx`, modais de trocas e extrato.
+     - **Trilha 2 (Dev 2) — Usuário, Gamificação e Cards:** `auth-service` (`auth.db`), inventário, pontos MIST, trading cards, crafting de insígnias, fórmulas de XP, perfil público visitável e página `Inventory.tsx`.
+     - **Trilha 3 (Dev 3) — Social, Comunidade, UGC e Gateway:** `social-service` (`social.db` para grupos e fóruns), novo serviço de UGC (`ugc.db` para screenshots e mods/workshop), notificações push em tempo real e agregação de busca global no Gateway.
+2. **Separação de Branches e Bancos de Dados:**
+   - Cada desenvolvedor manipula exclusivamente seus próprios arquivos de modelo e endpoints, garantindo commits e PRs sem divergências de merge.
+   - Padrão de branching padronizado (`feature/dev1-*`, `feature/dev2-*`, `feature/dev3-*`).
+3. **Reestruturação Completa do Cronograma:**
+   - Atualizado [`development_schedule.md`](../development_schedule.md) com tabela de responsabilidades, detalhamento ticket a ticket, cronograma dia a dia (Dias 3 a 15), gráfico de Gantt comparativo e matriz de contratos de interface entre os microsserviços.
+
+**Resumo das saídas:**
+
+- Arquivo [`development_schedule.md`](../development_schedule.md) reestruturado e atualizado com as 3 trilhas de desenvolvimento independentes.
+- Artefato gerado e copiado para o repositório.
+- Histórico registrado em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+
+---
+
+## 2026-09-26 — Prompt 44
+
+**Prompt do usuário:**
+
+> Vamos seguir com a sua recomendação. Entretanto, antes de gerar código analise os jogos existentes no projeto e detalhe melhor como funcionaria essa abordagem. Não sabemos o que é um daemon, por exemplo
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Análise do Catálogo e Código dos Jogos Existentes no MIST:**
+   - Inspeção dos três jogos desenvolvidos internamente (`MIST Studios`):
+     - `MIST Forca` (`services/store-service/app/data/games/forca.py`): Jogo clássico em terminal com arte ASCII da forca, palavras de computação, thread de ping para playtime e 4 conquistas integradas (`first_word`, `flawless_win`, `hangman_master`, etc.).
+     - `MIST Labirinto` (`services/store-service/app/data/games/labirinto.py`): Jogo 2D ASCII com navegação via W/A/S/D, coleta de itens `*`, escape da masmorra e 3 conquistas integradas (`first_move`, `maze_runner`, `speedrunner`).
+     - `MIST Quiz` (`services/store-service/app/data/games/quiz.py`): Trivia de computação em múltipla escolha, com conquistas de primeira resposta, pontuação perfeita e enciclopédia humana.
+   - Constatação da arquitetura dos jogos: todos usam exclusivamente a biblioteca padrão do Python (`stdlib-only`, sem pip/dependências externas), importam `mist_sdk.py` e leem `session.json`.
+
+2. **Desmistificação Conceitual: O que é um Daemon?**
+   - Explicação acessível utilizando analogias cotidianas (Spotify Connect, Steam Client, Docker Desktop e drivers de impressora).
+   - Definição técnica: um processo leve rodando em segundo plano no sistema operacional, sem interface invasiva, aguardando ordens através de uma porta de rede local segura (`127.0.0.1`).
+   - Justificativa do porquê de sua necessidade: superação do *sandbox* de segurança dos navegadores web (que impede páginas comuns de executarem arquivos no disco do usuário).
+
+3. **Arquitetura Passo a Passo do MIST Daemon / Runner Local:**
+   - **Download:** O navegador baixa o `.zip` ou o Daemon baixa diretamente para `~/.mist/installed/<game_id>/`.
+   - **Acionamento:** O clique em "Jogar" na SPA envia um `POST http://127.0.0.1:39090/launch` com `{ game_id, session_token }`.
+   - **Execução:** O Daemon injeta o `session.json` e dispara `subprocess.Popen([python, game.py], creationflags=CREATE_NEW_CONSOLE)`.
+   - **Telemetria:** O jogo abre nativamente em uma nova janela de terminal; o `mist_sdk.py` se conecta ao `library-service` na porta 8003 (ou gateway na porta 8000) registrando início de sessão, pings e conquistas.
+
+**Resumo das saídas:**
+
+- Registrado Prompt 44 no arquivo diário [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+- Resposta detalhada e didática apresentada ao usuário cobrindo a análise dos jogos, o conceito de daemon e o fluxo de execução.
+
+---
+
+## 2026-09-26 — Prompt 45
+
+**Prompt do usuário:**
+
+> Acrescente uma etapa 3 em que você atualiza o README e o architecture.md com todas as atualizações de stack e funcionalidades atuais. Acrescente no README as alternativas para rodar localmente o sistema (via docker ou outros meios)
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Inclusão da Etapa 3 no Plano de Implementação:**
+   - O plano consolidado passa a ser dividido formalmente em 3 etapas interconectadas:
+     - **Etapa 1:** Ajustes visuais e de componentes no frontend (`AchievementsPanel.tsx`, `AchievementDetailModal.tsx`, reatividade da barra de porcentagem, cores vivas para conquistas desbloqueadas e remoção de mock no `DownloadBar.tsx`).
+     - **Etapa 2:** Implementação do MIST Local Daemon (`runner/mist_daemon.py` e `iniciar_mist_daemon.bat`) conectando o botão "Jogar" à abertura de janelas de console nativas dos jogos.
+     - **Etapa 3:** Atualização e modernização profunda da documentação do projeto:
+       - [`README.md`](../README.md): Adição de toda a stack tecnológica atual (FastAPI, React 18, Vite, Tailwind, WebSockets, SQLite, Pytest, Vitest, Playwright, MIST SDK), guia duplo de execução local (Opção A via Docker Compose e Opção B nativo via `.venv` + `npm` + scripts) e catálogo de funcionalidades.
+       - [`docs/architecture.md`](../docs/architecture.md): Atualização dos diagramas Mermaid com WebSockets, Saga Pattern, Barramento de Atividades e integração do MIST Daemon local.
+2. **Atualização do Artefato:**
+   - Atualizado o artefato [`implementation_plan.md`](../brain/b3caf367-1573-4bc3-a063-6e685aa3d7ef/implementation_plan.md) com as 3 etapas detalhadas.
+
+**Resumo das saídas:**
+
+- Registrado Prompt 45 no arquivo diário [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+- Artefato `implementation_plan.md` atualizado com a Etapa 3 e submetido para validação do usuário.
+
+
+
+

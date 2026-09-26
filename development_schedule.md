@@ -1,566 +1,334 @@
-# MIST — Cronograma e Planejamento de Desenvolvimento
+# MIST — Cronograma e Planejamento de Desenvolvimento (Multi-Dev)
 
-> Documento gerado em: **2026-09-19**
-> Prazo total: **15 dias — inegociável**
-
----
-
-## Contexto e Decisões de Alinhamento
-
-| Decisão | Escolha |
-|:--------|:--------|
-| **Stack Backend** | Python + FastAPI + SQLite (1 arquivo `.db` por serviço) |
-| **Stack Frontend** | React + TypeScript + Tailwind CSS + Vite |
-| **Orquestração** | Docker Compose com rede interna e volumes persistentes |
-| **Gateway** | FastAPI com proxy reverso assíncrono via `httpx` |
-| **Autenticação** | JWT (access + refresh token), hashing com `bcrypt` |
-| **Agentes de IA** | API de LLM em nuvem (Gemini / OpenAI / Groq) via `.env`, com fallback mock |
-| **Jogos** | Pacote `.zip` real: `game.py` + `mist_sdk.py` + `session.json` |
-| **Gestão** | Sprint única contínua, feature branches, daily assíncrono, merge na `develop` |
+> **Documento atualizado em:** 2026-09-26  
+> **Status de Progresso Atual:** Blocos A, B, C, D, E, F e tickets G-01 a G-06 **CONCLUÍDOS**.  
+> **Prazo total restante:** Dias 3 a 15 (13 dias de execução)  
+> **Formato de Trabalho:** 3 Trilhas de Desenvolvimento Paralelas (3 Desenvolvedores) com isolamento arquitetural para minimizar conflitos de merge.
 
 ---
 
-## Distribuição do Prazo
+## 1. Contexto e Estratégia de Não-Sobreposição (Anti-Conflict)
 
-| Etapa | Dias | Duração | Objetivo |
-|:------|:-----|:-------:|:---------|
-| **Etapa 1** — Core Loop Integrado | Dias 1 – 2 | 2 dias | Gateway, Auth, Loja, Biblioteca, SDK, Social base, IA base, Reviews, Pontos |
-| **Etapa 2** — Expansão do Ecossistema Steam | Dias 3 – 12 | 10 dias | Inventário, Cards, Mercado, Grupos, Screenshots, Workshop, Notificações, Busca, Perfil Público, IA Avançada |
-| **Buffer** — Polimento e Entrega | Dias 13 – 15 | 3 dias | Testes E2E, Docker limpo, documentação, vídeo de demo, release `v1.0.0` |
-
-> **Estratégia para cumprir 15 dias:** uso intensivo de IA (Gemini / Copilot) para geração de
-> código boilerplate, máxima paralelização de backend e frontend, e priorização estrita
-> das tarefas pelo critério de dependência crítica.
-
----
-
-## Lista de Tarefas por Bloco de Funcionalidade
-
-> Cada bloco é um **Épico** do GitHub Project. Cada linha é um **ticket** individual.
-> Legenda de labels: `[B]` = backend · `[F]` = frontend · `[B+F]` = ambos
-
----
-
-### BLOCO A — Infraestrutura e API Gateway
-**Épico:** `EPIC-01` · **Label GitHub:** `infra`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| A-01 | `[B]` | Implementar `gateway/app/main.py` com proxy reverso assíncrono (`httpx`), CORS e middleware de extração/validação de JWT |
-| A-02 | `[B]` | Implementar injeção de headers internos de identidade (`X-User-Id`, `X-User-Role`) para os microsserviços |
-| A-03 | `[B]` | Configurar `docker-compose.yml` com rede interna, volumes persistentes para os SQLites e variáveis de ambiente via `.env` |
-| A-04 | `[B]` | Criar `.env.example` com portas (8000–8004), `JWT_SECRET` e `GEMINI_API_KEY` (opcional) |
-| A-05 | `[B]` | Criar `gateway/app/config.py` com mapeamento de URLs dos serviços internos |
-
----
-
-### BLOCO B — Autenticação e Perfil Base
-**Épico:** `EPIC-02` · **Label GitHub:** `auth`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| B-01 | `[B]` | Implementar modelo SQLAlchemy `User`: `id`, `username`, `email`, `password_hash`, `avatar_url`, `real_name`, `location`, `wallet_balance`, `points_balance`, `level`, `xp`, `status`, `privacy_settings` |
-| B-02 | `[B]` | Implementar endpoints `POST /register` e `POST /login` com hashing `bcrypt` e emissão de JWT (access + refresh token) |
-| B-03 | `[B]` | Implementar endpoint `GET /me` para retornar dados completos do usuário autenticado |
-| B-04 | `[B]` | Implementar endpoint `PATCH /me` para edição de perfil (nick, bio, avatar, localização) |
-| B-05 | `[F]` | Criar `AuthContext` no frontend com estado global do usuário, armazenamento seguro do JWT e função de logout |
-| B-06 | `[F]` | Criar tela/modal de Login e Registro no frontend conectada ao `auth-service` via Gateway |
-
----
-
-### BLOCO C — Loja, Catálogo e Checkout
-**Épico:** `EPIC-03` · **Label GitHub:** `store`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| C-01 | `[B]` | Implementar modelo SQLAlchemy `Game`: `id`, `title`, `description`, `price`, `tags`, `category`, `banner_url`, `screenshots`, `release_date`, `publisher`, `review_score` |
-| C-02 | `[B]` | Criar seed de 10–15 jogos com dados realistas para popular o catálogo |
-| C-03 | `[B]` | Implementar endpoint `GET /games` — lista com filtros por categoria, tag, preço, busca textual e ordenação |
-| C-04 | `[B]` | Implementar endpoint `GET /games/{id}` com detalhes completos do jogo |
-| C-05 | `[B]` | Implementar modelo `Wishlist` e endpoints `POST /wishlist/{game_id}` e `DELETE /wishlist/{game_id}` |
-| C-06 | `[B]` | Implementar endpoint `POST /checkout` que debita saldo da carteira e aciona grant no `library-service` |
-| C-07 | `[F]` | Conectar `Store.tsx` ao catálogo real da API (substituindo os mocks locais) |
-| C-08 | `[F]` | Implementar modal/página de Detalhes do Jogo com screenshots, sinopse, tags e botão de compra |
-| C-09 | `[F]` | Implementar fluxo de Checkout no frontend com confirmação e dedução visual do saldo da carteira |
-| C-10 | `[F]` | Implementar Wishlist no frontend (botão de coração nos cards e subaba dedicada) |
-
----
-
-### BLOCO D — Biblioteca e Licenças
-**Épico:** `EPIC-04` · **Label GitHub:** `library`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| D-01 | `[B]` | Implementar modelo `LibraryItem`: `user_id`, `game_id`, `acquired_at`, `playtime_minutes`, `is_installed`, `last_played` |
-| D-02 | `[B]` | Implementar endpoint interno `POST /library/grant` — acionado pelo `store-service` após checkout bem-sucedido |
-| D-03 | `[B]` | Implementar endpoint `GET /library/my-games` retornando os jogos do usuário com playtime e status |
-| D-04 | `[F]` | Conectar `Library.tsx` à API real para listar jogos comprados com playtime e status de instalação |
-| D-05 | `[F]` | Implementar painel de Conquistas por jogo na Biblioteca (bloqueadas vs desbloqueadas com barra de progresso) |
-
----
-
-### BLOCO E — Download Real e Mini SDK Python
-**Épico:** `EPIC-04` · **Labels GitHub:** `library` `sdk`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| E-01 | `[B]` | Criar `mist_sdk.py`: módulo Python stdlib-only (sem `pip install`) que lê `session.json` e expõe `start_session()`, `ping()` e `unlock_achievement(id)` |
-| E-02 | `[B]` | Criar 2–3 mini-jogos Python de demonstração (`game.py`) que importam `mist_sdk.py` e chamam o SDK durante o jogo |
-| E-03 | `[B]` | Implementar endpoint `GET /store/games/{id}/download` que gera e retorna um `.zip` com `game.py`, `mist_sdk.py` e `session.json` |
-| E-04 | `[B]` | Implementar endpoints de sessão no `library-service`: `POST /session/start`, `POST /session/ping` (acumula playtime) e `POST /session/end` |
-| E-05 | `[B]` | Implementar endpoint `POST /achievements/unlock` com registro no banco e disparo de evento de atividade |
-| E-06 | `[F]` | Conectar botão "Baixar" na `Library.tsx` ao endpoint de download e acionar o `DownloadBar.tsx` com progresso simulado |
-| E-07 | `[F]` | Implementar notificação Toast no frontend para conquistas desbloqueadas (SSE ou polling leve) |
-
----
-
-### BLOCO F — Social: Amigos, Feed e Chat WebSocket
-**Épico:** `EPIC-05` · **Label GitHub:** `social`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| F-01 | `[B]` | Implementar modelos `Friend`, `Message` e `Activity` no `social-service` |
-| F-02 | `[B]` | Implementar endpoints de amizade: `POST /friends/request`, `POST /friends/accept/{id}`, `DELETE /friends/{id}` e `GET /friends` |
-| F-03 | `[B]` | Implementar endpoint WebSocket `WS /ws/chat/{room_id}` para chat em tempo real entre amigos |
-| F-04 | `[B]` | Implementar endpoint WebSocket de presença `WS /ws/presence` para status Online / Ausente / Jogando |
-| F-05 | `[B]` | Atualizar status do usuário para "Jogando [Título do Jogo]" ao iniciar sessão via SDK |
-| F-06 | `[B]` | Implementar feed de atividades `GET /feed` com eventos de conquistas, compras e nível atingido |
-| F-07 | `[F]` | Construir componente de janela de Chat no `Social.tsx` com histórico de mensagens e indicador de digitação |
-| F-08 | `[F]` | Exibir status de presença em tempo real na lista de amigos do `Social.tsx` |
-
----
-
-### BLOCO G — Agentes de IA (Base e Avançado)
-**Épico:** `EPIC-06` · **Label GitHub:** `ai`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| G-01 | `[B]` | Criar helper unificado `ai_client.py` com suporte à API Gemini / OpenAI / Groq e fallback determinístico por mock local |
-| G-02 | `[B]` | Integrar **MIST AI Curator** no `store-service`: vitrine "Recomendado para você" usando histórico da biblioteca + tags dos favoritos |
-| G-03 | `[B]` | Integrar **MIST Quest Master** no `library-service`: geração de conquistas e desafios dinâmicos semanais por jogo |
-| G-04 | `[B]` | Integrar **MIST Companion Bot** no `social-service`: contato fixo na lista de amigos que responde via chat WebSocket |
-| G-05 | `[F]` | Exibir seção "Recomendado para Você" na `Store.tsx` abaixo do Hero Banner |
-| G-06 | `[F]` | Exibir MIST Bot como contato especial na lista de amigos do `Social.tsx` com marcação visual de IA |
-| S-01 | `[B]` | Expandir o Curator com análise de tendências: "Top Vendidos da Semana" e "Em Alta" calculados por volume de compras |
-| S-02 | `[B]` | Gerar justificativas textuais personalizadas para cada recomendação em linguagem natural |
-| S-03 | `[B]` | Implementar alerta inteligente "Promoção na sua Wishlist" quando um jogo do desejo entrar em desconto |
-| S-04 | `[F]` | Exibir seções "Top Vendidos", "Em Alta" e "Alerta de Promoção da Wishlist" na `Store.tsx` |
-
----
-
-### BLOCO H — Reviews de Jogos
-**Épico:** `EPIC-03` · **Labels GitHub:** `store` `reviews`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| H-01 | `[B]` | Implementar modelo `Review`: `user_id`, `game_id`, `is_recommended` (bool), `text`, `created_at`, `playtime_at_review` (horas) |
-| H-02 | `[B]` | Implementar endpoint `POST /games/{id}/reviews` (requer o jogo na biblioteca) e `GET /games/{id}/reviews` |
-| H-03 | `[B]` | Calcular score de aprovação do jogo (% de "Recomendo") e expor no endpoint `GET /games/{id}` |
-| H-04 | `[F]` | Implementar formulário de Review no modal de detalhes do jogo no frontend |
-| H-05 | `[F]` | Exibir lista de reviews e score de aprovação (ex: "Muito Positivo — 94%") na página de detalhes |
-
----
-
-### BLOCO I — Loja de Pontos e Cosméticos no Perfil
-**Épico:** `EPIC-07` · **Label GitHub:** `points`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| I-01 | `[B]` | Conectar acúmulo de Pontos MIST ao checkout: `100 pts por R$ 1,00` creditados no `auth-service` |
-| I-02 | `[B]` | Implementar modelo `InventoryItem` no `auth-service` para rastrear cosméticos adquiridos |
-| I-03 | `[B]` | Implementar endpoint `POST /points-shop/purchase` para deduzir pontos e adicionar item ao inventário |
-| I-04 | `[B]` | Implementar endpoint `POST /profile/equip` para equipar cosméticos (moldura de avatar, plano de fundo) |
-| I-05 | `[F]` | Exibir cosméticos equipados na `Profile.tsx` e itens do inventário na seção de Inventário |
-
----
-
-### BLOCO J — Inventário Completo de Itens
-**Épico:** `EPIC-08` · **Label GitHub:** `inventory`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| J-01 | `[B]` | Estender modelo `InventoryItem` com tipo de item (carta, emoticon, plano de fundo, avatar, insígnia) e status (equipado, listado no mercado, disponível) |
-| J-02 | `[B]` | Implementar endpoint `GET /inventory` retornando todos os itens do usuário agrupados por tipo |
-| J-03 | `[B]` | Implementar endpoints `POST /inventory/items/{id}/equip` e `POST /inventory/items/{id}/unequip` |
-| J-04 | `[F]` | Construir página de Inventário no frontend com abas por tipo, filtros e ação de equipar/desequipar |
-
----
-
-### BLOCO K — Trading Cards e Sistema de Insígnias com XP
-**Épico:** `EPIC-08` · **Labels GitHub:** `inventory` `cards`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| K-01 | `[B]` | Implementar modelo `TradingCard`: `game_id`, `card_name`, `card_art_url`, `rarity`, `is_foil` |
-| K-02 | `[B]` | Implementar lógica de drop de cartas no endpoint `session/ping`: probabilidade configurável de drop por minuto de jogo |
-| K-03 | `[B]` | Integrar Quest Master para gerar cartas únicas ao desbloquear conquistas (arte por template ou IA) |
-| K-04 | `[B]` | Implementar endpoint `POST /crafting/badge` que consome um set completo de cartas e cria uma `Badge` |
-| K-05 | `[B]` | Implementar modelo `Badge`: `name`, `description`, `xp_value`, `game_id`, `icon_url` |
-| K-06 | `[B]` | Implementar XP progressivo: `level = floor(sqrt(total_xp / 100))` e endpoint de progresso de nível |
-| K-07 | `[F]` | Exibir barra de XP e nível na `Sidebar.tsx` e no header do `Profile.tsx` |
-| K-08 | `[F]` | Exibir Insígnias craftadas na seção de Insígnias do Perfil e por jogo na Biblioteca |
-| K-09 | `[F]` | Exibir Cartas Colecionáveis no Inventário com ação "Selecionar Set para Crafting" |
-
----
-
-### BLOCO L — Mercado da Comunidade
-**Épico:** `EPIC-09` · **Label GitHub:** `market`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| L-01 | `[B]` | Implementar módulo de mercado (novo `market-service` ou módulo no `store-service`) com SQLite `market.db` |
-| L-02 | `[B]` | Implementar modelo `MarketListing`: `seller_id`, `item_id`, `item_type`, `price`, `status` (ativo, vendido, cancelado) |
-| L-03 | `[B]` | Implementar endpoint `POST /market/list` para colocar item do inventário à venda com preço em R$ |
-| L-04 | `[B]` | Implementar endpoint `GET /market/listings` com filtros por tipo, jogo, faixa de preço e ordenação |
-| L-05 | `[B]` | Implementar endpoint `POST /market/buy/{listing_id}` com dedução do saldo da carteira e transferência do item |
-| L-06 | `[B]` | Implementar modelo `TradeOffer`: `sender_id`, `receiver_id`, `offered_items[]`, `requested_items[]`, `status` |
-| L-07 | `[B]` | Implementar endpoints de Troca Direta: `POST /trades/offer`, `POST /trades/{id}/accept`, `POST /trades/{id}/decline` |
-| L-08 | `[B]` | Implementar endpoint `GET /wallet/history` com extrato de transações da carteira (paginado) |
-| L-09 | `[F]` | Construir página "Mercado da Comunidade" no frontend com listagens, filtros e botão de compra |
-| L-10 | `[F]` | Construir modal de Oferta de Troca: seleção de itens do inventário próprio e solicitação de itens do amigo |
-| L-11 | `[F]` | Exibir extrato de Histórico da Carteira acessível via modal ou aba no Perfil |
-
----
-
-### BLOCO M — Grupos e Comunidade
-**Épico:** `EPIC-10` · **Label GitHub:** `community`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| M-01 | `[B]` | Implementar modelo `Group`: `name`, `description`, `avatar_url`, `owner_id`, `privacy` (público/privado), `member_count` |
-| M-02 | `[B]` | Implementar modelo `GroupMember` e endpoints: `POST /groups`, `GET /groups`, `POST /groups/{id}/join`, `DELETE /groups/{id}/leave` |
-| M-03 | `[B]` | Implementar modelo `ForumPost`: `group_id`, `author_id`, `title`, `content`, `created_at`, `reply_count` |
-| M-04 | `[B]` | Implementar modelo `ForumReply` e endpoints CRUD de posts e respostas do fórum |
-| M-05 | `[B]` | Implementar endpoint WebSocket `WS /ws/group/{group_id}/chat` para chat de grupo em tempo real |
-| M-06 | `[F]` | Construir página de Grupos no frontend: descoberta/busca, criação, aba de membros, fórum e chat de grupo |
-
----
-
-### BLOCO N — Showcase de Capturas de Tela
-**Épico:** `EPIC-11` · **Label GitHub:** `ugc`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| N-01 | `[B]` | Implementar endpoint `POST /screenshots/upload` com suporte a `multipart/form-data` e metadados (jogo, legenda, visibilidade) |
-| N-02 | `[B]` | Estender `mist_sdk.py` com função `take_screenshot(description)` que captura a tela e envia ao MIST via HTTP |
-| N-03 | `[B]` | Implementar endpoint `GET /screenshots` com filtros por usuário e jogo |
-| N-04 | `[B]` | Implementar endpoints `POST /screenshots/{id}/like` e `DELETE /screenshots/{id}/like` |
-| N-05 | `[F]` | Construir galeria de Screenshots no Perfil Público e no modal de Detalhes do Jogo |
-| N-06 | `[F]` | Construir componente de upload manual de screenshot no frontend (drag-and-drop ou seleção de arquivo) |
-
----
-
-### BLOCO O — Workshop de Conteúdo (Mods e Skins)
-**Épico:** `EPIC-11` · **Label GitHub:** `ugc`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| O-01 | `[B]` | Implementar modelo `WorkshopItem`: `game_id`, `author_id`, `title`, `description`, `tags`, `file_url`, `thumbnail_url`, `subscriber_count`, `downloads` |
-| O-02 | `[B]` | Implementar endpoint `POST /workshop/upload` com upload de arquivo do mod/skin |
-| O-03 | `[B]` | Implementar endpoint `GET /workshop/items` com filtros por jogo, tags e popularidade |
-| O-04 | `[B]` | Implementar endpoints `POST /workshop/{id}/subscribe` e `DELETE /workshop/{id}/subscribe` |
-| O-05 | `[F]` | Construir página do Workshop no frontend: listagem por jogo, página de detalhe do item e botão de Subscrição/Download |
-| O-06 | `[F]` | Exibir contagem de itens do Workshop subscrita no Perfil do usuário |
-
----
-
-### BLOCO P — Perfil Público Visitável e Configurações de Privacidade
-**Épico:** `EPIC-12` · **Label GitHub:** `profile`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| P-01 | `[B]` | Implementar endpoint `GET /users/{username}/profile` que retorna o perfil público respeitando as configurações de privacidade |
-| P-02 | `[B]` | Implementar endpoint `PATCH /me/privacy` para configurar visibilidade de seções: jogos, conquistas, horas, inventário, screenshots, grupos (Todos / Amigos / Privado) |
-| P-03 | `[F]` | Construir página de Perfil Público no frontend, visitável pelo clique no nome de qualquer usuário no feed, chat ou mercado |
-| P-04 | `[F]` | Aplicar badge de relação (Amigo, Você mesmo, Membro do Grupo) no Perfil Público visitado |
-| P-05 | `[F]` | Construir modal de Configurações de Privacidade na tela de Perfil |
-
----
-
-### BLOCO Q — Sistema de Notificações Global
-**Épico:** `EPIC-13` · **Label GitHub:** `notifications`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| Q-01 | `[B]` | Implementar modelo `Notification`: `user_id`, `type` (amizade, conquista, mercado, mensagem, carta, review), `payload` (JSON), `is_read`, `created_at` |
-| Q-02 | `[B]` | Implementar endpoint `GET /notifications` (não lidas + histórico) e `POST /notifications/{id}/read` |
-| Q-03 | `[B]` | Implementar disparo de notificações por eventos: conquista desbloqueada, solicitação de amizade, item vendido, trade recebido, carta dropada |
-| Q-04 | `[B]` | Implementar entrega de notificações em tempo real via WebSocket ou SSE (Server-Sent Events) |
-| Q-05 | `[F]` | Construir painel de Notificações no frontend: sininho com badge no `Header.tsx` abrindo dropdown |
-| Q-06 | `[F]` | Adicionar navegação contextual nas notificações (amizade → Perfil do usuário, conquista → Biblioteca) |
-
----
-
-### BLOCO R — Busca Global
-**Épico:** `EPIC-13` · **Labels GitHub:** `notifications` `search`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| R-01 | `[B]` | Implementar endpoint `GET /search?q={query}&type={all\|games\|users\|groups\|market}` no Gateway agregando resultados de múltiplos serviços |
-| R-02 | `[B]` | Implementar busca por usuários no `auth-service` (por username ou nome real) |
-| R-03 | `[B]` | Implementar busca por grupos no `social-service` |
-| R-04 | `[B]` | Implementar busca por itens no `market-service` |
-| R-05 | `[F]` | Atualizar barra de busca do `Header.tsx` para exibir resultados globais em dropdown categorizado (Jogos, Usuários, Grupos, Mercado) |
-
----
-
-### BLOCO T — Histórico de Transações da Carteira
-**Épico:** `EPIC-09` · **Labels GitHub:** `market` `wallet`
-
-| ID | Tipo | Tarefa |
-|:---|:----:|:-------|
-| T-01 | `[B]` | Implementar modelo `WalletTransaction`: `user_id`, `type` (compra, venda, crédito, resgate de pontos), `amount`, `description`, `created_at` |
-| T-02 | `[B]` | Registrar transação a cada compra de jogo, compra/venda no mercado e resgate na Loja de Pontos |
-| T-03 | `[B]` | Implementar endpoint `GET /wallet/history` com paginação e filtros por tipo de transação |
-| T-04 | `[F]` | Construir extrato de Carteira no frontend (acessível via modal ou aba no Perfil) |
-
----
-
-## Cronograma Dia a Dia (15 Dias)
-
-> **Legenda:** `[B]` = backend  ·  `[F]` = frontend  ·  `[B+F]` = ambos em paralelo  ·  `⚑` = Checkpoint de entrega
-
----
-
-### ETAPA 1 — Core Loop Integrado (Dias 1 e 2)
-
-#### Dia 1 — Backend Sprint: Gateway + Auth + Loja + Biblioteca + Social + SDK + IA
-
-| Turno | Tipo | Tarefas |
-|:------|:----:|:--------|
-| Manhã | `[B]` | **A-01, A-02, A-03, A-04, A-05** — Gateway + Docker Compose |
-| Manhã | `[B]` | **B-01, B-02, B-03** — Auth: modelos SQLAlchemy, JWT, endpoint `/me` |
-| Tarde | `[B]` | **C-01, C-02, C-03, C-04** — Store: modelos + seed + listagem + detalhes |
-| Tarde | `[B]` | **D-01, D-02, D-03** — Library: modelos + endpoint interno `/grant` + `/my-games` |
-| Tarde | `[B]` | **F-01, F-02** — Social: modelos `Friend/Message/Activity` + endpoints de amizade |
-| Noite | `[B]` | **E-01, E-02, E-03** — `mist_sdk.py` + mini-jogos Python + endpoint de download `.zip` |
-| Noite | `[B]` | **G-01** — `ai_client.py`: helper unificado de LLM com fallback mock |
-
-#### Dia 2 — Integração E2E: Frontend + Social/Presença + IA + Reviews + Pontos
-
-| Turno | Tipo | Tarefas |
-|:------|:----:|:--------|
-| Manhã | `[F]` | **B-04, B-05, B-06** — `AuthContext` + tela de Login e Registro |
-| Manhã | `[B+F]` | **C-05, C-06, C-07, C-08, C-09** — Checkout + Wishlist backend + Loja conectada ao frontend |
-| Tarde | `[B+F]` | **D-04, D-05** — `Library.tsx` conectada à API real + painel de conquistas |
-| Tarde | `[B+F]` | **E-04, E-05, E-06, E-07** — Sessão/Ping + conquistas + `DownloadBar` + Toast |
-| Tarde | `[B]` | **F-03, F-04, F-05, F-06** — WebSocket Chat + Presença + status "Jogando" + Feed |
-| Noite | `[F]` | **F-07, F-08** — Chat UI + lista de amigos com presença em tempo real |
-| Noite | `[B+F]` | **G-02, G-03, G-04, G-05, G-06** — Curator + Quest Master + Bot IA + exibição no frontend |
-| Noite | `[B+F]` | **H-01, H-02, H-03, H-04, H-05** — Reviews: backend + formulário + score no frontend |
-| Noite | `[B+F]` | **I-01, I-02, I-03, I-04, I-05** — Loja de Pontos + cosméticos no Perfil |
-| Noite | `[F]` | **C-10** — Wishlist no frontend (aba dedicada + coração nos cards) |
-
-> **⚑ CHECKPOINT DIA 2 — Etapa 1 Completa**
-> Fluxo `compra → download → execução local → ping de playtime → conquista → notificação` funcionando de ponta a ponta.
-
----
-
-### ETAPA 2 — Expansão do Ecossistema Steam (Dias 3 a 12)
-
-#### Dia 3 — Inventário + Início dos Trading Cards
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **J-01, J-02, J-03** — Inventário: modelo estendido com tipos + endpoints get/equip |
-| `[F]` | **J-04** — Página de Inventário no frontend (abas por tipo, filtros, ação de equipar) |
-| `[B]` | **K-01, K-02, K-03** — Trading Cards: modelo + drop por ping + geração via Quest Master |
-
-#### Dia 4 — Crafting de Insígnias + XP + Notificações
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **K-04, K-05** — Crafting de Insígnia (endpoint + modelo `Badge`) |
-| `[B]` | **K-06** — Sistema de XP progressivo e endpoint de progressão de nível |
-| `[F]` | **K-07, K-08, K-09** — Barra de XP na `Sidebar` + Insígnias no Perfil + Cartas no Inventário |
-| `[B]` | **Q-01, Q-02, Q-03** — Notificações: modelo + endpoints get/read + disparo por eventos |
-
-#### Dia 5 — Notificações em Tempo Real + Histórico da Carteira
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **Q-04** — Entrega de notificações em tempo real (WebSocket / SSE) |
-| `[F]` | **Q-05, Q-06** — Painel de notificações no `Header` (sininho + dropdown + navegação contextual) |
-| `[B+F]` | **T-01, T-02, T-03, T-04** — Histórico da Carteira: modelo + registro + endpoint + extrato no frontend |
-
-#### Dia 6 — Mercado: Listagem Pública
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **L-01, L-02, L-03, L-04, L-05** — `market-service`: modelo `MarketListing` + colocar à venda + listagem pública + compra de item |
-
-#### Dia 7 — Mercado: Trade Offers + Wallet History
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **L-06, L-07, L-08** — Modelo `TradeOffer` + endpoints offer/accept/decline + wallet history |
-| `[F]` | **L-09, L-11** — Página do Mercado no frontend + extrato da carteira |
-
-#### Dia 8 — Mercado UI Completo + AI Curator Avançado
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[F]` | **L-10** — Modal de Oferta de Troca no frontend |
-| `[B+F]` | **S-01, S-02, S-03, S-04** — AI Curator Avançado: Top Vendidos, Em Alta e Alertas de Promoção da Wishlist |
-
-#### Dia 9 — Grupos, Fórum e Chat de Grupo
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **M-01, M-02, M-03, M-04** — Modelos `Group/GroupMember/ForumPost/ForumReply` + CRUD endpoints |
-| `[B]` | **M-05** — WebSocket de chat de grupo |
-| `[F]` | **M-06** — Página de Grupos completa no frontend |
-
-#### Dia 10 — Busca Global
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **R-01, R-02, R-03, R-04** — Endpoint agregador no Gateway + buscas por serviço (usuários, grupos, itens) |
-| `[F]` | **R-05** — Dropdown de busca global no `Header.tsx` com resultados categorizados |
-
-#### Dia 11 — Screenshots e Workshop
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[B]` | **N-01, N-02, N-03, N-04** — Screenshots: upload via API + via SDK + listagem + curtidas |
-| `[F]` | **N-05, N-06** — Galeria de Screenshots no Perfil + upload manual no frontend |
-| `[B]` | **O-01, O-02, O-03, O-04** — Workshop: modelo + upload de arquivo + listagem + subscrição |
-
-#### Dia 12 — Workshop UI + Perfil Público + Privacidade
-
-| Tipo | Tarefas |
-|:----:|:--------|
-| `[F]` | **O-05, O-06** — Página do Workshop no frontend + contagem de subs no Perfil |
-| `[B]` | **P-01, P-02** — Endpoint de Perfil Público com respeito à privacidade + endpoint de configuração |
-| `[F]` | **P-03, P-04, P-05** — Página de Perfil Público + badge de relação + modal de privacidade |
-
-> **⚑ CHECKPOINT DIA 12 — Etapa 2 Completa**
-> Todas as features do ecossistema Steam implementadas e integradas.
-
----
-
-### BUFFER — Polimento e Entrega (Dias 13 a 15)
-
-#### Dia 13 — Testes E2E e Correção de Bugs
-
-| # | Atividade |
-|:--|:----------|
-| 1 | Bateria de testes E2E com Playwright: compra, download, chat, mercado, trade e conquistas |
-| 2 | Testes unitários `pytest` nos endpoints críticos: auth, checkout, grant, achievements, market |
-| 3 | Correção de bugs e regressões identificados nos testes |
-
-#### Dia 14 — Polimento de UX e Docker Compose
-
-| # | Atividade |
-|:--|:----------|
-| 1 | Ajustes de UX: loading states, empty states e tratamento de erros com feedback visual |
-| 2 | Verificação do `docker compose up` limpo: todos os 5+ serviços e frontend sobem sem erros |
-| 3 | Atualização da documentação: `README.md`, `docs/architecture.md` e `prompts.md` |
-| 4 | Seed de dados demonstrativos para a apresentação (usuários, jogos, amigos, itens, cartas) |
-
-#### Dia 15 — Entrega Final
-
-| # | Atividade |
-|:--|:----------|
-| 1 | Gravação do vídeo de demonstração percorrendo todos os fluxos do ecossistema MIST |
-| 2 | Tag de release `v1.0.0` no repositório GitHub |
-| 3 | Push final na branch `main` com o sistema completo e executável |
-
-> **⚑ CHECKPOINT FINAL — Sistema MIST Completo Entregue no Dia 15**
-
----
-
-## Gantt Visual (15 Dias)
+Para evitar conflitos de commit e gargalos em pull requests durante o trabalho concorrente dos 3 desenvolvedores, o escopo foi dividido estritamente por **domínios de responsabilidade, arquivos e microsserviços**:
 
 ```
-Bloco / Funcionalidade      D1  D2  D3  D4  D5  D6  D7  D8  D9  D10 D11 D12 D13 D14 D15
-─────────────────────────── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
-A  Gateway & Infra           ██
-B  Auth & Perfil             ██  ██
-C  Loja & Checkout           ██  ██
-D  Biblioteca                ██  ██
-E  SDK & Download            ██  ██
-F  Social & Chat             ██  ██
-G  IA Base (Curator/Bot)     ██  ██
-H  Reviews de Jogos              ██
-I  Pontos & Cosméticos           ██
-                                 ⚑ ETAPA 1
-J  Inventário                        ██
-K  Trading Cards & XP                ██  ██
-Q  Notificações                      ██  ██
-T  Histórico da Carteira                 ██
-L  Mercado da Comunidade                     ██  ██  ██
-S  IA Avançada (Curator+)                            ██
-M  Grupos & Fórum                                        ██
-R  Busca Global                                              ██
-N  Screenshots                                                   ██
-O  Workshop                                                      ██
-P  Perfil Público                                                    ██
-                                                                     ⚑ ETAPA 2
-   Testes E2E                                                            ██
-   Polimento & Docker                                                        ██
-   Release & Entrega                                                             ██
-                                                                                 ⚑ FIM
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 DIVISÃO DE RESPONSABILIDADES                                │
+├───────────────────────────────┬───────────────────────────────┬─────────────────────────────┤
+│      TRILHA 1 (DEV 1)         │       TRILHA 2 (DEV 2)        │      TRILHA 3 (DEV 3)       │
+│  Economia, Mercado & Carteira │ Usuário, Gamificação & Cards  │  Social, UGC & Notificações │
+├───────────────────────────────┼───────────────────────────────┼─────────────────────────────┤
+│ • services/market-service/    │ • services/auth-service/      │ • services/social-service/  │
+│   (Novo serviço independente) │   (Perfil, Inventário, XP)    │   (Grupos, Fórum, Chat)     │
+│ • store-service (apenas       │ • library-service (apenas     │ • services/ugc-service/     │
+│   módulo isolado de reviews)  │   módulo drops de cartas)     │   (Screenshots e Workshop)  │
+│ • Páginas/Componentes:        │ • Páginas/Componentes:        │ • gateway/ (Busca e rotas)  │
+│   - Market.tsx                │   - Inventory.tsx             │ • Páginas/Componentes:      │
+│   - ReviewModal.tsx           │   - BadgesSection.tsx         │   - Groups.tsx              │
+│   - TradeOfferModal.tsx       │   - PrivacyModal.tsx          │   - Workshop.tsx            │
+│   - WalletHistoryModal.tsx    │   - Pontos/Cosméticos Profile │   - NotificationsDropdown   │
+│                               │                               │   - GlobalSearchDropdown    │
+└───────────────────────────────┴───────────────────────────────┴─────────────────────────────┘
+```
+
+### Regras de Governança de Branches
+1. **Branch Principal de Integração:** `dev`.
+2. **Nomenclatura de Feature Branches:**
+   - Dev 1: `feature/dev1-reviews-wallet`, `feature/dev1-market-service`, `feature/dev1-trade-offers`
+   - Dev 2: `feature/dev2-inventory-points`, `feature/dev2-trading-cards-xp`, `feature/dev2-public-profile`
+   - Dev 3: `feature/dev3-notifications-ai`, `feature/dev3-groups-forum`, `feature/dev3-ugc-workshop`
+3. **Isolamento de Banco de Dados:** Cada trilha altera exclusivamente suas próprias tabelas ou seu próprio banco SQLite (`market.db`, `auth.db`, `social.db`, `ugc.db`), garantindo zero colisões de migrations ou seeds.
+4. **Isolamento de Rotas no Gateway:** O Dev 3 atua como mantenedor do Gateway para registro de rotas agregadoras, recebendo endpoints declarados e estáveis das outras duas trilhas.
+
+---
+
+## 2. Status Geral dos Blocos de Funcionalidade
+
+| Bloco | Nome | Responsável | Status Atual |
+|:-----:|:-----|:-----------:|:------------:|
+| **A** | Infraestrutura e API Gateway | Equipe | **CONCLUÍDO** |
+| **B** | Autenticação e Perfil Base | Equipe | **CONCLUÍDO** |
+| **C** | Loja, Catálogo e Checkout | Equipe | **CONCLUÍDO** |
+| **D** | Biblioteca e Licenças | Equipe | **CONCLUÍDO** |
+| **E** | Download Real e Mini SDK Python | Equipe | **CONCLUÍDO** |
+| **F** | Social: Amigos, Feed e Chat WebSocket | Equipe | **CONCLUÍDO** |
+| **G** | Agentes de IA Base (G-01 a G-06) | Equipe | **CONCLUÍDO** |
+| **H** | Reviews de Jogos | **DEV 1** | A Fazer |
+| **I** | Loja de Pontos e Cosméticos | **DEV 2** | A Fazer |
+| **J** | Inventário Completo de Itens | **DEV 2** | A Fazer |
+| **K** | Trading Cards, Badges e XP | **DEV 2** | A Fazer |
+| **L** | Mercado da Comunidade e Trades | **DEV 1** | A Fazer |
+| **M** | Grupos, Fórum e Chat de Grupo | **DEV 3** | A Fazer |
+| **N** | Showcase de Capturas de Tela | **DEV 3** | A Fazer |
+| **O** | Workshop de Conteúdo (Mods e Skins) | **DEV 3** | A Fazer |
+| **P** | Perfil Público Visitável e Privacidade | **DEV 2** | A Fazer |
+| **Q** | Sistema de Notificações Global | **DEV 3** | A Fazer |
+| **R** | Busca Global | **DEV 3** | A Fazer |
+| **S** | AI Curator Avançado (S-01 a S-04) | **DEV 3** | A Fazer |
+| **T** | Histórico de Transações da Carteira | **DEV 1** | A Fazer |
+
+---
+
+## 3. Divisão Detalhada das Trilhas de Desenvolvimento
+
+---
+
+### TRILHA 1 — DEV 1: Economia, Mercado e Avaliações
+
+> **Foco de Código:** `services/market-service/` (novo), módulo de reviews no `services/store-service/`, páginas e modais de compra/venda/troca.  
+> **Volume de Tickets:** 20 tickets (Blocos H, T, L).
+
+#### Bloco H — Reviews de Jogos (`store` `reviews`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| H-01 | `[B]` | `store-service/app/models/review.py` | Implementar modelo `Review`: `user_id`, `game_id`, `is_recommended`, `text`, `playtime_at_review`, `created_at`. |
+| H-02 | `[B]` | `store-service/app/api/reviews.py` | Endpoints `POST /games/{id}/reviews` (valida posse na biblioteca) e `GET /games/{id}/reviews`. |
+| H-03 | `[B]` | `store-service/app/services/review_service.py` | Cálculo automático de aprovação percentual (ex: "Muito Positivo - 92%") injetado no `GET /games/{id}`. |
+| H-04 | `[F]` | `frontend/src/components/ReviewFormModal.tsx` | Componente de formulário com recomendação (Sim/Não), texto e badge de horas jogadas. |
+| H-05 | `[F]` | `frontend/src/components/ReviewsList.tsx` | Lista de avaliações da comunidade com filtros de mais úteis e recentes dentro de `GameDetailModal.tsx`. |
+
+#### Bloco T — Histórico de Transações da Carteira (`market` `wallet`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| T-01 | `[B]` | `market-service/app/models/transaction.py` | Modelo `WalletTransaction`: `user_id`, `type` (compra, venda, recarga, resgate), `amount`, `description`. |
+| T-02 | `[B]` | `market-service/app/services/wallet_ledger.py` | Serviço de registro contábil de transações (acionado em compras de jogos, mercado e resgates). |
+| T-03 | `[B]` | `market-service/app/api/wallet.py` | Endpoint `GET /wallet/history` com paginação e filtro por período/tipo. |
+| T-04 | `[F]` | `frontend/src/components/WalletHistoryModal.tsx` | Modal/aba de extrato detalhado da carteira do usuário no Perfil/Header. |
+
+#### Bloco L — Mercado da Comunidade e Trade Offers (`market`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| L-01 | `[B]` | `services/market-service/` | Estruturar novo microsserviço com FastAPI, Dockerfile e SQLite dedicado `market.db`. |
+| L-02 | `[B]` | `market-service/app/models/listing.py` | Modelo `MarketListing`: `seller_id`, `item_id`, `item_type`, `price`, `status` (ativo, vendido, cancelado). |
+| L-03 | `[B]` | `market-service/app/api/listings.py` | Endpoint `POST /market/list` (valida se o item está disponível no inventário e bloqueia uso). |
+| L-04 | `[B]` | `market-service/app/api/listings.py` | Endpoint `GET /market/listings` com filtros por tipo, jogo e ordenação por menor preço. |
+| L-05 | `[B]` | `market-service/app/services/checkout.py` | Endpoint `POST /market/buy/{listing_id}` com transferência atômica de saldo e custódia do item. |
+| L-06 | `[B]` | `market-service/app/models/trade.py` | Modelo `TradeOffer`: `sender_id`, `receiver_id`, `offered_items[]`, `requested_items[]`, `status`. |
+| L-07 | `[B]` | `market-service/app/api/trades.py` | Endpoints `POST /trades/offer`, `POST /trades/{id}/accept`, `POST /trades/{id}/decline`. |
+| L-08 | `[B]` | `market-service/app/api/trades.py` | Histórico e listagem de ofertas pendentes recebidas e enviadas. |
+| L-09 | `[F]` | `frontend/src/pages/Market.tsx` | Página completa do Mercado da Comunidade: catálogo de anúncios, busca, filtros e compra. |
+| L-10 | `[F]` | `frontend/src/components/TradeOfferModal.tsx` | Modal interativa de troca: seleção de itens do inventário próprio vs seleção de itens do inventário do amigo. |
+| L-11 | `[F]` | `frontend/src/pages/Market.tsx` | Aba "Meus Anúncios" com opções de gerenciar e cancelar ofertas ativas. |
+
+---
+
+### TRILHA 2 — DEV 2: Usuário, Gamificação, Cards e Inventário
+
+> **Foco de Código:** `services/auth-service/` (usuário, inventário, pontos, XP, privacidade), módulo de drops no `services/library-service/`, páginas `Inventory.tsx` e customizações de `Profile.tsx`.  
+> **Volume de Tickets:** 23 tickets (Blocos I, J, K, P).
+
+#### Bloco I — Loja de Pontos e Cosméticos (`points`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| I-01 | `[B]` | `auth-service/app/services/points.py` | Crédito de 100 Pontos MIST por R$ 1,00 gasto no checkout de jogos ou mercado. |
+| I-02 | `[B]` | `auth-service/app/models/inventory.py` | Modelo `InventoryItem`: `id`, `user_id`, `item_type`, `name`, `asset_url`, `is_equipped`. |
+| I-03 | `[B]` | `auth-service/app/api/points_shop.py` | Endpoint `POST /points-shop/purchase` com validação de saldo e criação do item cosmético. |
+| I-04 | `[B]` | `auth-service/app/api/profile.py` | Endpoint `POST /profile/equip` para definir moldura de avatar e fundo de perfil ativos. |
+| I-05 | `[F]` | `frontend/src/pages/PointsShop.tsx` | Conexão do fluxo da Loja de Pontos à API real, atualizando cosméticos do usuário. |
+
+#### Bloco J — Inventário Completo de Itens (`inventory`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| J-01 | `[B]` | `auth-service/app/models/inventory.py` | Suporte a tipos de itens: `card`, `emoticon`, `background`, `avatar_frame`, `badge` e status de mercado. |
+| J-02 | `[B]` | `auth-service/app/api/inventory.py` | Endpoint `GET /inventory` com paginação e agrupamento por abas de categorias. |
+| J-03 | `[B]` | `auth-service/app/api/inventory.py` | Endpoints `POST /inventory/items/{id}/equip` e `/unequip`. |
+| J-04 | `[F]` | `frontend/src/pages/Inventory.tsx` | Nova página de Inventário com visualizador em grid, abas por categoria, preview e botão de ação rápida. |
+
+#### Bloco K — Trading Cards, Insígnias e XP Progressivo (`inventory` `cards`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| K-01 | `[B]` | `auth-service/app/models/card.py` | Modelo `TradingCard`: `game_id`, `name`, `art_url`, `rarity`, `is_foil`. |
+| K-02 | `[B]` | `library-service/app/services/card_drop.py` | Algoritmo probabilístico de drop de cartas no endpoint de ping de tempo de jogo. |
+| K-03 | `[B]` | `library-service/app/services/quest_cards.py` | Integração com Quest Master para conceder cartas especiais ao obter conquistas raras. |
+| K-04 | `[B]` | `auth-service/app/api/crafting.py` | Endpoint `POST /crafting/badge` que valida o set completo de cartas, consome os itens e cria a Insígnia. |
+| K-05 | `[B]` | `auth-service/app/models/badge.py` | Modelo `Badge`: `name`, `description`, `xp_value`, `game_id`, `icon_url`. |
+| K-06 | `[B]` | `auth-service/app/services/xp_engine.py` | Cálculo de progressão: `level = floor(sqrt(total_xp / 100))` e endpoint `GET /me/level-progress`. |
+| K-07 | `[F]` | `frontend/src/components/Sidebar.tsx` | Barra de XP e indicador de nível em tempo real com tooltip de progresso até o próximo nível. |
+| K-08 | `[F]` | `frontend/src/components/BadgesSection.tsx` | Vitrine de insígnias craftadas no Perfil e na aba de detalhes de cada jogo na Biblioteca. |
+| K-09 | `[F]` | `frontend/src/pages/Inventory.tsx` | Visualização de progresso do set de cartas (ex: 3/5 coletadas) com botão "Fabricar Insígnia". |
+
+#### Bloco P — Perfil Público e Configurações de Privacidade (`profile`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| P-01 | `[B]` | `auth-service/app/api/public_profile.py` | Endpoint `GET /users/{username}/profile` filtrando dados conforme o nível de privacidade do usuário. |
+| P-02 | `[B]` | `auth-service/app/api/privacy.py` | Endpoint `PATCH /me/privacy` (visibilidade de jogos, conquistas, inventário, horas jogadas). |
+| P-03 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Visualização do perfil de terceiros visitável ao clicar no nome do usuário em qualquer feed/chat. |
+| P-04 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Badges de relacionamento dinâmicos (Amigo, Membro do Grupo, Bloqueado) e botão de adicionar amigo. |
+| P-05 | `[F]` | `frontend/src/components/PrivacySettingsModal.tsx` | Modal com toggles para controle granular de privacidade de cada seção do perfil. |
+
+---
+
+### TRILHA 3 — DEV 3: Social, Comunidade, UGC, Notificações e Gateway
+
+> **Foco de Código:** `services/social-service/` (grupos, fórum), novo `services/ugc-service/` (screenshots, workshop), `gateway/` (rotas e agregação de busca), `Header.tsx` (notificações e busca).  
+> **Volume de Tickets:** 33 tickets (Blocos M, N, O, Q, R, S).
+
+#### Bloco M — Grupos, Comunidade e Fórum (`community`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| M-01 | `[B]` | `social-service/app/models/group.py` | Modelos `Group` e `GroupMember`: nome, descrição, avatar, privacidade, contagem de membros. |
+| M-02 | `[B]` | `social-service/app/api/groups.py` | Endpoints `POST /groups`, `GET /groups`, `POST /groups/{id}/join`, `DELETE /groups/{id}/leave`. |
+| M-03 | `[B]` | `social-service/app/models/forum.py` | Modelos `ForumPost` e `ForumReply`: tópicos, respostas, autor e contadores. |
+| M-04 | `[B]` | `social-service/app/api/forum.py` | Endpoints CRUD para tópicos e comentários de discussões do grupo. |
+| M-05 | `[B]` | `social-service/app/api/group_chat.py` | Endpoint WebSocket `WS /ws/group/{group_id}/chat` para bate-papo de grupo em tempo real. |
+| M-06 | `[F]` | `frontend/src/pages/Groups.tsx` | Nova página com busca de grupos, tela de criação, lista de membros, aba de discussões e sala de chat. |
+
+#### Bloco N — Showcase de Capturas de Tela (`ugc`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| N-01 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `POST /screenshots/upload` (multipart/form-data) com metadados e armazenamento em volume. |
+| N-02 | `[B]` | `mist_sdk.py` | Função `take_screenshot(caption)` no SDK Python com captura de frame e envio automático. |
+| N-03 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `GET /screenshots` com filtros por jogo e por usuário. |
+| N-04 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoints `POST /screenshots/{id}/like` e `DELETE /like`. |
+| N-05 | `[F]` | `frontend/src/components/ScreenshotsGallery.tsx` | Galeria em grid responsivo com lightbox de ampliação e contador de likes no Perfil e na Loja. |
+| N-06 | `[F]` | `frontend/src/components/ScreenshotUploadModal.tsx` | Modal de upload com preview e drag-and-drop no frontend. |
+
+#### Bloco O — Workshop de Conteúdo: Mods e Skins (`ugc`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| O-01 | `[B]` | `ugc-service/app/models/workshop.py` | Modelo `WorkshopItem`: `game_id`, `author_id`, `title`, `tags`, `file_url`, `downloads`. |
+| O-02 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `POST /workshop/upload` com validação de tipo de arquivo. |
+| O-03 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `GET /workshop/items` com busca por tags e ordenação por popularidade. |
+| O-04 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoints `POST /workshop/{id}/subscribe` e `/unsubscribe`. |
+| O-05 | `[F]` | `frontend/src/pages/Workshop.tsx` | Página completa do Workshop por jogo com busca, detalhes do mod e botão de download. |
+| O-06 | `[F]` | `frontend/src/pages/Profile.tsx` | Exibição de contagem e lista de criações do Workshop publicadas pelo usuário. |
+
+#### Bloco Q — Sistema de Notificações Global (`notifications`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| Q-01 | `[B]` | `social-service/app/models/notification.py` | Modelo `Notification`: `user_id`, `type` (amigo, conquista, trade, venda), `payload`, `is_read`. |
+| Q-02 | `[B]` | `social-service/app/api/notifications.py` | Endpoints `GET /notifications` e `POST /notifications/{id}/read`. |
+| Q-03 | `[B]` | `social-service/app/services/event_bus.py` | Disparador de eventos internos para geração automática de notificações. |
+| Q-04 | `[B]` | `social-service/app/api/ws_notifications.py` | Entrega de notificações push em tempo real via WebSocket `WS /ws/notifications`. |
+| Q-05 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Sininho com badge de não lidas no Header e menu dropdown expansível. |
+| Q-06 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Ação de redirecionamento contextual ao clicar na notificação (ex: abrir tela do trade). |
+
+#### Bloco R — Busca Global (`notifications` `search`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| R-01 | `[B]` | `gateway/app/api/search.py` | Endpoint unificado `GET /search?q={query}` agregando respostas assíncronas via `httpx`. |
+| R-02 | `[B]` | `auth-service/app/api/search.py` | Endpoint interno de busca de usuários por nickname/nome. |
+| R-03 | `[B]` | `social-service/app/api/search.py` | Endpoint interno de busca de grupos. |
+| R-04 | `[B]` | `market-service/app/api/search.py` | Endpoint interno de busca de itens do mercado. |
+| R-05 | `[F]` | `frontend/src/components/GlobalSearchDropdown.tsx` | Barra de pesquisa com resultados em seções (Jogos, Usuários, Grupos, Mercado). |
+
+#### Bloco S — AI Curator Avançado (`ai`)
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
+|:---|:----:|:--------------------|:---------------------|
+| S-01 | `[B]` | `store-service/app/services/ai_trends.py` | Algoritmo de "Top Vendidos" e "Em Alta" calculado por volume recente de checkouts. |
+| S-02 | `[B]` | `store-service/app/services/ai_curator.py` | Geração de justificativas dinâmicas em linguagem natural ("Porque você jogou Elden Ring..."). |
+| S-03 | `[B]` | `store-service/app/services/wishlist_ai.py` | Alerta proativo de desconto em itens presentes na Wishlist do usuário. |
+| S-04 | `[F]` | `frontend/src/pages/Store.tsx` | Seções dinâmicas "Mais Populares da Semana" e banner de promoções recomendadas. |
+
+---
+
+## 4. Cronograma Dia a Dia por Desenvolvedor (Dias 3 a 15)
+
+---
+
+### FASE 1: Construção dos Pilares Independentes (Dias 3 a 5)
+
+| Dia | Trilha 1 — DEV 1 (Mercado & Economia) | Trilha 2 — DEV 2 (Usuário & Cards) | Trilha 3 — DEV 3 (Social, UGC & Notif.) |
+|:---:|:---|:---|:---|
+| **Dia 3** | **H-01, H-02, H-03**<br>Modelos e endpoints de Reviews no `store-service`; cálculo de aprovação. | **I-01, I-02, I-03**<br>Acúmulo de pontos no checkout, modelo `InventoryItem` e compra na Loja de Pontos. | **S-01, S-02, S-03**<br>AI Curator Avançado: cálculo de tendências, justificativas por IA e alertas da wishlist. |
+| **Dia 4** | **H-04, H-05**<br>Formulário de avaliação e listagem com badges de horas jogadas no frontend. | **I-04, I-05, J-01**<br>Equipar cosméticos no perfil, conexão frontend da Loja de Pontos e tipos de inventário. | **S-04, Q-01, Q-02**<br>Seções da Store com recomendações IA; modelo e endpoints REST de notificações. |
+| **Dia 5** | **T-01, T-02, T-03, T-04**<br>Modelo `WalletTransaction`, registro de lançamentos, endpoint `/wallet/history` e modal de extrato. | **J-02, J-03, J-04**<br>Endpoints get/equip de itens e criação da página `Inventory.tsx`. | **Q-03, Q-04, Q-05, Q-06**<br>WebSocket de notificações push, sininho no `Header.tsx` e dropdown com ações. |
+
+> **⚑ CHECKPOINT 1 (Final do Dia 5):**  
+> Reviews e Extrato de Carteira ativos (Dev 1); Inventário e Loja de Pontos integrados (Dev 2); Notificações push e IA Avançada na Loja funcionando (Dev 3).
+
+---
+
+### FASE 2: Expansão de Sistemas Complexos (Dias 6 a 8)
+
+| Dia | Trilha 1 — DEV 1 (Mercado & Economia) | Trilha 2 — DEV 2 (Usuário & Cards) | Trilha 3 — DEV 3 (Social, UGC & Notif.) |
+|:---:|:---|:---|:---|
+| **Dia 6** | **L-01, L-02, L-03**<br>Criação do `market-service` (`market.db`), modelo `MarketListing` e endpoint `POST /market/list`. | **K-01, K-02, K-03**<br>Modelo `TradingCard`, algoritmo de drop no ping de jogo e cartas do Quest Master. | **M-01, M-02**<br>Modelos `Group`, `GroupMember` e endpoints de descoberta/entrada em grupos. |
+| **Dia 7** | **L-04, L-05**<br>Listagem pública de itens à venda e fluxo de compra com dedução de saldo e troca de dono. | **K-04, K-05, K-06**<br>Endpoint de Crafting de Insígnias, modelo `Badge` e fórmula de progressão de nível/XP. | **M-03, M-04, M-05**<br>Discussões de fórum (posts/replies) e sala de WebSocket de chat do grupo. |
+| **Dia 8** | **L-09, L-11**<br>Página `Market.tsx` com catálogo de anúncios, filtros por preço/jogo e aba "Meus Anúncios". | **K-07, K-08, K-09**<br>Barra de XP na `Sidebar.tsx`, seção de Insígnias no perfil e botão de crafting no inventário. | **M-06**<br>Página `Groups.tsx` completa com busca, fórum e bate-papo em tempo real. |
+
+> **⚑ CHECKPOINT 2 (Final do Dia 8):**  
+> Mercado com listagem e compra pública (Dev 1); Drops de cartas, crafting de insígnias e níveis de XP funcionais (Dev 2); Comunidades com fórum e chat de grupo no ar (Dev 3).
+
+---
+
+### FASE 3: Negociações, UGC e Serviços Transversais (Dias 9 a 10)
+
+| Dia | Trilha 1 — DEV 1 (Mercado & Economia) | Trilha 2 — DEV 2 (Usuário & Cards) | Trilha 3 — DEV 3 (Social, UGC & Notif.) |
+|:---:|:---|:---|:---|
+| **Dia 9** | **L-06, L-07, L-08**<br>Modelo `TradeOffer`, endpoints de proposta, aceite e recusa de trocas diretas. | **P-01, P-02**<br>Endpoint de perfil público com filtragem por privacidade e `PATCH /me/privacy`. | **R-01, R-02, R-03, R-04**<br>Agregador assíncrono de Busca Global no Gateway e endpoints nos microsserviços. |
+| **Dia 10** | **L-10**<br>Modal de Oferta de Troca no frontend (seleção comparativa de itens entre amigos). | **P-03, P-04, P-05**<br>Página `PublicProfile.tsx`, badges de relação e modal de configuração de privacidade. | **R-05, N-01, N-02**<br>Dropdown de busca categorizada no `Header.tsx`; upload de screenshots via API e SDK. |
+
+> **⚑ CHECKPOINT 3 (Final do Dia 10):**  
+> Trocas diretas entre amigos (Dev 1); Perfis públicos visitáveis com controles de privacidade (Dev 2); Busca global unificada e upload de capturas via SDK (Dev 3).
+
+---
+
+### FASE 4: Finalização dos Módulos e UGC (Dias 11 a 12)
+
+| Dia | Trilha 1 — DEV 1 (Mercado & Economia) | Trilha 2 — DEV 2 (Usuário & Cards) | Trilha 3 — DEV 3 (Social, UGC & Notif.) |
+|:---:|:---|:---|:---|
+| **Dia 11** | **L-05/L-10 (Testes & Hardening)**<br>Validação de concorrência: bloqueio de itens em múltiplos trades e transações atômicas de carteira. | **K-09/P-03 (Polimento)**<br>Sincronização em tempo real de inventário pós-crafting e pré-visualização de itens no Perfil. | **N-03, N-04, N-05, N-06**<br>Galeria de screenshots no frontend com likes e upload drag-and-drop. |
+| **Dia 12** | **Revisão de Economia Integrada**<br>Testes cruzados: compra de jogo gera pontos → gasta na loja → dropa carta → vende no mercado. | **Revisão de Gamificação**<br>Testes de regressão: ganho de XP após crafting e desbloqueio de badges em múltiplos jogos. | **O-01 a O-06**<br>Workshop de Mods e Skins: backend de upload/subscrição e página `Workshop.tsx`. |
+
+> **⚑ CHECKPOINT 4 (Final do Dia 12 — Fechamento da Etapa 2):**  
+> 100% dos 115 tickets desenvolvidos e validados nas branches individuais de cada desenvolvedor.
+
+---
+
+### FASE 5: Buffer, Testes E2E e Entrega Final (Dias 13 a 15 — Trabalho Conjunto)
+
+| Dia | Atividades Integradas da Equipe (Dev 1 + Dev 2 + Dev 3) |
+|:---:|:---|
+| **Dia 13** | **Bateria de Testes Automatizados e E2E:**<br>• Merge das 3 trilhas na branch `dev` com acompanhamento conjunto.<br>• Execução dos testes E2E com Playwright cobrindo os fluxos completos: compra de jogo → execução via SDK → conquista → drop de carta → listagem no mercado → trade entre amigos → mod no workshop.<br>• Resolução imediata de inconsistências de contrato de API. |
+| **Dia 14** | **Polimento de UX e Verificação de Deploy:**<br>• Revisão visual: consistência de paleta, loading skeletons, tratamento de erros e toasts explicativos.<br>• Validação do `docker compose up` do zero: subir todos os microsserviços e frontend limpos em novas máquinas.<br>• População do banco demonstrativo com seed rico (jogos, reviews, perfis, screenshots, mods e itens de mercado). |
+| **Dia 15** | **Demonstração, Tag de Release e Entrega:**<br>• Gravação do vídeo oficial de demonstração percorrendo todos os épicos do ecossistema MIST.<br>• Merge final de `dev` na branch `main`.<br>• Criação da tag de release `v1.0.0` no GitHub. |
+
+---
+
+## 5. Gantt Comparativo das 3 Trilhas (Dias 3 a 15)
+
+```
+Desenvolvedor / Módulo       D3  D4  D5  D6  D7  D8  D9  D10 D11 D12 D13 D14 D15
+──────────────────────────── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
+[DEV 1] H: Reviews Jogos     ██  ██
+[DEV 1] T: Extrato Carteira          ██
+[DEV 1] L: Mercado List/Buy              ██  ██  ██
+[DEV 1] L: Trade Offers                              ██  ██
+[DEV 1] Hardening Economia                                   ██  ██
+──────────────────────────── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
+[DEV 2] I: Loja de Pontos    ██  ██
+[DEV 2] J: Inventário                ██
+[DEV 2] K: Cards, Badges, XP             ██  ██  ██
+[DEV 2] P: Perfil & Priv.                            ██  ██
+[DEV 2] Polimento Gamif.                                     ██  ██
+──────────────────────────── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
+[DEV 3] S: AI Trends/Curator ██  ██
+[DEV 3] Q: Notificações Push     ██  ██
+[DEV 3] M: Grupos & Fórum                ██  ██  ██
+[DEV 3] R: Busca Global                              ██  ██
+[DEV 3] N: Screenshots                                   ██  ██
+[DEV 3] O: Workshop Mods                                         ██
+──────────────────────────── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ─── ───
+[TODOS] Testes E2E Playwright                                            ██
+[TODOS] Polimento UX & Docker                                                ██
+[TODOS] Release v1.0.0 & Demo                                                    ██
 ```
 
 ---
 
-## Mapa de Dependências Críticas
+## 6. Matriz de Interfaces e Contratos entre Trilhas
 
-```
-Gateway (A)
-  └──► TODOS os serviços e endpoints do sistema
+Para evitar que uma trilha bloqueie a outra durante os commits, seguem os contratos de dados acordados:
 
-auth-service (B)
-  └──► AuthContext (B-05/06)
-         └──► Todos os fluxos autenticados do frontend
-  └──► XP / Nível (K-06)
-         └──► Barra de XP na Sidebar (K-07)
+1. **Dev 1 ↔ Dev 2 (Mercado e Inventário):**
+   - Para colocar um item à venda, o Dev 1 consulta `GET /inventory` (Dev 2) e envia `POST /inventory/items/{id}/lock` (ou status `listed`).
+   - Se vendido, o `market-service` aciona `POST /inventory/transfer` passando `item_id`, `from_user_id` e `to_user_id`.
 
-store-service (C)
-  └──► grant library (D-02)
-         └──► SDK (E-01/02/03)
-                └──► Sessions / Achievements
-                └──► Trading Cards drop (K-02)
-  └──► Reviews (H)
-         └──► Score em GET /games/{id}
-                └──► AI Curator Avançado (S-01/02)
+2. **Dev 2 ↔ Dev 3 (Cartas, Conquistas e Notificações):**
+   - Quando o Dev 2 realiza um drop de carta ou craft de badge, dispara um evento interno para o `event_bus` do Dev 3, que envia a notificação em tempo real via WebSocket.
 
-social-service WebSocket (F-03)
-  └──► MIST Bot (G-04)
-  └──► Notificações em tempo real (Q-04)
-
-Inventário (J)
-  └──► Trading Cards (K)
-         └──► Crafting de Insígnia (K-04)
-                └──► XP progressivo (K-06)
-         └──► Listagem no Mercado (L-02)
-                └──► Trade Offers (L-06)
-
-Notificações (Q-03) ◄── disparadas por:
-  ├── Achievements desbloqueados (E-05)
-  ├── Solicitação de amizade (F-02)
-  ├── Item vendido no mercado (L-05)
-  ├── Trade recebido (L-06)
-  └── Carta dropada (K-02)
-```
-
----
-
-## Mapeamento de Épicos para o GitHub Project
-
-| Épico | Blocos | Label | Dias Principais |
-|:------|:-------|:------|:---------------|
-| **EPIC-01** Infraestrutura & Gateway | A | `infra` | 1 |
-| **EPIC-02** Autenticação e Perfil Base | B | `auth` | 1 – 2 |
-| **EPIC-03** Loja, Checkout e Reviews | C, H | `store` `reviews` | 1 – 2 |
-| **EPIC-04** Biblioteca, Download e SDK | D, E | `library` `sdk` | 1 – 2 |
-| **EPIC-05** Social, Chat e Feed | F | `social` | 1 – 2 |
-| **EPIC-06** Agentes de IA (Base + Avançado) | G, S | `ai` | 2, 8 |
-| **EPIC-07** Loja de Pontos e Cosméticos | I | `points` | 2 |
-| **EPIC-08** Inventário e Trading Cards | J, K | `inventory` `cards` | 3 – 4 |
-| **EPIC-09** Mercado, Trades e Carteira | L, T | `market` `wallet` | 5 – 8 |
-| **EPIC-10** Grupos e Fórum | M | `community` | 9 |
-| **EPIC-11** Screenshots e Workshop | N, O | `ugc` | 11 |
-| **EPIC-12** Perfil Público e Privacidade | P | `profile` | 12 |
-| **EPIC-13** Notificações e Busca Global | Q, R | `notifications` `search` | 4 – 5, 10 |
+3. **Dev 1 / Dev 2 ↔ Dev 3 (Busca Global):**
+   - Dev 1 disponibiliza a rota padrão `GET /internal/search/market?q={query}`.
+   - Dev 2 disponibiliza `GET /internal/search/users?q={query}`.
+   - Dev 3 consome essas rotas no agregador assíncrono do Gateway sem precisar alterar nenhum arquivo de backend dos colegas.
