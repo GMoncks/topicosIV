@@ -155,6 +155,8 @@ export interface GameApiResponse {
   id: number;
   title: string;
   price: number;
+  original_price?: number;
+  discount_percentage?: number;
   tags: string[];
   category: string;
   banner_url: string;
@@ -162,6 +164,8 @@ export interface GameApiResponse {
   developer: string;
   publisher: string;
   review_score: number;
+  recommendation_score?: number;
+  recommendation_reason?: string;
 }
 
 export interface GameDetailApiResponse extends GameApiResponse {
@@ -198,6 +202,10 @@ export const storeApi = {
 
   async getGameDetails(gameId: number): Promise<GameDetailApiResponse> {
     return fetchApi<GameDetailApiResponse>(`/api/games/${gameId}`, { method: 'GET' });
+  },
+
+  async getRecommendations(limit: number = 4): Promise<GameApiResponse[]> {
+    return fetchApi<GameApiResponse[]>(`/api/store/recommendations?limit=${limit}`, { method: 'GET' });
   },
 
   async addToWishlist(gameId: number): Promise<{ id: number; created: boolean }> {
@@ -310,7 +318,32 @@ export const libraryApi = {
     const query = since ? `?since=${encodeURIComponent(since)}` : '';
     return fetchApi<any[]>(`/api/library/achievements/recent${query}`, { method: 'GET' });
   },
+
+  async getGameQuests(gameId: number): Promise<DynamicQuest[]> {
+    return fetchApi<DynamicQuest[]>(`/api/library/games/${gameId}/quests`, { method: 'GET' });
+  },
+
+  async claimQuest(gameId: number, questId: number): Promise<any> {
+    return fetchApi<any>(`/api/library/games/${gameId}/quests/${questId}/claim`, { method: 'POST' });
+  },
 };
+
+export interface DynamicQuest {
+  id: number;
+  user_id: number;
+  game_id: number;
+  quest_key: string;
+  title: string;
+  description: string;
+  xp_reward: number;
+  target_type: string;
+  target_value: number;
+  progress: number;
+  is_completed: boolean;
+  is_claimed: boolean;
+  week_key: string;
+  created_at?: string;
+}
 
 export interface FriendItem {
   friendship_id: number;
@@ -322,6 +355,7 @@ export interface FriendItem {
   presence_status?: 'online' | 'away' | 'playing' | 'offline';
   current_game?: string;
   current_game_id?: number;
+  is_bot?: boolean;
 }
 
 export interface ActivityItem {
@@ -383,6 +417,13 @@ export const socialApi = {
 
   async markChatRead(roomId: string): Promise<any> {
     return fetchApi<any>(`/api/social/chat/${roomId}/read`, { method: 'POST' });
+  },
+
+  async sendMessage(roomId: string, content: string): Promise<ChatMessage> {
+    return fetchApi<ChatMessage>(`/api/social/chat/${roomId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
   },
 
   async getPresenceSnapshot(): Promise<UserPresence[]> {

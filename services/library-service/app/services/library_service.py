@@ -3,9 +3,12 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Dict, Any, Optional
 import httpx
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from app.models.library_item import LibraryItem
 from app.models.game_session import GameSession
+from app.models.quest import DynamicQuest
+from app.services.ai_client import AIClient
 
 
 _achievement_subscribers: Dict[int, List[asyncio.Queue]] = {}
@@ -451,4 +454,132 @@ class LibraryService:
         item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
         playtime = item.playtime_minutes if item else 0
         return session, playtime
+
+    @staticmethod
+    async def get_or_generate_weekly_quests(
+        db: Session,
+        user_id: int,
+        game_id: int,
+        store_service_url: str = "http://localhost:8002",
+        client: Optional[httpx.AsyncClient] = None
+    ) -> List[dict]:
+        """
+        MIST Quest Master (G-03): Retorna ou gera desafios semanais dinâmicos por jogo,
+        acompanhando o progresso de tempo de jogo e conquistas do usuário.
+        """
+        now = datetime.now(timezone.utc)
+        week_key = f"{now.year}-W{now.isocalendar()[1]}"
+
+        existing_quests = db.query(DynamicQuest).filter_by(
+            user_id=user_id,
+            game_id=game_id,
+            week_key=week_key
+        ).all()
+
+        item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+        playtime = item.playtime_minutes if item else 0
+
+        from app.models.achievement import UserAchievement
+        unlocked_count = db.query(UserAchievement).filter_by(user_id=user_id, game_id=game_id).count()
+
+        if not existing_quests:
+            game_title = f"Game {game_id}"
+            game_category = "Ação"
+
+            owns_client = False
+            if client is None:
+                client = httpx.AsyncClient(timeout=4.0)
+                owns_client = True
+            try:
+                resp = await client.get(f"{store_service_url.rstrip('/')}/games/{game_id}")
+                if resp.status_code == 200:
+                    data = resp.json()
+                    game_title = data.get("title", game_title)
+                    game_category = data.get("category", game_category)
+            except Exception:
+                pass
+            finally:
+                if owns_client:
+                    await client.aclose()
+
+            ai_client = AIClient()
+            generated = await ai_client.generate_dynamic_quests(
+                game_title=game_title,
+                game_category=game_category,
+                user_playtime_minutes=playtime
+            )
+
+            created_quests = []
+            for q_data in generated:
+                quest_key = str(q_data.get("id", f"quest_{len(created_quests)+1}"))
+                if "target_minutes" in q_data:
+                    target_type = "playtime"
+                    target_val = int(q_data["target_minutes"])
+                elif "target_achievements" in q_data:
+                    target_type = "achievements"
+                    target_val = int(q_data["target_achievements"])
+                else:
+                    target_type = "score"
+                    target_val = int(q_data.get("target_score", 100))
+
+                quest = DynamicQuest(
+                    user_id=user_id,
+                    game_id=game_id,
+                    quest_key=quest_key,
+                    title=q_data.get("title", f"Desafio em {game_title}"),
+                    description=q_data.get("description", "Complete o objetivo nesta semana."),
+                    xp_reward=int(q_data.get("xp_reward", 200)),
+                    target_type=target_type,
+                    target_value=target_val,
+                    progress=0,
+                    is_completed=False,
+                    is_claimed=False,
+                    week_key=week_key,
+                    created_at=now
+                )
+                db.add(quest)
+                created_quests.append(quest)
+
+            db.commit()
+            for q in created_quests:
+                db.refresh(q)
+            existing_quests = created_quests
+
+        result = []
+        for q in existing_quests:
+            if q.target_type == "playtime":
+                q.progress = min(playtime, q.target_value)
+            elif q.target_type == "achievements":
+                q.progress = min(unlocked_count, q.target_value)
+            else:
+                q.progress = q.progress
+
+            if q.progress >= q.target_value and not q.is_completed:
+                q.is_completed = True
+
+            result.append(q.to_dict())
+
+        db.commit()
+        return result
+
+    @staticmethod
+    def claim_quest(db: Session, user_id: int, game_id: int, quest_id: int) -> dict:
+        quest = db.query(DynamicQuest).filter_by(id=quest_id, user_id=user_id, game_id=game_id).first()
+        if not quest:
+            raise HTTPException(status_code=404, detail="Desafio não encontrado.")
+        if not quest.is_completed:
+            raise HTTPException(status_code=400, detail="Desafio ainda não completado.")
+        if quest.is_claimed:
+            raise HTTPException(status_code=400, detail="Recompensa já resgatada anteriormente.")
+
+        quest.is_claimed = True
+        db.commit()
+        db.refresh(quest)
+        return {
+            "status": "claimed",
+            "quest_id": quest.id,
+            "xp_reward": quest.xp_reward,
+            "message": f"Você resgatou {quest.xp_reward} XP pelo desafio '{quest.title}'!"
+        }
+
 

@@ -206,6 +206,34 @@ async def websocket_chat_endpoint(
                         **saved_msg
                     }
                     await chat_manager.broadcast_message(room_id, broadcast_payload)
+
+                    # MIST Companion Bot (G-04): Se a sala for do bot e a mensagem partiu do usuário
+                    is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"
+                    if is_bot_room and sender_id != 0:
+                        # 1. Dispara typing indicator do bot
+                        await chat_manager.broadcast_typing(room_id, user_id=0, is_typing=True)
+                        # 2. Carrega histórico recente para contexto
+                        history_msgs = SocialService.list_messages(db, room_id, limit=6)
+                        chat_history = [
+                            {"sender": ("MIST Bot" if m["sender_id"] == 0 else "Gamer"), "text": m["content"]}
+                            for m in history_msgs
+                        ]
+                        # 3. Invoca AI Client (com fallback determinístico resiliente)
+                        from app.services.ai_client import AIClient
+                        ai_client = AIClient()
+                        bot_reply = await ai_client.companion_chat_reply(
+                            user_message=content,
+                            chat_history=chat_history,
+                            user_profile={"username": f"Gamer_{current_user_id}"}
+                        )
+                        # 4. Salva a resposta do bot
+                        bot_saved = SocialService.save_message(db, room_id, sender_id=0, content=bot_reply)
+                        # 5. Remove typing indicator e transmite resposta via WebSocket
+                        await chat_manager.broadcast_typing(room_id, user_id=0, is_typing=False)
+                        await chat_manager.broadcast_message(room_id, {
+                            "type": "message",
+                            **bot_saved
+                        })
             elif msg_type == "typing":
                 is_typing = bool(data.get("is_typing", False))
                 await chat_manager.broadcast_typing(room_id, current_user_id, is_typing, exclude=websocket)
@@ -227,6 +255,52 @@ def get_chat_messages(
     Recupera o histórico paginado de mensagens de uma sala de chat (F-07).
     """
     return SocialService.list_messages(db=db, room_id=room_id, limit=limit, offset=offset)
+
+
+from pydantic import BaseModel as PyBaseModel
+
+class ChatSendPayload(PyBaseModel):
+    content: str
+
+
+@router.post("/chat/{room_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/social/chat/{room_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def send_chat_message(
+    room_id: str,
+    payload: ChatSendPayload,
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Envia uma mensagem para uma sala de chat via REST com auto-resposta se a sala for do MIST Bot.
+    """
+    user_id = int(x_user_id) if x_user_id else 1
+    content = payload.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Conteúdo da mensagem não pode ser vazio.")
+
+    saved_msg = SocialService.save_message(db=db, room_id=room_id, sender_id=user_id, content=content)
+    await chat_manager.broadcast_message(room_id, {"type": "message", **saved_msg})
+
+    is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"
+    if is_bot_room and user_id != 0:
+        history_msgs = SocialService.list_messages(db, room_id, limit=6)
+        chat_history = [
+            {"sender": ("MIST Bot" if m["sender_id"] == 0 else "Gamer"), "text": m["content"]}
+            for m in history_msgs
+        ]
+        from app.services.ai_client import AIClient
+        ai_client = AIClient()
+        bot_reply = await ai_client.companion_chat_reply(
+            user_message=content,
+            chat_history=chat_history,
+            user_profile={"username": f"Gamer_{user_id}"}
+        )
+        bot_saved = SocialService.save_message(db, room_id, sender_id=0, content=bot_reply)
+        await chat_manager.broadcast_message(room_id, {"type": "message", **bot_saved})
+
+    return saved_msg
+
 
 
 @router.post("/chat/{room_id}/read", status_code=status.HTTP_200_OK)
