@@ -1,9 +1,12 @@
+import json
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.schemas.game import GameListItemResponse, GameDetailResponse
+from app.schemas.review import ReviewCreate, ReviewResponse, ReviewHelpfulResponse
+from app.services.review_service import ReviewService
 from app.services.store_service import StoreService
 
 router = APIRouter(tags=["Store"])
@@ -61,7 +64,83 @@ def get_game_details(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Jogo não encontrado"
         )
-    return game
+    summary = ReviewService.get_summary(db=db, game_id=game_id)
+    return GameDetailResponse.model_validate(game).model_copy(update=summary.model_dump())
+
+
+def _require_user_id(x_user_id: Optional[str]) -> int:
+    if not x_user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+    try:
+        user_id = int(x_user_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Identificador de usuário inválido.")
+    if user_id <= 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Identificador de usuário inválido.")
+    return user_id
+
+
+def _review_response(review, helpful_count: int) -> ReviewResponse:
+    return ReviewResponse.model_validate(review).model_copy(update={"helpful_count": helpful_count})
+
+
+@router.post("/games/{game_id}/reviews", response_model=ReviewResponse)
+async def create_or_update_review(
+    game_id: int,
+    payload: ReviewCreate,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """
+    Cria (201) ou atualiza (200) a avaliação do usuário para o jogo.
+    Exige posse do jogo na biblioteca; as horas jogadas são gravadas em `playtime_at_review`.
+    """
+    user_id = _require_user_id(x_user_id)
+    if not StoreService.get_game_by_id(db=db, game_id=game_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Jogo não encontrado")
+
+    playtime_minutes = await ReviewService.fetch_playtime_minutes(user_id=user_id, game_id=game_id)
+    review, created = ReviewService.upsert_review(
+        db=db, user_id=user_id, game_id=game_id, payload=payload, playtime_minutes=playtime_minutes
+    )
+    body = _review_response(review, ReviewService.helpful_counts(db, [review.id]).get(review.id, 0))
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        content=json.loads(body.model_dump_json()),
+    )
+
+
+@router.get("/games/{game_id}/reviews", response_model=List[ReviewResponse], status_code=status.HTTP_200_OK)
+def list_game_reviews(
+    game_id: int,
+    sort: str = Query("recent", pattern="^(recent|helpful)$", description="Ordenação: recent ou helpful"),
+    is_recommended: Optional[bool] = Query(None, description="Filtra por avaliações positivas (true) ou negativas (false)"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """Lista as avaliações da comunidade para o jogo."""
+    if not StoreService.get_game_by_id(db=db, game_id=game_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Jogo não encontrado")
+    rows = ReviewService.list_reviews(
+        db=db, game_id=game_id, sort=sort, is_recommended=is_recommended, skip=skip, limit=limit
+    )
+    return [_review_response(review, helpful_count) for review, helpful_count in rows]
+
+
+@router.post("/reviews/{review_id}/helpful", response_model=ReviewHelpfulResponse)
+def mark_review_helpful(
+    review_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """Marca uma avaliação como útil (idempotente: um voto por usuário)."""
+    user_id = _require_user_id(x_user_id)
+    helpful_count, created = ReviewService.add_helpful_vote(db=db, review_id=review_id, user_id=user_id)
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        content={"review_id": review_id, "helpful_count": helpful_count, "created": created},
+    )
 
 
 @router.get("/games/{game_id}/download", status_code=status.HTTP_200_OK)

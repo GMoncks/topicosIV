@@ -34,7 +34,7 @@ export const Store: React.FC<StoreProps> = ({
   activeSubTab = 'destaques',
   onNavigateToLibrary,
 }) => {
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { isAuthenticated, openAuthModal, user } = useAuth();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
   const [games, setGames] = useState<GameItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -320,6 +320,7 @@ export const Store: React.FC<StoreProps> = ({
         isAuthenticated={isAuthenticated}
         isOwned={selectedGameId ? ownedGameIds.has(selectedGameId) : false}
         onOpenAuth={() => openAuthModal('login')}
+        currentUserId={user?.id}
       />
 
       {/* Modal de Checkout Unitário ("Comprar agora") */}

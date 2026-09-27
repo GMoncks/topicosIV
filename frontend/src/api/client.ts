@@ -167,6 +167,10 @@ export interface GameApiResponse {
 export interface GameDetailApiResponse extends GameApiResponse {
   description: string;
   screenshots: string[];
+  reviews_count: number;
+  positive_count: number;
+  approval_pct: number | null;
+  approval_label: string;
 }
 
 export interface ListGamesParams {
@@ -258,6 +262,63 @@ export interface CheckoutPayload {
   game_ids?: number[];
   idempotency_key?: string;
 }
+
+// ========================================
+// Store API — Avaliações de Jogos (Bloco H)
+// ========================================
+
+export interface ReviewApiResponse {
+  id: number;
+  user_id: number;
+  game_id: number;
+  is_recommended: boolean;
+  text: string;
+  playtime_at_review: number;
+  created_at: string;
+  updated_at: string;
+  helpful_count: number;
+}
+
+export interface ReviewCreatePayload {
+  is_recommended: boolean;
+  text: string;
+}
+
+export interface ReviewHelpfulResponse {
+  review_id: number;
+  helpful_count: number;
+  created: boolean;
+}
+
+export const reviewApi = {
+  async listReviews(
+    gameId: number,
+    params?: { sort?: 'recent' | 'helpful'; is_recommended?: boolean; skip?: number; limit?: number }
+  ): Promise<ReviewApiResponse[]> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.set(key, String(value));
+        }
+      });
+    }
+    const qs = query.toString();
+    // Usa o proxy genérico /api/store/* (o proxy dedicado /api/games/* só repassa GET/OPTIONS).
+    return fetchApi<ReviewApiResponse[]>(`/api/store/games/${gameId}/reviews${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
+
+  async submitReview(gameId: number, payload: ReviewCreatePayload): Promise<ReviewApiResponse> {
+    return fetchApi<ReviewApiResponse>(`/api/store/games/${gameId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async markHelpful(reviewId: number): Promise<ReviewHelpfulResponse> {
+    return fetchApi<ReviewHelpfulResponse>(`/api/store/reviews/${reviewId}/helpful`, { method: 'POST' });
+  },
+};
 
 export interface LibraryItemResponse {
   id: number;

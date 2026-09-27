@@ -70,7 +70,8 @@ def check_user_has_game(
     db: Session = Depends(get_db)
 ):
     owned = LibraryService.has_game(db=db, user_id=user_id, game_id=game_id)
-    return {"user_id": user_id, "game_id": game_id, "owned": owned}
+    playtime_minutes = LibraryService.get_playtime_minutes(db=db, user_id=user_id, game_id=game_id)
+    return {"user_id": user_id, "game_id": game_id, "owned": owned, "playtime_minutes": playtime_minutes}
 
 
 @router.get(

@@ -1,7 +1,7 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { GameDetailModal } from './GameDetailModal';
-import { storeApi, GameDetailApiResponse } from '../api/client';
+import { storeApi, reviewApi, GameDetailApiResponse } from '../api/client';
 import { CartProvider } from '../context/CartContext';
 
 vi.mock('../api/client', () => ({
@@ -10,6 +10,11 @@ vi.mock('../api/client', () => ({
     getWishlist: vi.fn(),
     addToWishlist: vi.fn(),
     removeFromWishlist: vi.fn(),
+  },
+  reviewApi: {
+    listReviews: vi.fn(),
+    submitReview: vi.fn(),
+    markHelpful: vi.fn(),
   },
 }));
 
@@ -31,12 +36,17 @@ describe('GameDetailModal Component', () => {
     tags: ['RPG', 'Sci-Fi'],
     category: 'JOGO',
     review_score: 9.2,
+    reviews_count: 0,
+    positive_count: 0,
+    approval_pct: null,
+    approval_label: 'Sem avaliações',
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     (storeApi.getGameDetails as any).mockResolvedValue(mockGameDetails);
     (storeApi.getWishlist as any).mockResolvedValue([]);
+    (reviewApi.listReviews as any).mockResolvedValue([]);
   });
 
   const renderModal = (props: Partial<Parameters<typeof GameDetailModal>[0]> = {}) => {
@@ -153,5 +163,53 @@ describe('GameDetailModal Component', () => {
     expect(screen.getByText('Na Biblioteca')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Comprar agora/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Adicionar ao carrinho/i })).not.toBeInTheDocument();
+  });
+
+  it('deve exibir "Sem avaliações" quando o jogo não possui reviews e não mostrar botão de avaliar sem posse', async () => {
+    renderModal({ isOwned: false });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cyberpunk Odyssey')).toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText('Sem avaliações').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /Escrever avaliação/i })).not.toBeInTheDocument();
+  });
+
+  it('deve exibir a aprovação calculada e permitir abrir o formulário de avaliação quando o usuário possui o jogo', async () => {
+    (storeApi.getGameDetails as any).mockResolvedValue({
+      ...mockGameDetails,
+      reviews_count: 10,
+      positive_count: 9,
+      approval_pct: 90,
+      approval_label: 'Muito Positivo - 90%',
+    });
+    (reviewApi.listReviews as any).mockResolvedValue([
+      {
+        id: 1,
+        user_id: 99,
+        game_id: 1,
+        is_recommended: true,
+        text: 'Excelente!',
+        playtime_at_review: 120,
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        helpful_count: 3,
+      },
+    ]);
+
+    renderModal({ isOwned: true });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cyberpunk Odyssey')).toBeInTheDocument();
+    });
+
+    expect(await screen.findByText('Muito Positivo - 90%')).toBeInTheDocument();
+
+    const reviewButton = await screen.findByRole('button', { name: /Escrever avaliação/i });
+    fireEvent.click(reviewButton);
+
+    expect(await screen.findByText('Você recomenda este jogo?')).toBeInTheDocument();
+    expect(await screen.findByText('Excelente!')).toBeInTheDocument();
   });
 });

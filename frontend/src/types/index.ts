@@ -32,6 +32,7 @@ export interface UserBadge {
 }
 
 export interface UserProfile {
+  id: number;
   username: string;
   realName: string;
   location: string;
@@ -119,4 +120,4 @@ export interface AchievementResponse {
   rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário';
   is_unlocked: boolean;
   unlocked_at: string | null;
-}
+}
