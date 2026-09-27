@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapAuthUserToProfile(authUser: AuthUserResponse): UserProfile {
   return {
+    id: authUser.id,
     username: authUser.username,
     realName: authUser.username,
     location: 'Brasil',

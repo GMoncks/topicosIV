@@ -65,3 +65,25 @@ def test_ownership_check_false_then_true_after_grant(client):
     resp_after = client.get("/library/users/42/has-game/101")
     assert resp_after.status_code == 200
     assert resp_after.json()["owned"] is True
+
+
+@pytest.mark.unit
+def test_has_game_exposes_playtime_minutes(client):
+    """Valida que has-game retorna playtime_minutes (0 sem licença; valor real com licença)."""
+    from app.models.library_item import LibraryItem
+
+    resp = client.get("/library/users/42/has-game/101")
+    assert resp.json()["playtime_minutes"] == 0
+
+    assert client.post("/library/grant", json={"user_id": 42, "game_id": 101}).status_code == 201
+    resp = client.get("/library/users/42/has-game/101")
+    assert resp.json()["owned"] is True
+    assert resp.json()["playtime_minutes"] == 0
+
+    db = TestingSessionLocal()
+    db.query(LibraryItem).filter_by(user_id=42, game_id=101).update({"playtime_minutes": 135})
+    db.commit()
+    db.close()
+
+    resp = client.get("/library/users/42/has-game/101")
+    assert resp.json()["playtime_minutes"] == 135

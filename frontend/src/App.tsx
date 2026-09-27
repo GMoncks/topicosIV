@@ -18,6 +18,7 @@ import { storeApi, libraryApi } from './api/client';
 
 
 const defaultGuestUser: UserProfile = {
+  id: 0,
   username: 'ggtorres2001',
   realName: 'Gabriel Torres',
   location: 'Rio Grande do Sul, Brazil',

@@ -67,5 +67,9 @@ class GameDetailResponse(BaseModel):
     publisher: str
     review_score: float
     game_file: Optional[str] = None
+    reviews_count: int = 0
+    positive_count: int = 0
+    approval_pct: Optional[float] = Field(None, description="Aprovação percentual dos reviews reais (None sem avaliações)")
+    approval_label: str = Field("Sem avaliações", description="Ex.: 'Muito Positivo - 92%'")
 
     model_config = ConfigDict(from_attributes=True)

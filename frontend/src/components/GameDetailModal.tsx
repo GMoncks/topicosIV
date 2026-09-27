@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { GameDetailApiResponse, storeApi } from '../api/client';
+import { GameDetailApiResponse, ReviewApiResponse, storeApi } from '../api/client';
 import { GameItem } from '../types';
 import { useCart } from '../context/CartContext';
+import { ReviewFormModal } from './ReviewFormModal';
+import { ReviewsList } from './ReviewsList';
 
 interface GameDetailModalProps {
   gameId: number | null;
@@ -11,6 +13,7 @@ interface GameDetailModalProps {
   isAuthenticated: boolean;
   isOwned?: boolean;
   onOpenAuth: () => void;
+  currentUserId?: number;
 }
 
 const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
@@ -21,6 +24,7 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   isAuthenticated,
   isOwned = false,
   onOpenAuth,
+  currentUserId,
 }) => {
   const [game, setGame] = useState<GameDetailApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,6 +32,8 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   const [selectedScreenshotIndex, setSelectedScreenshotIndex] = useState<number>(0);
   const [inWishlist, setInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+  const [myReview, setMyReview] = useState<ReviewApiResponse | null>(null);
 
   const { isInCart, toggleCart } = useCart();
   const inCart = game ? isInCart(game.id) : false;
@@ -133,6 +139,19 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
       setWishlistLoading(false);
     }
   };
+
+  const handleReviewsLoaded = useCallback(
+    (reviews: ReviewApiResponse[]) => {
+      setMyReview(
+        currentUserId !== undefined ? reviews.find((r) => r.user_id === currentUserId) ?? null : null
+      );
+    },
+    [currentUserId]
+  );
+
+  const handleReviewSubmitted = useCallback((review: ReviewApiResponse) => {
+    setMyReview(review);
+  }, []);
 
   const screenshots = useMemo(() => {
     return game?.screenshots && game.screenshots.length > 0 ? game.screenshots : [];
@@ -306,6 +325,36 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                     <p>{game.description}</p>
                   </div>
                 </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <h3 className="text-xl font-display font-bold text-white border-b border-gray-800 pb-2 flex-1 min-w-[200px]">
+                      Avaliações
+                    </h3>
+                    {isOwned && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isAuthenticated && !hasAuthToken) {
+                            handleUnauthenticatedAction();
+                          } else {
+                            setIsReviewFormOpen(true);
+                          }
+                        }}
+                        className="bg-brand-purple/20 border border-brand-purple text-brand-purple hover:bg-brand-purple/30 font-medium text-sm px-4 py-2 rounded-lg transition cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="fa-solid fa-pen mr-1.5"></i>
+                        {myReview ? 'Editar avaliação' : 'Escrever avaliação'}
+                      </button>
+                    )}
+                  </div>
+                  <ReviewsList
+                    gameId={game.id}
+                    currentUserId={currentUserId}
+                    isAuthenticated={isAuthenticated || hasAuthToken}
+                    onReviewsLoaded={handleReviewsLoaded}
+                  />
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -384,12 +433,20 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                       <span className="text-gray-400">Categoria</span>
                       <span className="text-white font-medium">{game.category}</span>
                     </li>
+                    <li className="flex justify-between items-center">
+                      <span className="text-gray-400">Aprovação</span>
+                      {game.reviews_count > 0 ? (
+                        <span className="text-brand-purple font-medium flex items-center gap-1 text-right">
+                          <i className="fa-solid fa-thumbs-up text-xs"></i>
+                          {game.approval_label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 text-xs italic">Sem avaliações</span>
+                      )}
+                    </li>
                     <li className="flex justify-between">
-                      <span className="text-gray-400">Review Score</span>
-                      <span className="text-brand-purple font-medium flex items-center gap-1">
-                        <i className="fa-solid fa-star text-xs"></i>
-                        {game.review_score.toFixed(1)} / 10
-                      </span>
+                      <span className="text-gray-400">Avaliações</span>
+                      <span className="text-white font-medium">{game.reviews_count}</span>
                     </li>
                   </ul>
                 </div>
@@ -411,6 +468,17 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
           </>
         ) : null}
       </div>
+
+      {game && (
+        <ReviewFormModal
+          gameId={game.id}
+          gameTitle={game.title}
+          isOpen={isReviewFormOpen}
+          existingReview={myReview}
+          onClose={() => setIsReviewFormOpen(false)}
+          onSubmitted={handleReviewSubmitted}
+        />
+      )}
     </div>
   );
 };

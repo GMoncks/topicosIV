@@ -84,11 +84,16 @@ graph TD
   - **Saga Compensation:** Se a concessão falhar, o serviço estorna automaticamente 100% do valor para a carteira e retorna HTTP 502.
   - Limpeza automática de itens adquiridos da wishlist.
   - Disparo de evento de atividade `game_purchased` para o feed do `social-service`.
+- **Avaliações de Jogos (Bloco H):**
+  - `POST /games/{id}/reviews`: cria (201) ou atualiza (200) o review do usuário (um por jogo). Exige posse no `library-service`, que também informa as horas jogadas gravadas em `playtime_at_review`; falha fechado (403 sem posse, 503 se a biblioteca não confirmar).
+  - `GET /games/{id}/reviews`: lista com `sort=recent|helpful`, filtro `is_recommended` e paginação.
+  - `POST /reviews/{id}/helpful`: voto "útil" idempotente (um por usuário; não vale no próprio review).
+  - `GET /games/{id}` inclui `approval_pct` e `approval_label` (ex.: "Muito Positivo - 92%"), calculados dos reviews reais; a coluna `review_score` fica como fallback do seed.
 - **Distribuição de Jogos:** Gera pacotes dinâmicos em `.zip` contendo o executável Python, o `mist_sdk.py` e o arquivo de contexto `session.json`.
 
 ### 2.4. Library Service (`/services/library-service`, Porta `8003`)
 - **Banco de Dados:** `library.db` (SQLite).
-- **Gestão de Posse:** Consulta e concessão de jogos por usuário (`LibraryItem`).
+- **Gestão de Posse:** Consulta e concessão de jogos por usuário (`LibraryItem`). `GET /library/users/{id}/has-game/{game_id}` devolve `owned` e `playtime_minutes`.
 - **Ciclo de Vida de Sessões (E-04):**
   - `POST /session/start`: Abre sessão e despacha status *"Jogando [Jogo]"* para o Social Service.
   - `POST /session/ping`: Heartbeat a cada 60s acumulando playtime (`playtime_minutes`).

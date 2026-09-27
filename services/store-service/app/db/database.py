@@ -32,6 +32,7 @@ def get_db():
 def init_db():
     import app.models.game  # noqa: F401
     import app.models.wishlist  # noqa: F401
+    import app.models.review  # noqa: F401
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
         try:
