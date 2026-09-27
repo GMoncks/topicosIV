@@ -213,3 +213,42 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
    - Backend: 9 falhas agora vs. 8 na `dev` (as 8 originais + esta), todas fora do `market-service`. Novos testes do L-01 (`market-service` + `gateway`): 9/9 passando.
 
 **Bloco L-01 concluído**, pronto para commit na branch `gm-market-service`.
+
+---
+
+## 2026-09-27 — Prompt 10
+
+**Prompt do usuário:**
+
+> Dá merge dessa branch na dev, depois vamos para o bloco T
+
+**Decisões arquiteturais e técnicas:**
+
+1. Merge local `gm-market-service` → `dev` por fast-forward (sem divergência prévia).
+2. **Achado crítico durante o merge:** `git fetch` revelou que `origin/dev` havia recebido 2 commits novos (`9bbef39`, `7f4256d` — PR #106 "base_AI_agents") enquanto eu trabalhava, divergindo da `dev` local a partir do mesmo ponto-base (`fd9d9a5`). O outro lado implementou G-02 a G-06 (AI Curator no Store, Quest Master no Library, Companion Bot no Social) e ajustes de UI no `Store.tsx`, tocando arquivos compartilhados com o meu Bloco H (`GameDetailModal.tsx`, `Store.tsx`, `types/index.ts`, `store-service/app/api/routes.py`, `library-service/app/api/routes.py` e `library_service.py`).
+3. **Não fiz push** antes de avisar — parei e expliquei o risco de conflito ao usuário antes de prosseguir.
+
+**Resumo das saídas:** relatório de divergência apresentado ao usuário; aguardando decisão sobre como sincronizar.
+
+---
+
+## 2026-09-27 — Prompt 11
+
+**Prompt do usuário:**
+
+> Pode fazer o 1, visto que o historico de prompts estará presente e voce saberá o que fazer.
+
+(Opção 1 = fazer `git merge origin/dev` na `dev` local agora e resolver conflitos que aparecerem.)
+
+**Decisões arquiteturais e técnicas:**
+
+1. Antes de mesclar, li `prompts/gabriel-T800_26th.md` em `origin/dev` (Prompts 49–54, sob o usuário `gabriel-T800`) para entender a intenção por trás das mudanças e resolver eventuais conflitos com contexto real, não apenas "ours"/"theirs" às cegas.
+2. Executado `git merge origin/dev --no-edit` em `dev`. **Resultado: merge 100% automático (estratégia `ort`), zero conflitos.** As grandes diferenças que pareciam arriscadas (`GameDetailModal.tsx`, `types/index.ts`, etc.) eram apenas porque `origin/dev` não tinha os commits do Bloco H — o merge de 3 vias confirmou que nenhuma região de código foi editada por ambos os lados nos mesmos pontos.
+3. Verificação pós-merge: reviews + aprovação (Bloco H) e Curator/Quests/Companion Bot (G-02 a G-06) coexistem sem conflito em todos os arquivos compartilhados (`store-service/app/api/routes.py`, `library-service/app/api/routes.py`, `Store.tsx`, `types/index.ts`).
+
+**Resumo das saídas:**
+
+- Commit de merge `f8f5007` (`Merge remote-tracking branch 'origin/dev' into dev`), sem edições manuais de conflito (não houve nenhum).
+- Backend: suíte completa com exatamente as mesmas 9 falhas de antes (as 8 pré-existentes + a corrida de teste do `social-service` já diagnosticada) — nenhuma falha nova introduzida pelo merge.
+- Frontend: **75/75 testes passando** (18 suítes, incluindo `CuratorSection`, `Store.test.tsx`, `ChatWindow`, `Social`, e os componentes do Bloco H). `tsc --noEmit` sem erros.
+- `dev` local segue **não publicada** em `origin/dev` (nenhum `push` realizado).
