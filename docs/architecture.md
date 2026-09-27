@@ -6,7 +6,7 @@ O **MIST** é uma prova de conceito avançada que recria a infraestrutura e os f
 
 ## 1. Visão Geral da Arquitetura
 
-O sistema é composto por um **API Gateway**, 5 **Microsserviços de Domínio** independentes (o quinto, `market-service`, ainda em esqueleto — ver §2.6), uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
+O sistema é composto por um **API Gateway**, 5 **Microsserviços de Domínio** independentes (o quinto, `market-service`, ainda em construção — ver §2.6), uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
 
 ```mermaid
 graph TD
@@ -119,9 +119,12 @@ graph TD
 
 ### 2.6. Market Service (`/services/market-service`, Porta `8005`)
 - **Banco de Dados:** `market.db` (SQLite dedicado).
-- **Status:** esqueleto criado (L-01) — FastAPI, Dockerfile e `/health`, sem endpoints de domínio ainda.
-- **Escopo futuro (Bloco L):** anúncios do Mercado da Comunidade (`MarketListing`), compra com transferência de saldo/custódia, e trocas diretas entre usuários (`TradeOffer`). O extrato de carteira (Bloco T, `WalletTransaction`) também será hospedado aqui.
-- **Gateway:** `MARKET_SERVICE_URL` já configurado em `gateway/app/config.py` e no `docker-compose.yml`; a rota de proxy `/api/market/*` em `gateway/app/main.py` será adicionada quando os primeiros endpoints existirem (mantido pelo Dev 3 por convenção de isolamento de rotas).
+- **Status:** esqueleto (L-01) + Extrato da Carteira (Bloco T) implementados. Mercado da Comunidade e Trocas (Bloco L, `MarketListing`/`TradeOffer`) ainda pendentes.
+- **Extrato da Carteira (T-01 a T-03):**
+  - `WalletTransaction`: `user_id`, `type` (`compra`, `venda`, `recarga`, `resgate`), `amount` (magnitude positiva), `description`, `created_at`.
+  - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, de forma *best-effort* (falha não derruba a compra).
+  - `GET /wallet/history`: extrato paginado do usuário autenticado, com filtro por `type` e por período (`start_date`/`end_date`). Direção (`credit`/`debit`) é derivada do tipo: `compra` debita; `venda`, `recarga` e `resgate` creditam.
+- **Gateway:** `MARKET_SERVICE_URL` configurado e rota de proxy genérica `/api/market/*` em `gateway/app/main.py` (mesmo padrão de `/api/store/*`).
 
 ---
 

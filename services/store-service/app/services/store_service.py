@@ -10,7 +10,7 @@ from sqlalchemy import or_, desc, asc
 from app.models.game import Game
 from app.models.purchase import Purchase
 from app.services.ai_client import AIClient
-from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL
+from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL, MARKET_SERVICE_URL
 
 
 class StoreService:
@@ -371,15 +371,19 @@ class StoreService:
                 except Exception:
                     pass
 
-            # Concessão de Pontos MIST: 100 pontos por R$ 1,00 creditados no auth-service
-            points_earned = int(total_amount * 100)
-            if points_earned > 0:
+            # Registra o lançamento no extrato da carteira (T-02) — best-effort,
+            # não bloqueia o checkout se o market-service estiver indisponível.
+            # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
+            if total_amount > 0:
                 try:
+                    titles = ", ".join(g.title for g in games)
                     await client.post(
-                        f"{auth_url.rstrip('/')}/users/{user_id}/points/credit",
+                        f"{MARKET_SERVICE_URL.rstrip('/')}/wallet/transactions",
                         json={
-                            "amount": points_earned,
-                            "reason": f"Checkout MIST: {[g.title for g in games]}"
+                            "user_id": user_id,
+                            "type": "compra",
+                            "amount": total_amount,
+                            "description": f"Compra: {titles}"[:500]
                         }
                     )
                 except Exception:
@@ -391,10 +395,8 @@ class StoreService:
                 "items": items_response,
                 "total_paid": total_amount,
                 "new_wallet_balance": new_wallet_balance,
-                "points_earned": points_earned,
                 "purchased_at": now
             }
-
         finally:
             if owns_client:
                 await client.aclose()

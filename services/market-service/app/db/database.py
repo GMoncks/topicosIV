@@ -28,6 +28,7 @@ def get_db():
 
 
 def init_db():
-    # Os modelos do domínio (MarketListing, TradeOffer, WalletTransaction, ...)
-    # serão importados aqui conforme forem criados nos próximos tickets (L-02, L-06, T-01).
+    import app.models.transaction  # noqa: F401
+    # Os demais modelos do domínio (MarketListing, TradeOffer, ...) serão
+    # importados aqui conforme forem criados nos próximos tickets (L-02, L-06).
     Base.metadata.create_all(bind=engine)

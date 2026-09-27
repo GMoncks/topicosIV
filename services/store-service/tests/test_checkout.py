@@ -179,6 +179,100 @@ async def test_checkout_single_game_success(client, seed_games_data):
 
 
 @pytest.mark.asyncio
+async def test_checkout_records_wallet_ledger_transaction(client, seed_games_data):
+    """T-02: checkout bem-sucedido registra um lançamento 'compra' no market-service (best-effort)."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    ledger_calls = []
+
+    async def mock_get(url, *args, **kwargs):
+        if "has-game" in str(url):
+            return httpx.Response(200, json={"owned": False})
+        return httpx.Response(404)
+
+    async def mock_post(url, json=None, *args, **kwargs):
+        if "wallet/debit" in str(url):
+            return httpx.Response(200, json={"new_balance": 150.0})
+        if "library/grant" in str(url):
+            return httpx.Response(201, json={"created": True})
+        if "wallet/transactions" in str(url):
+            ledger_calls.append(json)
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(404)
+
+    mock_client.get = mock_get
+    mock_client.post = mock_post
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        resp = client.post("/checkout", json={"game_id": 1}, headers={"X-User-Id": "10"})
+        assert resp.status_code == 201
+
+    assert len(ledger_calls) == 1
+    assert ledger_calls[0]["user_id"] == 10
+    assert ledger_calls[0]["type"] == "compra"
+    assert ledger_calls[0]["amount"] == 50.0
+    assert "Jogo Aventura MIST" in ledger_calls[0]["description"]
+
+
+@pytest.mark.asyncio
+async def test_checkout_free_game_does_not_record_wallet_ledger_transaction(client, seed_games_data):
+    """Jogos gratuitos (amount 0) não geram lançamento no extrato da carteira."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    ledger_calls = []
+
+    async def mock_get(url, *args, **kwargs):
+        if "has-game" in str(url):
+            return httpx.Response(200, json={"owned": False})
+        return httpx.Response(404)
+
+    async def mock_post(url, json=None, *args, **kwargs):
+        if "wallet/debit" in str(url):
+            return httpx.Response(200, json={"new_balance": 200.0})
+        if "library/grant" in str(url):
+            return httpx.Response(201, json={"created": True})
+        if "wallet/transactions" in str(url):
+            ledger_calls.append(json)
+            return httpx.Response(201, json={"id": 1})
+        return httpx.Response(404)
+
+    mock_client.get = mock_get
+    mock_client.post = mock_post
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        resp = client.post("/checkout", json={"game_id": 3}, headers={"X-User-Id": "10"})
+        assert resp.status_code == 201
+
+    assert ledger_calls == []
+
+
+@pytest.mark.asyncio
+async def test_checkout_succeeds_even_if_wallet_ledger_call_fails(client, seed_games_data):
+    """O registro no extrato é best-effort: falha no market-service não derruba o checkout."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+
+    async def mock_get(url, *args, **kwargs):
+        if "has-game" in str(url):
+            return httpx.Response(200, json={"owned": False})
+        return httpx.Response(404)
+
+    async def mock_post(url, *args, **kwargs):
+        if "wallet/debit" in str(url):
+            return httpx.Response(200, json={"new_balance": 150.0})
+        if "library/grant" in str(url):
+            return httpx.Response(201, json={"created": True})
+        if "wallet/transactions" in str(url):
+            raise httpx.ConnectError("market-service fora do ar")
+        return httpx.Response(404)
+
+    mock_client.get = mock_get
+    mock_client.post = mock_post
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        resp = client.post("/checkout", json={"game_id": 1}, headers={"X-User-Id": "10"})
+        assert resp.status_code == 201
+        assert resp.json()["status"] == "success"
+
+
+@pytest.mark.asyncio
 async def test_checkout_cart_multiple_games_success(client, seed_games_data):
     """Valida checkout em lote (carrinho) somando preços autoritativos."""
     mock_client = AsyncMock(spec=httpx.AsyncClient)

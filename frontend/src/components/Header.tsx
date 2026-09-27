@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { WalletHistoryModal } from './WalletHistoryModal';
 
 interface HeaderProps {
   wishlistCount?: number;
@@ -22,6 +23,15 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { openCart, totalCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+
+  const handleWalletClick = () => {
+    if (isGuest) {
+      onOpenAuth?.();
+      return;
+    }
+    setIsWalletModalOpen(true);
+  };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -105,11 +115,17 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
-        {/* Saldo da Carteira com a cor secundária #1F4D36 */}
-        <div className="text-emerald-300 font-bold text-sm bg-brand-green/90 px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5">
+        {/* Saldo da Carteira com a cor secundária #1F4D36 — abre o extrato (T-04) */}
+        <button
+          type="button"
+          onClick={handleWalletClick}
+          title="Ver extrato da carteira"
+          aria-label="Ver extrato da carteira"
+          className="text-emerald-300 font-bold text-sm bg-brand-green/90 hover:bg-brand-green px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+        >
           <i className="fa-solid fa-wallet text-xs text-emerald-400"></i>
           <span>{formattedBalance}</span>
-        </div>
+        </button>
 
         {isGuest && onOpenAuth && (
           <button
@@ -120,6 +136,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
       </div>
+
+      <WalletHistoryModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
     </header>
   );
 };

@@ -74,47 +74,7 @@
 - Resultado esperado: Retorno HTTP 200 e reconstituição do saldo anterior.
 - Rastreabilidade: `services/auth-service/app/services/auth_service.py`
 
-#### AUTH-UNIT-06 — Crédito atômico de Pontos MIST na conta do usuário (I-01)
-- Prioridade: P0
-- Status: aprovado
-- Runner: pytest
-- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_credit_points_success or test_credit_points_invalid_user_or_amount"`
-- Pré-condições: Usuário cadastrado no `auth-service` com saldo de pontos inicial.
-- Passos:
-  - Dado um usuário com 2.500 pontos MIST
-  - Quando o endpoint POST /users/{id}/points/credit for acionado com 1.000 pontos
-  - Então o saldo é incrementado atomicamente para 3.500 pontos, retornando status HTTP 200 e saldos anterior e atual
-- Resultado esperado: Concessão confiável e atômica de pontos sem perdas de concorrência.
-- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
-
-#### AUTH-UNIT-07 — Resgate de cosméticos na Loja de Pontos com validação de saldo e posse única (I-02 & I-03)
-- Prioridade: P0
-- Status: aprovado
-- Runner: pytest
-- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_purchase_points_shop_item_success or test_purchase_points_shop_duplicate_conflict or test_purchase_points_shop_insufficient_points"`
-- Pré-condições: Catálogo canônico da Loja de Pontos e usuário com saldo de pontos.
-- Passos:
-  - Dado um usuário com saldo suficiente e sem o cosmético desejado
-  - Quando envia POST /points-shop/purchase com o item_id
-  - Então os pontos são debitados atomicamente, um registro InventoryItem é criado e tentativas de compra duplicada resultam em HTTP 409 Conflict
-- Resultado esperado: Resgate de cosmético com persistência no inventário e bloqueio de compras duplicadas ou sem saldo.
-- Rastreabilidade: `services/auth-service/app/models/inventory.py`, `services/auth-service/app/services/auth_service.py`
-
-#### AUTH-UNIT-08 — Equipamento e desequipamento de moldura e plano de fundo no perfil (I-04)
-- Prioridade: P0
-- Status: aprovado
-- Runner: pytest
-- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_equip_and_unequip_cosmetics"`
-- Pré-condições: Usuário com itens cosméticos no inventário.
-- Passos:
-  - Dado um usuário com moldura e plano de fundo adquiridos no inventário
-  - Quando aciona POST /profile/equip com action='equip' ou 'unequip'
-  - Então os cosméticos anteriores do mesmo tipo são desativados, o item escolhido se torna ativo e o perfil do usuário (avatar_frame_url e profile_background_url) é atualizado
-- Resultado esperado: Retorno HTTP 200 com refletividade imediata no perfil do usuário.
-- Rastreabilidade: `services/auth-service/app/models/user.py`, `services/auth-service/app/services/auth_service.py`
-
 ### Loja e Catálogo (Store Service)
-
 #### STORE-UNIT-01 — Criação e tipagem do modelo Game
 - Prioridade: P0
 - Status: aprovado
@@ -193,21 +153,59 @@
 - Resultado esperado: Retorno HTTP 200 com recomendações ajustadas ao perfil de preferências do usuário.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
 
-#### STORE-UNIT-07 — Conexão do acúmulo de Pontos MIST ao checkout de jogos (100 pts por R$ 1,00) (I-01)
+#### STORE-UNIT-07 — Criação e atualização (upsert) de avaliações de jogos (H-01/H-02)
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_credits_points_to_auth_service"`
-- Pré-condições: Catálogo de jogos ativo e serviço financeiro/auth disponível.
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_post_review_creates_with_playtime or test_post_review_twice_updates_existing"`
+- Pré-condições: Jogo existente no catálogo; library-service mockado confirmando posse e horas jogadas.
 - Passos:
-  - Dado uma compra de jogo no valor de R$ 50,00 concluída com sucesso
-  - Quando a orquestração do checkout finaliza a concessão de licenças
-  - Então 5.000 Pontos MIST (100 pts/R$ 1,00) são creditados no auth-service e points_earned=5000 é retornado no payload
-- Resultado esperado: Retorno HTTP 201 Created com cálculo autoritativo e envio assíncrono dos pontos para o auth-service.
-- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/schemas/checkout.py`
+  - Dado um usuário autenticado que possui o jogo na biblioteca
+  - Quando publica uma avaliação pela primeira vez e depois publica novamente para o mesmo jogo
+  - Então a primeira chamada cria o registro (HTTP 201) e a segunda atualiza o mesmo registro (HTTP 200), sem duplicar linhas
+- Resultado esperado: No máximo uma avaliação por par (usuário, jogo), com `playtime_at_review` sempre atualizado.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`, `services/store-service/app/models/review.py`
+
+#### STORE-UNIT-08 — Falha fechada na validação de posse via library-service (H-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_post_review_requires_ownership or test_post_review_fails_closed_when_library_unavailable"`
+- Pré-condições: library-service mockado retornando `owned: false`, erro de conexão ou HTTP 500.
+- Passos:
+  - Dado que o usuário não possui o jogo ou o library-service está indisponível
+  - Quando tenta publicar uma avaliação
+  - Então a requisição é rejeitada com HTTP 403 (sem posse) ou HTTP 503 (serviço indisponível), sem criar registro
+- Resultado esperado: Nenhuma avaliação é criada sem confirmação positiva de posse.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`
+
+#### STORE-UNIT-09 — Listagem de avaliações com ordenação e filtro (H-05)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_list_reviews_default_order_is_most_recent_first or test_list_reviews_sorted_by_helpful or test_list_reviews_filters_by_recommendation"`
+- Pré-condições: Múltiplas avaliações cadastradas para o mesmo jogo, com votos úteis variados.
+- Passos:
+  - Dado várias avaliações publicadas para um jogo
+  - Quando `GET /games/{id}/reviews` é chamado com `sort=recent`, `sort=helpful` ou `is_recommended`
+  - Então a lista retorna na ordem e no recorte correspondentes
+- Resultado esperado: Ordenação e filtros corretos, com paginação (`skip`/`limit`) íntegra.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`
+
+#### STORE-UNIT-10 — Voto útil idempotente e bloqueio de autovoto (H-02); aprovação calculada dinamicamente (H-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_helpful_is_idempotent_per_user or test_helpful_cannot_vote_own_review or test_game_detail_injects_approval_from_real_reviews"`
+- Pré-condições: Avaliações publicadas por diferentes usuários.
+- Passos:
+  - Dado um review de outro usuário, um segundo voto "útil" do mesmo votante e uma tentativa de voto no próprio review
+  - Quando os endpoints `POST /reviews/{id}/helpful` e `GET /games/{id}` são chamados
+  - Então o primeiro voto conta (201), o repetido é idempotente (200, mesma contagem), o autovoto é rejeitado (403), e `approval_pct`/`approval_label` refletem exatamente a proporção real de recomendações positivas
+- Resultado esperado: Extrato de utilidade e aprovação sempre consistentes com os dados reais.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`, `services/store-service/app/api/routes.py`
 
 ### Social e Amigos (Social Service)
-
 #### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
 - Prioridade: P0
 - Status: aprovado
@@ -392,6 +390,59 @@
   - Então a primeira tentativa falha com HTTP 400, a segunda conclui com sucesso concedendo o XP e marcando como claimed, e a terceira falha com HTTP 400 por duplicidade
 - Resultado esperado: Máquina de estados íntegra para claim de recompensas de missões.
 - Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+#### LIB-UNIT-06 — Exposição de horas jogadas na checagem de posse (H-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_ownership.py -k "test_has_game_exposes_playtime_minutes"`
+- Pré-condições: Usuário sem e com licença concedida, com `playtime_minutes` variável.
+- Passos:
+  - Dado um usuário sem o jogo, depois com o jogo recém-concedido e depois com horas jogadas registradas
+  - Quando `GET /library/users/{id}/has-game/{game_id}` é chamado em cada estágio
+  - Então o campo `playtime_minutes` retorna 0, 0 e o valor real, respectivamente, mantendo `owned` correto
+- Resultado esperado: Extensão aditiva e retrocompatível do endpoint, consumida pelo `store-service` no Bloco H.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+### Mercado e Carteira (Market Service)
+#### MARKET-UNIT-01 — Esqueleto do serviço: health check e CORS (L-01)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_health.py`
+- Pré-condições: `market-service` inicializado com banco `market.db` dedicado.
+- Passos:
+  - Dado o serviço em execução
+  - Quando `GET /health` é chamado e uma requisição `OPTIONS` com origem `http://localhost:3000` é enviada
+  - Então o serviço responde `{"status": "healthy", "service": "market-service"}` e o CORS permite a origem do frontend
+- Resultado esperado: Esqueleto do microsserviço operacional, pronto para os endpoints de domínio dos tickets seguintes.
+- Rastreabilidade: `services/market-service/app/main.py`
+
+#### MARKET-UNIT-02 — Registro de lançamentos no extrato e direção crédito/débito por tipo (T-01/T-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_wallet.py -k "test_record_transaction_direction_by_type or test_record_transaction_rejects_unknown_type or test_record_transaction_rejects_non_positive_amount"`
+- Pré-condições: Nenhuma (banco em memória por teste).
+- Passos:
+  - Dado lançamentos dos tipos `compra`, `venda`, `recarga` e `resgate`, e tentativas com tipo/valor inválidos
+  - Quando `POST /wallet/transactions` (endpoint interno, sem autenticação de usuário) é chamado
+  - Então `compra` é classificada como débito e as demais como crédito; tipos desconhecidos ou valores não-positivos são rejeitados com HTTP 422
+- Resultado esperado: Ledger contábil consistente, pronto para ser acionado por outros microsserviços.
+- Rastreabilidade: `services/market-service/app/services/wallet_ledger.py`, `services/market-service/app/models/transaction.py`
+
+#### MARKET-UNIT-03 — Extrato paginado com filtro por tipo e período, isolado por usuário (T-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_wallet.py -k "test_get_history_only_returns_own_transactions or test_get_history_filters_by_type or test_get_history_filters_by_period or test_get_history_paginates"`
+- Pré-condições: Lançamentos de múltiplos usuários e datas cadastrados.
+- Passos:
+  - Dado o histórico de vários usuários e tipos, com datas distintas
+  - Quando `GET /wallet/history` é chamado com `X-User-Id`, filtros de `type`/`start_date` e paginação `skip`/`limit`
+  - Então retorna apenas os lançamentos do usuário autenticado, respeitando filtro e paginação, ordenados do mais recente para o mais antigo
+- Resultado esperado: Extrato correto, isolado por usuário e sem vazamento de dados entre contas.
+- Rastreabilidade: `services/market-service/app/services/wallet_ledger.py`, `services/market-service/app/api/wallet.py`
 
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
@@ -693,60 +744,46 @@
 - Resultado esperado: Layout contextualizado e priorização da intenção do usuário preservando a descoberta inteligente por IA.
 - Rastreabilidade: `frontend/src/pages/Store.tsx`, `frontend/src/pages/Store.test.tsx`
 
-#### FRONT-UNIT-24 — Exibição dinâmica de moldura e plano de fundo e alternância para o inventário no Profile (I-04)
+#### FRONT-UNIT-24 — Formulário de avaliação: recomendação, validação e edição (H-04)
 - Prioridade: P0
 - Status: aprovado
 - Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
-- Pré-condições: Componente Profile montado com usuário autenticado contendo cosméticos equipados.
+- Comando: `npm --prefix frontend run test:unit -- src/components/ReviewFormModal.test.tsx`
+- Pré-condições: `reviewApi.submitReview` mockado.
 - Passos:
-  - Dado o perfil com moldura e background configurados
-  - Quando a página é renderizada e o usuário clica na aba de Inventário
-  - Então a moldura envolve o avatar com animação, o background é renderizado no topo e a seção de inventário lista os itens com botões de equipar e desequipar
-- Resultado esperado: Apresentação estilizada dos cosméticos ativos e interatividade completa no inventário do perfil.
-- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+  - Dado o formulário aberto sem e com uma avaliação existente
+  - Quando o usuário escolhe Sim/Não, digita o texto (inclusive só espaços) e publica
+  - Então o botão de publicar só habilita com recomendação e texto não-vazio; uma avaliação existente pré-preenche os campos e rotula a ação como edição; erros da API são exibidos sem fechar a modal
+- Resultado esperado: Publicação/edição correta, com eventos `mist:review-submitted` disparados em caso de sucesso.
+- Rastreabilidade: `frontend/src/components/ReviewFormModal.tsx`
 
-#### FRONT-UNIT-25 — Catálogo, resgate de cosméticos e atualização de saldo de pontos no PointsShop (I-05)
+#### FRONT-UNIT-25 — Lista de avaliações: ordenação, voto útil e integração na modal de detalhes (H-05)
 - Prioridade: P0
 - Status: aprovado
 - Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx`
-- Pré-condições: Catálogo de cosméticos disponível e usuário com saldo de pontos.
+- Comando: `npm --prefix frontend run test:unit -- src/components/ReviewsList.test.tsx src/components/GameDetailModal.test.tsx`
+- Pré-condições: `reviewApi.listReviews`/`markHelpful` mockados.
 - Passos:
-  - Dado o catálogo de itens da Loja de Pontos exibido com preços e status de posse
-  - Quando o usuário clica em "Resgatar" em um item disponível
-  - Então o endpoint da API é acionado, o saldo de pontos é atualizado e o item transita para "Adquirido"
-- Resultado esperado: Fluxo fluido de resgate com atualização de estado local e feedback visual imediato ao usuário.
-- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`, `frontend/src/pages/PointsShop.test.tsx`
+  - Dado avaliações de terceiros e do próprio usuário
+  - Quando as abas "Mais recentes"/"Mais úteis" são alternadas e o voto útil é acionado
+  - Então a lista recarrega com a ordenação correta, o botão útil é desabilitado na própria avaliação e para visitantes, e a `GameDetailModal` exibe a aprovação real e o botão de escrever/editar avaliação apenas quando o jogo é possuído
+- Resultado esperado: Fluxo de avaliações totalmente integrado à modal de detalhes do jogo.
+- Rastreabilidade: `frontend/src/components/ReviewsList.tsx`, `frontend/src/components/GameDetailModal.tsx`
 
-#### FRONT-UNIT-26 — Atividade recente inteligente e contador dinâmico de jogos no Profile (I-06)
+#### FRONT-UNIT-26 — Extrato da carteira: filtros, paginação e acesso pelo Header (T-04)
 - Prioridade: P0
 - Status: aprovado
 - Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
-- Pré-condições: Perfil do usuário renderizado com integração a feed de atividades e biblioteca de jogos.
+- Comando: `npm --prefix frontend run test:unit -- src/components/WalletHistoryModal.test.tsx src/components/Header.test.tsx`
+- Pré-condições: `walletApi.getHistory` mockado.
 - Passos:
-  - Dado o usuário acessando o seu perfil com conquistas recentes e aquisições de jogos registradas
-  - Quando a aba "Atividade recente" é visualizada
-  - Então os eventos reais de desbloqueio de conquistas e aquisição de jogos são renderizados no feed de atividade, o contador de jogos exibe a quantidade real da biblioteca e a seta estética ao lado do nome de usuário é suprimida
-- Resultado esperado: Feed de atividades dinâmico, inteligente e fiel aos acontecimentos reais da conta do jogador no ecossistema MIST.
-- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
-
-#### FRONT-UNIT-27 — Listagem de jogos com barra de progresso de conquistas e tempo de jogo no Profile (I-07)
-- Prioridade: P0
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
-- Pré-condições: Usuário possuindo jogos na biblioteca com horas jogadas e conquistas desbloqueadas.
-- Passos:
-  - Dado a página de perfil com a aba ou atalho lateral de "Jogos"
-  - Quando o usuário clica em "Jogos"
-  - Então a seção "Meus Jogos" é exibida, listando cada jogo da biblioteca com seu tempo de jogo formatado, data da última sessão e barra de progresso percentual de conquistas
-- Resultado esperado: Visualização analítica dos títulos do usuário com foco no engajamento, horas jogadas e progressão de conquistas.
-- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+  - Dado o saldo exibido no Header
+  - Quando o usuário autenticado clica no saldo, troca o filtro de tipo ou navega entre páginas
+  - Então a modal de extrato abre e recarrega com o filtro/página correspondente, com sinal e cor por direção (crédito/débito); para um visitante, o clique abre a autenticação em vez do extrato
+- Resultado esperado: Extrato acessível e funcional a partir do Header, sem exigir navegação a outra página.
+- Rastreabilidade: `frontend/src/components/WalletHistoryModal.tsx`, `frontend/src/components/Header.tsx`
 
 ## Integração
-
 
 ### Gateway e Autenticação
 #### GATEWAY-INT-01 — Encaminhamento de requisição com injeção de header de identidade
@@ -788,6 +825,19 @@
   - E quando a requisição contiver um Bearer JWT válido
   - Então o Gateway valida o JWT e encaminha a chamada para o library-service injetando o header seguro `X-User-Id`
 - Resultado esperado: Código HTTP 401 para requisições anônimas e 200 com repasse correto de identidade para usuários autenticados.
+- Rastreabilidade: `gateway/app/main.py`
+
+#### GATEWAY-INT-04 — Proxy reverso do market-service com injeção de identidade e fallback 503 (L-01/T-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_gateway.py -k "test_gateway_market_wallet_history_proxy or test_gateway_market_proxy_unavailable_returns_503"`
+- Pré-condições: Rota `/api/market/{path}` registrada no Gateway.
+- Passos:
+  - Dado uma requisição `GET /api/market/wallet/history` com JWT válido, e uma segunda simulando o market-service fora do ar
+  - Quando o Gateway processa cada requisição
+  - Então a primeira encaminha ao market-service com `X-User-Id` injetado a partir do JWT, e a segunda retorna HTTP 503 com mensagem explicativa
+- Resultado esperado: Mesmo padrão de proxy genérico já usado por `/api/store/*`, agora cobrindo `/api/market/*`.
 - Rastreabilidade: `gateway/app/main.py`
 
 ### Autenticação e Persistência
@@ -1041,6 +1091,19 @@
 - Resultado esperado: Retorno HTTP 201 com total_paid: 0.0 e licença concedida.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`
 
+#### STORE-MARKET-INT-01 — Registro best-effort de lançamento no extrato após o checkout (T-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_records_wallet_ledger_transaction or test_checkout_free_game_does_not_record_wallet_ledger_transaction or test_checkout_succeeds_even_if_wallet_ledger_call_fails"`
+- Pré-condições: market-service mockado no client HTTP do store-service.
+- Passos:
+  - Dado um checkout pago bem-sucedido, um checkout de jogo gratuito e um checkout com o market-service indisponível
+  - Quando o fluxo de checkout é concluído em cada cenário
+  - Então o pago dispara `POST /wallet/transactions` (tipo `compra`, valor total) no market-service, o gratuito não dispara nenhum lançamento, e a falha no market-service é engolida sem impedir o HTTP 201 do checkout
+- Resultado esperado: Extrato da carteira alimentado organicamente pelas compras reais, sem acoplar a disponibilidade do market-service à compra em si.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
 ### Amizades e Atividades (Social Service)
 #### SOCIAL-INT-01 — Registro e listagem de eventos de atividade no Social Service (E-05)
 - Prioridade: P0
@@ -1174,6 +1237,7 @@
 #### REG-FRONT-01 — Preservação da paleta de cor secundária (#1F4D36)
 - Prioridade: P2
 - Status: aprovado
+
 - Runner: vitest
 - Comando: `npm --prefix frontend run test:unit -- src/test/theme.test.ts`
 - Pré-condições: Variáveis de tema e estilos Tailwind carregados.
@@ -1184,119 +1248,6 @@
 - Resultado esperado: Estilos computados correspondem à cor `#1F4D36`.
 - Rastreabilidade: `prompts.md` (Prompt 3)
 - Observações: Regressão originada da substituição de paleta definida no Prompt 3.
-
-#### REG-FRONT-02 — Crédito imediato de Pontos MIST no saldo do usuário após checkout
-- Prioridade: P0
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/components/CheckoutModal.test.tsx -t "deve creditar pontos e atualizar saldo"`
-- Causa raiz: `CheckoutModal.tsx` e `CartDrawer.tsx` chamavam `updateUserBalance(res.new_wallet_balance)` omitindo o segundo parâmetro `newPoints` e não despachavam `mist:points-updated`. O saldo permanecia inalterado no frontend até navegações ou compras subsequentes.
-- Reprodução original: Comprar um jogo na loja com saldo MIST; o saldo de pontos permanecia 500 no header e na loja de pontos até resgatar outro cosmético.
-- PR/Commit relacionado: Prompt 59
-- Pré-condições: Usuário autenticado com saldo em carteira e saldo inicial de pontos.
-- Passos:
-  - Dado um usuário autenticado com 500 pontos MIST e R$ 200,00 na carteira
-  - Quando finaliza a compra de um jogo de R$ 47,49 (rendendo 4.749 pontos)
-  - Então `updateUserBalance` é acionado imediatamente com saldo R$ 152,51 e 5.249 pontos, e o evento `mist:points-updated` é emitido
-- Resultado esperado: Saldo de pontos sincronizado em tempo real no estado global sem necessidade de recarregamento.
-- Rastreabilidade: `frontend/src/components/CheckoutModal.tsx`, `frontend/src/components/CartDrawer.tsx`
-
-#### REG-FRONT-03 — Estilização dourada autêntica para a Moldura Mestre Dourada (frame_gold)
-- Prioridade: P1
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "aplica estilização dourada"`
-- Causa raiz: O avatar no `Profile.tsx` possuía classes fixas em tons ciano/azul (`ring-cyan-400`, `border-cyan-300/80`, `shadow-[0_0_30px_rgba(6,182,212,0.7)]`) para qualquer moldura equipada, fazendo a moldura dourada parecer azul.
-- Reprodução original: Equipar a "Moldura Mestre Dourada" no inventário e inspecionar o avatar no perfil.
-- PR/Commit relacionado: Prompt 59
-- Pré-condições: Usuário com a moldura `frame_gold` equipada no perfil.
-- Passos:
-  - Dado um usuário com a moldura `frame_gold` ativa
-  - Quando a página de perfil é renderizada
-  - Então o container do avatar e a moldura recebem classes de tom âmbar/dourado (`ring-amber-400`, `border-amber-300`, `shadow-[0_0_35px_rgba(245,158,11,0.85)]`)
-- Resultado esperado: Avatar com anel, borda e brilho dourados condizentes com o cosmético lendário.
-- Rastreabilidade: `frontend/src/pages/Profile.tsx`
-
-#### REG-FRONT-04 — Título e descrição do Hero Banner da Loja de Pontos
-- Prioridade: P2
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx -t "exibe o banner atualizado"`
-- Causa raiz: O banner exibia texto estático "A LOJA DE PONTOS / Compre jogos, ganhe pontos" em vez da redação atualizada do layout.
-- Reprodução original: Acessar a Loja de Pontos e verificar o banner superior.
-- PR/Commit relacionado: Prompt 59
-- Pré-condições: Loja de Pontos renderizada.
-- Passos:
-  - Dado que o usuário navega para a aba da Loja de Pontos
-  - Quando a tela for carregada
-  - Então o banner exibe o título "Loja de MIST Points" e a descrição "Personalize a sua experiência no MIST com molduras de avatar, planos de fundo exclusivos, e muito mais."
-- Resultado esperado: Textos institucionais do banner alinhados com as especificações visuais do MIST.
-- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`
-
-#### REG-FRONT-05 — Exclusão e saneamento de registros corrompidos com game_id 0
-- Prioridade: P0
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "filtra e não exibe jogo inexistente ou corrompido com game_id 0"`
-- Causa raiz: Registros com `game_id: 0` geravam cards de título com fallback "Jogo #0" e imagem genérica tanto na Biblioteca quanto na listagem de jogos do Perfil.
-- Reprodução original: Acessar Minha Biblioteca ou aba Jogos do Perfil e notar a presença de "Jogo #0".
-- PR/Commit relacionado: Prompt 59
-- Pré-condições: Itens de biblioteca retornados da API.
-- Passos:
-  - Dado a presença de registros com `game_id <= 0` ou sem metadados válidos
-  - Quando a Biblioteca e a aba Jogos do Perfil carregam a lista de jogos
-  - Então itens com `game_id <= 0` são estritamente filtrados antes de renderizar os cards e calcular estatísticas
-- Resultado esperado: Nenhum card de "Jogo #0" exibido na interface.
-- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Profile.tsx`, `services/library-service/app/services/library_service.py`
-
-#### REG-FRONT-06 — Estilização dourada no card de preview da Moldura Mestre Dourada na Loja de Pontos
-- Prioridade: P1
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx -t "aplica estilização com borda dourada"`
-- Causa raiz: No `PointsShop.tsx`, o card de item do tipo `avatar_frame` possuía classes fixas em tom ciano (`border-cyan-400/80`, `shadow-[0_0_15px_rgba(6,182,212,0.6)]`) no anel em torno do avatar de exemplo para qualquer moldura do catálogo.
-- Reprodução original: Acessar a Loja de Pontos e verificar o card da "Moldura Mestre Dourada". O anel do avatar aparecia em azul neon ciano.
-- PR/Commit relacionado: Prompt 44
-- Pré-condições: Catálogo da Loja de Pontos renderizado contendo a moldura dourada (`frame_gold`).
-- Passos:
-  - Dado o catálogo de cosméticos na Loja de Pontos com a moldura "Moldura Mestre Dourada"
-  - Quando os cards são renderizados na interface
-  - Então o anel em volta do avatar de preview recebe classes douradas (`border-amber-400`, `shadow-[0_0_20px_rgba(245,158,11,0.85)]`, `ring-2 ring-amber-300/60`) em vez de azul neon
-- Resultado esperado: Card de cosmético com preview de moldura com anel e brilho dourados condizentes.
-- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`
-
-#### REG-FRONT-07 — Exibição exata do novo saldo da carteira na tela de sucesso pós-compra unitária (Comprar Agora)
-- Prioridade: P0
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/components/CheckoutModal.test.tsx -t "deve creditar pontos e atualizar saldo"`
-- Causa raiz: A tela de sucesso do `CheckoutModal.tsx` calculava `projectedBalance = walletBalance - gamePrice`. Como o callback `updateUserBalance` já atualizava o saldo do contexto global para o novo valor debitado, o re-render recalculava `walletBalance - gamePrice` sobre o saldo já abatido, provocando dupla subtração e exibindo valores errados ou negativos caso o saldo restante fosse menor que o valor do jogo.
-- Reprodução original: Ter um saldo e comprar um jogo via "Comprar agora" que consumisse grande parte do saldo. Na tela de sucesso, o saldo restante aparecia negativo.
-- PR/Commit relacionado: Prompt 44
-- Pré-condições: Modal de checkout aberto com saldo suficiente para compra direta.
-- Passos:
-  - Dado um usuário com R$ 200,00 comprando um jogo de R$ 47,49
-  - Quando a compra é confirmada com sucesso via API
-  - Então a tela de sucesso exibe o `new_wallet_balance` autoritativo devolvido pelo backend (R$ 152,51) sem recalcular e sem duplicar o abatimento do preço
-- Resultado esperado: Novo saldo disponível exibido condizente com a resposta real da transação.
-- Rastreabilidade: `frontend/src/components/CheckoutModal.tsx`
-
-#### REG-FRONT-08 — Contraste e visibilidade imediata do texto digitado no chat com MIST Bot
-- Prioridade: P1
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/components/ChatWindow.test.tsx -t "garante contraste legível com bg-brand-card"`
-- Causa raiz: No `ChatWindow.tsx`, o `<input>` e os botões de sugestão rápida utilizavam a classe inexistente `bg-brand-dark/80` (não configurada no `tailwind.config.js`). O navegador aplicava fundo branco padrão enquanto a classe `text-white` renderizava o texto digitado na cor branca, resultando em texto invisível/em branco.
-- Reprodução original: Abrir o chat com o MIST Bot e digitar uma mensagem ou clicar numa sugestão rápida. O texto inserido parecia desaparecer/ficar em branco.
-- PR/Commit relacionado: Prompt 45
-- Pré-condições: Janela de chat aberta na aplicação.
-- Passos:
-  - Dado o componente ChatWindow renderizado para conversa direta ou bot
-  - Quando o usuário digita no input ou aciona uma sugestão
-  - Então o elemento possui a classe `bg-brand-card` (fundo escuro `#1a1a24`) e `text-white`, garantindo alto contraste e visibilidade imediata dos caracteres
-- Resultado esperado: Texto visível, com contraste e destaque sem desaparecer ao digitar.
-- Rastreabilidade: `frontend/src/components/ChatWindow.tsx`, `frontend/src/components/ChatWindow.test.tsx`
-
 
 ### Autenticação
 #### REG-AUTH-01 — Suporte a débito de R$ 0,00 para jogos gratuitos
@@ -1314,56 +1265,6 @@
   - Então o endpoint aceita a requisição com HTTP 200 sem alterar o saldo e sem disparar exceção 422
 - Resultado esperado: HTTP 200 com new_balance idêntico ao previous_balance.
 - Rastreabilidade: `services/auth-service/app/schemas/user.py`, `services/auth-service/app/services/auth_service.py`
-
-### Biblioteca e Conquistas (Library Service)
-#### REG-LIB-01 — Isolamento e purga automática de conquistas intrusas e duplicadas entre jogos
-- Prioridade: P0
-- Status: aprovado
-- Runner: pytest
-- Comando: `pytest services/library-service/tests/test_achievements.py -k "test_seed_purges_corrupted_mixed_achievements"`
-- Causa raiz: Inconsistência histórica entre o fallback estático e o catálogo oficial provocou a atribuição de conquistas de jogos distintos aos mesmos IDs (ex: Baldur's Gate 3 com conquistas de MIST Forca no ID 13, e MIST Labirinto com conquistas de Quiz no ID 15). O seed não limpava conquistas órfãs ou pertencentes a outros títulos ao atualizar o banco.
-- Reprodução original: Acessar os cards de Baldur's Gate 3 ou MIST Labirinto no perfil ou biblioteca e constatar 6 conquistas misturadas em vez de 3.
-- PR/Commit relacionado: Prompt 44
-- Pré-condições: Execução da rotina de inicialização e seed do `library-service`.
-- Passos:
-  - Dado a presença de conquistas de títulos alheios associadas a um `game_id` no banco SQLite
-  - Quando a rotina `seed_achievements` executa no startup ou manutenção
-  - Então conquistas cujos IDs não pertencem à lista canônica do jogo são purgadas e deletadas do banco, garantindo exatamente as conquistas exclusivas daquele título
-- Resultado esperado: Cada jogo exibe estritamente 3 conquistas próprias (ex: Baldur's Gate 3 com Início, Jogador Dedicado e Conquistador Lendário; MIST Labirinto com Primeiros Passos, Escapista e Velocista da Masmorra).
-- Rastreabilidade: `services/library-service/app/db/seed_achievements.py`, `services/library-service/tests/test_achievements.py`
-
-### Social e Chat (Social Service)
-#### REG-SOC-01 — Deduplicação estrita de atividades repetidas e purga de títulos mock no feed
-- Prioridade: P1
-- Status: aprovado
-- Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve deduplicar itens repetidos do feed de atividades"`
-- Causa raiz: Múltiplas sessões repetidas de jogo ou testes gravavam instâncias redundantes da mesma conquista/compra na tabela de atividades do `social.db` sem unicidade. Além disso, o seed e o feed carregavam atividades antigas contendo jogos inexistentes no catálogo (ex: Space Marine 2).
-- Reprodução original: Acessar a aba Social ou Perfil e observar 5 ou mais entradas repetidas da mesma conquista ("Primeira Palavra em Jogo #13"), além de conquistas de jogos mock inexistentes.
-- PR/Commit relacionado: Prompt 45
-- Pré-condições: Feed social consultado com atividades redundantes no histórico.
-- Passos:
-  - Dado uma lista de atividades contendo eventos repetidos com mesmo usuário, tipo, jogo e conquista
-  - Quando o feed é consultado via backend ou renderizado no frontend
-  - Então registros repetidos são deduplicados e jogos inexistentes são filtrados, exibindo apenas uma única ocorrência por conquista/jogo
-- Resultado esperado: Feed limpo, com atividades singulares e títulos resolvidos.
-- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/db/seed_social.py`, `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
-
-#### REG-SOC-02 — Respostas inteligentes e contextuais sobre títulos do catálogo no MIST Companion Bot
-- Prioridade: P1
-- Status: aprovado
-- Runner: pytest
-- Comando: `pytest services/social-service/tests/test_companion_bot.py -k "test_bot_contextual_game_strategy_reply"`
-- Causa raiz: Na indisponibilidade de chave válida para LLM externa (ou retorno de fallback padrão), o bot retornava respostas genéricas estáticas repetidas de conquistas ao responder a perguntas específicas sobre títulos como Hollow Knight: Silksong ou Baldur's Gate 3.
-- Reprodução original: Enviar ao MIST Bot a mensagem "Sim, eu gostaria de ajuda para ganhar as conquistas do Silksong" e receber a resposta genérica repetida "Conquistas são a melhor parte! A cada nova conquista você ganha XP...".
-- PR/Commit relacionado: Prompt 45
-- Pré-condições: Chat direto com o MIST Bot ativo.
-- Passos:
-  - Dado uma mensagem do usuário solicitando estratégias ou ajuda de conquistas para um título específico (ex: Silksong)
-  - Quando o bot processa a requisição via WebSocket ou REST
-  - Então o bot reconhece o jogo e a intenção, retornando dicas detalhadas e específicas sobre mecânicas do título (Hornet, agulha em diagonal, seda, Pharloom) sem recorrer à resposta genérica
-- Resultado esperado: Resposta inteligente contextual e relevante para o jogo consultado.
-- Rastreabilidade: `services/social-service/app/services/ai_client.py`, `services/social-service/tests/test_companion_bot.py`
 
 ## Smoke
 

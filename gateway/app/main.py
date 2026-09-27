@@ -12,6 +12,7 @@ from app.config import (
     STORE_SERVICE_URL,
     LIBRARY_SERVICE_URL,
     SOCIAL_SERVICE_URL,
+    MARKET_SERVICE_URL,
     JWT_SECRET_KEY,
     JWT_ALGORITHM,
 )
@@ -394,6 +395,57 @@ async def proxy_social(path: str, request: Request):
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"detail": "Serviço social temporariamente indisponível"}
+        )
+
+
+@app.api_route("/api/market/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_market(path: str, request: Request):
+    """
+    Proxy reverso genérico para rotas do market-service (/api/market/*).
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+            forward_headers["X-User-Token"] = token
+        except Exception:
+            pass
+
+    target_url = f"{MARKET_SERVICE_URL.rstrip('/')}/{path}"
+    body = await request.body()
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params,
+            content=body
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço de mercado temporariamente indisponível"}
         )
 
 
