@@ -108,13 +108,27 @@ export const Social: React.FC = () => {
     }
   };
 
-  // Separação de amigos por status de presença
-  const playingFriends = friends.filter((f) => f.presence_status === 'playing');
-  const onlineFriends = friends.filter((f) => f.presence_status === 'online');
-  const awayFriends = friends.filter((f) => f.presence_status === 'away');
-  const offlineFriends = friends.filter(
+  // Separação de MIST Companion Bot (G-04 & G-06) e amigos humanos
+  const botFriend: FriendItem = friends.find((f) => f.is_bot || f.friend_user_id === 0) || {
+    friendship_id: 0,
+    friend_user_id: 0,
+    status: 'accepted',
+    since: new Date().toISOString(),
+    username: 'MIST Bot',
+    avatar_url: 'https://api.dicebear.com/7.x/bottts/svg?seed=mistbot',
+    presence_status: 'online',
+    current_game: 'MIST AI Companion',
+    is_bot: true,
+  };
+
+  const humanFriends = friends.filter((f) => !f.is_bot && f.friend_user_id !== 0);
+  const playingFriends = humanFriends.filter((f) => f.presence_status === 'playing');
+  const onlineFriends = humanFriends.filter((f) => f.presence_status === 'online');
+  const awayFriends = humanFriends.filter((f) => f.presence_status === 'away');
+  const offlineFriends = humanFriends.filter(
     (f) => !f.presence_status || f.presence_status === 'offline'
   );
+
 
   const formatRelativeTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -331,7 +345,48 @@ export const Social: React.FC = () => {
               </span>
             </div>
 
-            {friends.length === 0 ? (
+            {/* Seção Fixada MIST Companion Bot (G-04 & G-06) */}
+            <div className="mb-5 pb-4 border-b border-gray-800">
+              <h5 className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <i className="fa-solid fa-sparkles text-[10px] text-cyan-400"></i>
+                Companheiro IA Oficial
+              </h5>
+              <div
+                onClick={() => setActiveChatFriend(botFriend)}
+                data-testid="friend-item-bot"
+                className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-purple-950/40 via-brand-surface to-cyan-950/30 border border-brand-purple/50 hover:border-cyan-400 transition-all duration-300 cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.15)] hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <img
+                      src={botFriend.avatar_url || 'https://api.dicebear.com/7.x/bottts/svg?seed=mistbot'}
+                      alt="MIST Bot"
+                      className="w-10 h-10 rounded-xl object-cover bg-purple-900/40 border border-brand-purple/60 p-0.5"
+                    />
+                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-cyan-400 border-2 border-brand-card animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-sm text-white group-hover:text-cyan-300 transition">
+                        {botFriend.username || 'MIST Bot'}
+                      </p>
+                      <span className="text-[9px] font-extrabold bg-gradient-to-r from-brand-purple to-cyan-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
+                        IA
+                      </span>
+                    </div>
+                    <p className="text-xs text-cyan-300 font-medium flex items-center gap-1 mt-0.5">
+                      <i className="fa-solid fa-robot text-[10px]"></i>
+                      {botFriend.current_game || 'Pronto para conversar'}
+                    </p>
+                  </div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-brand-purpleLight group-hover:bg-cyan-500 group-hover:text-black transition">
+                  <i className="fa-solid fa-comment-dots text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            {humanFriends.length === 0 ? (
               <div className="p-6 text-center text-gray-500 text-xs bg-brand-surface rounded-xl border border-gray-800">
                 <p>Nenhum amigo adicionado.</p>
                 <button
@@ -343,6 +398,7 @@ export const Social: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
+
                 {/* 1. Jogando Agora */}
                 {playingFriends.length > 0 && (
                   <div>

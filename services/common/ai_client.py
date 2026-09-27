@@ -199,7 +199,8 @@ class AIClient:
         self,
         user_library_games: List[dict],
         catalog_games: List[dict],
-        limit: int = 4
+        limit: int = 4,
+        user_favorite_tags: Optional[List[str]] = None
     ) -> List[dict]:
         """
         MIST AI Curator (G-02): Analisa o perfil do usuário e recomenda jogos do catálogo
@@ -214,8 +215,9 @@ class AIClient:
 
         # Se houver chaves externas configuradas, podemos pedir para a IA enriquecer
         if self.resolve_provider() != "mock":
+            fav_info = f", e tags favoritas em destaque: {user_favorite_tags}" if user_favorite_tags else ""
             prompt = (
-                f"Com base na biblioteca do usuário: {[g.get('title') for g in user_library_games]},\n"
+                f"Com base na biblioteca do usuário: {[g.get('title') for g in user_library_games]}{fav_info},\n"
                 f"Analise os seguintes jogos candidatos: {[g.get('title') for g in candidates]}.\n"
                 f"Selecione os melhores {limit} jogos e gere um array JSON de objetos contendo "
                 f"'game_title', 'score' (0 a 100) e 'reason' em português."
@@ -245,6 +247,10 @@ class AIClient:
         for g in user_library_games:
             for t in g.get("tags", []):
                 user_tags[t] = user_tags.get(t, 0) + 1
+
+        if user_favorite_tags:
+            for t in user_favorite_tags:
+                user_tags[t] = user_tags.get(t, 0) + 2
 
         scored = []
         for g in candidates:

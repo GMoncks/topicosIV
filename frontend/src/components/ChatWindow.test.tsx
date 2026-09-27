@@ -119,4 +119,51 @@ describe('ChatWindow Component (F-07)', () => {
     fireEvent.click(closeBtn);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('exibe badge BOT IA, sugestões rápidas e indicador personalizado quando o amigo é o MIST Bot (G-06)', async () => {
+    const botFriend: FriendItem = {
+      friendship_id: 0,
+      friend_user_id: 0,
+      status: 'accepted',
+      since: '2026-01-01T00:00:00Z',
+      username: 'MIST Bot',
+      presence_status: 'online',
+      current_game: 'MIST AI Companion',
+      is_bot: true,
+    };
+
+    render(<ChatWindow friend={botFriend} currentUserId={1} onClose={vi.fn()} />);
+
+    // 1. Badge BOT IA no cabeçalho
+    expect(screen.getByText('BOT IA')).toBeInTheDocument();
+
+    // 2. Presença das Sugestões Rápidas (Quick Prompts)
+    expect(screen.getByText(/Sugestões:/i)).toBeInTheDocument();
+    const promptBtn = screen.getByText('Recomende um jogo do catálogo');
+    expect(promptBtn).toBeInTheDocument();
+
+    // 3. Clicar na sugestão deve preencher o input
+    fireEvent.click(promptBtn);
+    const input = screen.getByPlaceholderText('Escreva uma mensagem...') as HTMLInputElement;
+    expect(input.value).toBe('Recomende um jogo do catálogo');
+
+    // 4. Indicador de digitação do bot
+    await waitFor(() => {
+      expect(MockWebSocket.instances.length).toBeGreaterThan(0);
+    });
+    const ws = MockWebSocket.instances[MockWebSocket.instances.length - 1];
+    ws.onmessage?.({
+      data: JSON.stringify({
+        type: 'typing',
+        room_id: 'direct_0_1',
+        user_id: 0,
+        is_typing: true,
+      }),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/MIST Bot está formulando resposta.../i)).toBeInTheDocument();
+    });
+  });
 });
+

@@ -161,4 +161,23 @@ describe('Social Page Component (F-06 & F-08)', () => {
       expect(screen.getAllByText(/Hollow Knight/i).length).toBeGreaterThanOrEqual(1);
     });
   });
+
+  it('deve renderizar o MIST Companion Bot na seção de destaque com badge IA (G-06)', async () => {
+    render(<Social />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('friend-item-bot')).toBeInTheDocument();
+      expect(screen.getByText('MIST Bot')).toBeInTheDocument();
+      expect(screen.getByText('Companheiro IA Oficial')).toBeInTheDocument();
+      expect(screen.getByText('IA')).toBeInTheDocument();
+    });
+
+    // Clica no bot para abrir chat
+    fireEvent.click(screen.getByTestId('friend-item-bot'));
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-window')).toBeInTheDocument();
+      expect(screen.getByText('BOT IA')).toBeInTheDocument();
+    });
+  });
 });
+
