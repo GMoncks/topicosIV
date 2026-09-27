@@ -122,3 +122,94 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
    - Backend: suíte completa reexecutada, mesmas 8 falhas pré-existentes de antes (não-regressão).
 
 **Bloco H (Reviews de Jogos) está 100% concluído** (H-01 a H-05) na branch `gm-game-reviews`, pronto para commit.
+
+---
+
+## 2026-09-27 — Prompt 6
+
+**Prompt do usuário:**
+
+> Execute o projeto para eu ver como ficou
+
+**Decisões arquiteturais e técnicas:**
+
+1. Modo nativo (sem Docker) escolhido: `uvicorn` para os 4 microsserviços + gateway, `npm run dev` para o frontend — mais rápido para hot-reload do que rebuild de imagens Docker.
+2. Smoke test end-to-end via `curl` pelo Gateway: registro, checkout de jogo gratuito, bloqueio de review sem posse (403), criação de review, recálculo de aprovação, voto útil idempotente, bloqueio de autovoto (403). Todos os comportamentos esperados confirmados.
+3. Demonstração visual via `claude-in-chrome`: login com conta de teste dedicada (`demo_bloco_h_5955`) — **não** usei a credencial salva do Chrome para `gabriel_moncks` (senha autopreenchida pelo navegador), por não ser uma credencial de teste criada nesta sessão. Fluxo completo validado na UI real: compra → botão "Escrever avaliação" aparece só após posse → publicação → badge "Sua avaliação" → botão vira "Editar avaliação".
+4. Entrei e saí do modo de planejamento (Plan Mode) sem pedido do usuário no meio da demo — engano da ferramenta, sem impacto; usuário confirmou "foi engano" e a sessão retomou do ponto exato onde parou.
+
+**Resumo das saídas:** nenhuma alteração de código; 5 microsserviços + frontend rodando nativamente em background; smoke test de API e demonstração de UI completos e bem-sucedidos.
+
+---
+
+## 2026-09-27 — Prompt 7
+
+**Prompt do usuário:**
+
+> Pode fazer o merge da branch atual na dev
+
+**Decisões arquiteturais e técnicas:**
+
+1. `dev` era ancestral direto de `gm-game-reviews` (sem divergência) → merge por fast-forward, sem conflitos.
+2. Só local: **não** houve `git push` (ação outward-facing, avisada e não solicitada ainda).
+
+**Resumo das saídas:** `dev` avançada de `fd9d9a5` para `91ad979` (fast-forward). Branch `gm-game-reviews` mantida (redundante, não apagada).
+
+---
+
+## 2026-09-27 — Prompt 8
+
+**Prompt do usuário:**
+
+> O L-01 bloqueia as minhas tarefas (dev 1)?
+
+**Decisões arquiteturais e técnicas:**
+
+1. Análise de dependência confirmada: dos 15 tickets restantes da Trilha 1 (T-01 a T-04, L-02 a L-11), **todos** dependem do esqueleto do `market-service` criado pelo L-01 — seja por viverem literalmente dentro do serviço (Bloco L), seja pela decisão já tomada de mover `WalletTransaction`/`wallet_ledger.py` para lá (Bloco T). Apenas o Bloco H (já concluído) era independente.
+
+**Resumo das saídas:** nenhuma alteração de código; resposta de análise.
+
+---
+
+## 2026-09-27 — Prompt 9
+
+**Prompt do usuário:**
+
+> Ok, crie uma branch para o L-01 especificamente e vamos começar ele antes de continuar nas minha tarefaz
+
+(seguido de correção do usuário: "Agora que me toquei, o L-01 é minha responsabilidade, não de outro dev. Pode criar uma branch com o nome relacionado ao bloco como foi para o bloco H.")
+
+**Decisões arquiteturais e técnicas:**
+
+1. Branch `gm-market-service` criada a partir de `dev`, seguindo o mesmo estilo descritivo usado em `gm-game-reviews` (em vez de um nome curto tipo `gm-l-01`).
+2. Escopo do L-01 em aberto (pergunta interrompida na sessão do dia 26): se a branch deve ou não tocar `gateway/app/main.py` (mantido pelo Dev 3 pela governança do projeto) — a ser resolvido antes de codificar.
+
+**Resumo das saídas:** branch criada; implementação ainda não iniciada.
+
+**Decisões de escopo confirmadas com o usuário:**
+- Gateway: apenas `MARKET_SERVICE_URL` em `gateway/app/config.py` + `docker-compose.yml` (aditivo, mesmo padrão dos outros 4 serviços). **Não** mexer em `gateway/app/main.py` (rotas de proxy ficam para o Dev 3/ticket futuro), respeitando a governança de isolamento de rotas.
+- Porta do `market-service`: **8005** (próxima disponível após 8000-8004).
+
+**Implementação do L-01 (esqueleto do market-service):**
+
+1. **Arquivos criados** (`services/market-service/`):
+   - `app/config.py`: só `ENVIRONMENT` por ora — nenhuma URL de serviço especulativa; serão adicionadas quando algum ticket realmente as consumir (L-03, L-05).
+   - `app/db/database.py`: padrão idêntico ao `library-service` (SQLite dedicado `market.db`, `get_db`, `init_db` vazio — modelos entram nos próximos tickets).
+   - `app/api/routes.py`: só `GET /health`.
+   - `app/main.py`: FastAPI + CORS + lifespan (`init_db`), mesmo padrão dos demais serviços.
+   - `Dockerfile`, `requirements.txt` (incluindo `httpx`, já antecipando L-03/L-05).
+   - `tests/test_health.py`: health check + CORS.
+2. **Arquivos modificados:**
+   - `pyproject.toml`: `services/market-service` em `testpaths` e `pythonpath`.
+   - `docker-compose.yml`: novo serviço `market-service` (porta 8005, volume `market_data`), `MARKET_SERVICE_URL` e dependência adicionados ao `gateway`.
+   - `.env.example`: `MARKET_SERVICE_PORT`, `MARKET_SERVICE_URL`, `MARKET_DATABASE_URL`.
+   - `gateway/app/config.py`: `MARKET_SERVICE_URL` (comentário explícito de que a rota de proxy ainda não existe em `main.py`).
+   - `docs/architecture.md` (nova seção §2.6) e `README.md` (tabela de testes + detalhamento de módulos): documentam o serviço como esqueleto.
+
+3. **Achado importante — falha nova na suíte completa (não é bug meu, mas registro por transparência):**
+   - Rodar a suíte inteira (`pytest`) nesta branch expõe consistentemente (3/3 execuções) uma 9ª falha pré-existente: `services/social-service/tests/test_social.py::test_list_friends_with_presence_and_profiles`, ausente na `dev` limpa (verificado 3x em worktree).
+   - **Causa raiz** (não é do `market-service`): `PresenceManager` (`services/social-service/app/services/presence_manager.py`) é um singleton em memória. O teste anterior no mesmo arquivo (`test_presence_status_update_playing`) fecha um WebSocket ao sair do `with client.websocket_connect(...)`, disparando `disconnect()` → marca o usuário como `offline` de forma assíncrona. Esse processamento pode vazar para o teste seguinte (`test_list_friends_with_presence_and_profiles`, mesmo `user_id=2`), sobrescrevendo `"playing"` para `"offline"` entre o `POST /presence/status` e o `GET /friends` do teste seguinte — uma corrida de teste pré-existente, apenas nunca exposta antes porque o tempo total de coleta/execução da suíte não empurrava o timing o suficiente. Adicionar os testes do `market-service` (mais um arquivo/serviço na coleção do pytest) mudou esse timing o suficiente para expor a corrida de forma determinística neste ambiente.
+   - **Não alterei** `social-service` (fora do escopo do L-01 e da minha trilha). Recomendo avisar o Dev 3.
+   - Backend: 9 falhas agora vs. 8 na `dev` (as 8 originais + esta), todas fora do `market-service`. Novos testes do L-01 (`market-service` + `gateway`): 9/9 passando.
+
+**Bloco L-01 concluído**, pronto para commit na branch `gm-market-service`.

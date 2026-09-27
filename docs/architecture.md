@@ -6,7 +6,7 @@ O **MIST** é uma prova de conceito avançada que recria a infraestrutura e os f
 
 ## 1. Visão Geral da Arquitetura
 
-O sistema é composto por um **API Gateway**, 4 **Microsserviços de Domínio** independentes, uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
+O sistema é composto por um **API Gateway**, 5 **Microsserviços de Domínio** independentes (o quinto, `market-service`, ainda em esqueleto — ver §2.6), uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
 
 ```mermaid
 graph TD
@@ -116,6 +116,12 @@ graph TD
   - Broadcast instantâneo de transições de status (*Jogando [Título]*, *Online*, *Ausente*, *Offline*).
 - **Feed de Atividades (F-06):**
   - Endpoint `GET /feed` consolidando conquistas, compras de jogos e progressão.
+
+### 2.6. Market Service (`/services/market-service`, Porta `8005`)
+- **Banco de Dados:** `market.db` (SQLite dedicado).
+- **Status:** esqueleto criado (L-01) — FastAPI, Dockerfile e `/health`, sem endpoints de domínio ainda.
+- **Escopo futuro (Bloco L):** anúncios do Mercado da Comunidade (`MarketListing`), compra com transferência de saldo/custódia, e trocas diretas entre usuários (`TradeOffer`). O extrato de carteira (Bloco T, `WalletTransaction`) também será hospedado aqui.
+- **Gateway:** `MARKET_SERVICE_URL` já configurado em `gateway/app/config.py` e no `docker-compose.yml`; a rota de proxy `/api/market/*` em `gateway/app/main.py` será adicionada quando os primeiros endpoints existirem (mantido pelo Dev 3 por convenção de isolamento de rotas).
 
 ---
 

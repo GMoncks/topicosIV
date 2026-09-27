@@ -87,6 +87,24 @@ services:
       - mist-network
     restart: unless-stopped
 
+  market-service:
+    build:
+      context: ./services/market-service
+      dockerfile: Dockerfile
+    container_name: mist-market-service
+    ports:
+      - "127.0.0.1:${MARKET_SERVICE_PORT:-8005}:8005"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8005
+      - MARKET_DATABASE_URL=${MARKET_DATABASE_URL:-sqlite:///app/data/market.db}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - market_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
   gateway:
     build:
       context: ./gateway
@@ -101,6 +119,7 @@ services:
       - STORE_SERVICE_URL=${STORE_SERVICE_URL:-http://store-service:8002}
       - LIBRARY_SERVICE_URL=${LIBRARY_SERVICE_URL:-http://library-service:8003}
       - SOCIAL_SERVICE_URL=${SOCIAL_SERVICE_URL:-http://social-service:8004}
+      - MARKET_SERVICE_URL=${MARKET_SERVICE_URL:-http://market-service:8005}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-mist_super_secret_jwt_key_development_secret_32bytes}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
@@ -109,6 +128,7 @@ services:
       - store-service
       - library-service
       - social-service
+      - market-service
     networks:
       - mist-network
     restart: unless-stopped
@@ -134,6 +154,8 @@ volumes:
   library_data:
     driver: local
   social_data:
+    driver: local
+  market_data:
     driver: local
 
 networks:
