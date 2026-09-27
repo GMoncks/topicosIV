@@ -328,6 +328,54 @@ export const reviewApi = {
   },
 };
 
+// ========================================
+// Market API — Extrato da Carteira (Bloco T)
+// ========================================
+
+export type WalletTransactionType = 'compra' | 'venda' | 'recarga' | 'resgate';
+
+export interface WalletTransactionApiResponse {
+  id: number;
+  user_id: number;
+  type: WalletTransactionType;
+  amount: number;
+  direction: 'credit' | 'debit';
+  description: string;
+  created_at: string;
+}
+
+export interface WalletHistoryApiResponse {
+  items: WalletTransactionApiResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface WalletHistoryParams {
+  type?: WalletTransactionType;
+  start_date?: string;
+  end_date?: string;
+  skip?: number;
+  limit?: number;
+}
+
+export const walletApi = {
+  async getHistory(params?: WalletHistoryParams): Promise<WalletHistoryApiResponse> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          query.set(key, String(value));
+        }
+      });
+    }
+    const qs = query.toString();
+    return fetchApi<WalletHistoryApiResponse>(`/api/market/wallet/history${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+};
+
 export interface LibraryItemResponse {
   id: number;
   user_id: number;

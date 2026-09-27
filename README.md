@@ -44,7 +44,7 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
                        └───────────────┘ Presença      │ Presença
                                        └───────────────┘
 ```
-> Um quinto microsserviço, **Market Service** (`:8005`, `market.db`), já existe como esqueleto (L-01) e ainda não está conectado ao Gateway — ver item 6 abaixo.
+> Um quinto microsserviço, **Market Service** (`:8005`, `market.db`), já está conectado ao Gateway (`/api/market/*`) e expõe o Extrato da Carteira — ver item 6 abaixo.
 
 ### Detalhamento dos Módulos:
 1. **API Gateway (`gateway/`, porta `8000`):**
@@ -72,8 +72,8 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
    - Presença em tempo real com WebSocket e snapshot de status (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*).
    - Feed agregador multi-domínio (`GET /feed`) com compras, conquistas e progressão.
 6. **Market Service (`services/market-service/`, porta `8005`):**
-   - Esqueleto criado (L-01): FastAPI, Dockerfile e `/health`, banco `market.db` dedicado.
-   - Endpoints de domínio (Mercado da Comunidade, Trocas, Extrato de Carteira) chegam nos próximos tickets do Bloco L/T.
+   - Extrato da Carteira (`GET /wallet/history`, paginado com filtro por tipo/período) e endpoint interno de registro de lançamentos (`POST /wallet/transactions`), acionado automaticamente pelo `store-service` após cada checkout pago.
+   - Endpoints do Mercado da Comunidade e Trocas (`MarketListing`, `TradeOffer`) chegam nos próximos tickets do Bloco L.
 7. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
    - Servidor HTTP leve local em Python que ouve requisições da interface web e dispara jogos em novas janelas do sistema operacional.
 

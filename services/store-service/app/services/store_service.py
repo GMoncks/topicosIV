@@ -10,7 +10,7 @@ from sqlalchemy import or_, desc, asc
 from app.models.game import Game
 from app.models.purchase import Purchase
 from app.services.ai_client import AIClient
-from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL
+from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL, MARKET_SERVICE_URL
 
 
 class StoreService:
@@ -366,6 +366,24 @@ class StoreService:
                                 "price": float(g.price),
                                 "banner_url": g.banner_url
                             }
+                        }
+                    )
+                except Exception:
+                    pass
+
+            # Registra o lançamento no extrato da carteira (T-02) — best-effort,
+            # não bloqueia o checkout se o market-service estiver indisponível.
+            # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
+            if total_amount > 0:
+                try:
+                    titles = ", ".join(g.title for g in games)
+                    await client.post(
+                        f"{MARKET_SERVICE_URL.rstrip('/')}/wallet/transactions",
+                        json={
+                            "user_id": user_id,
+                            "type": "compra",
+                            "amount": total_amount,
+                            "description": f"Compra: {titles}"[:500]
                         }
                     )
                 except Exception:

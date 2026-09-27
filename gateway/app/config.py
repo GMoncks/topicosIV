@@ -4,9 +4,6 @@ AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8001")
 STORE_SERVICE_URL = os.getenv("STORE_SERVICE_URL", "http://localhost:8002")
 LIBRARY_SERVICE_URL = os.getenv("LIBRARY_SERVICE_URL", "http://localhost:8003")
 SOCIAL_SERVICE_URL = os.getenv("SOCIAL_SERVICE_URL", "http://localhost:8004")
-# NOTA: ainda sem rota de proxy em app/main.py (L-01 só cria o esqueleto do
-# market-service). A rota /api/market/* será adicionada quando os endpoints
-# de listagem/troca existirem (L-03 em diante).
 MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8005")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()

@@ -153,6 +153,58 @@
 - Resultado esperado: Retorno HTTP 200 com recomendações ajustadas ao perfil de preferências do usuário.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
 
+#### STORE-UNIT-07 — Criação e atualização (upsert) de avaliações de jogos (H-01/H-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_post_review_creates_with_playtime or test_post_review_twice_updates_existing"`
+- Pré-condições: Jogo existente no catálogo; library-service mockado confirmando posse e horas jogadas.
+- Passos:
+  - Dado um usuário autenticado que possui o jogo na biblioteca
+  - Quando publica uma avaliação pela primeira vez e depois publica novamente para o mesmo jogo
+  - Então a primeira chamada cria o registro (HTTP 201) e a segunda atualiza o mesmo registro (HTTP 200), sem duplicar linhas
+- Resultado esperado: No máximo uma avaliação por par (usuário, jogo), com `playtime_at_review` sempre atualizado.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`, `services/store-service/app/models/review.py`
+
+#### STORE-UNIT-08 — Falha fechada na validação de posse via library-service (H-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_post_review_requires_ownership or test_post_review_fails_closed_when_library_unavailable"`
+- Pré-condições: library-service mockado retornando `owned: false`, erro de conexão ou HTTP 500.
+- Passos:
+  - Dado que o usuário não possui o jogo ou o library-service está indisponível
+  - Quando tenta publicar uma avaliação
+  - Então a requisição é rejeitada com HTTP 403 (sem posse) ou HTTP 503 (serviço indisponível), sem criar registro
+- Resultado esperado: Nenhuma avaliação é criada sem confirmação positiva de posse.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`
+
+#### STORE-UNIT-09 — Listagem de avaliações com ordenação e filtro (H-05)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_list_reviews_default_order_is_most_recent_first or test_list_reviews_sorted_by_helpful or test_list_reviews_filters_by_recommendation"`
+- Pré-condições: Múltiplas avaliações cadastradas para o mesmo jogo, com votos úteis variados.
+- Passos:
+  - Dado várias avaliações publicadas para um jogo
+  - Quando `GET /games/{id}/reviews` é chamado com `sort=recent`, `sort=helpful` ou `is_recommended`
+  - Então a lista retorna na ordem e no recorte correspondentes
+- Resultado esperado: Ordenação e filtros corretos, com paginação (`skip`/`limit`) íntegra.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`
+
+#### STORE-UNIT-10 — Voto útil idempotente e bloqueio de autovoto (H-02); aprovação calculada dinamicamente (H-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_reviews.py -k "test_helpful_is_idempotent_per_user or test_helpful_cannot_vote_own_review or test_game_detail_injects_approval_from_real_reviews"`
+- Pré-condições: Avaliações publicadas por diferentes usuários.
+- Passos:
+  - Dado um review de outro usuário, um segundo voto "útil" do mesmo votante e uma tentativa de voto no próprio review
+  - Quando os endpoints `POST /reviews/{id}/helpful` e `GET /games/{id}` são chamados
+  - Então o primeiro voto conta (201), o repetido é idempotente (200, mesma contagem), o autovoto é rejeitado (403), e `approval_pct`/`approval_label` refletem exatamente a proporção real de recomendações positivas
+- Resultado esperado: Extrato de utilidade e aprovação sempre consistentes com os dados reais.
+- Rastreabilidade: `services/store-service/app/services/review_service.py`, `services/store-service/app/api/routes.py`
+
 ### Social e Amigos (Social Service)
 #### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
 - Prioridade: P0
@@ -338,6 +390,59 @@
   - Então a primeira tentativa falha com HTTP 400, a segunda conclui com sucesso concedendo o XP e marcando como claimed, e a terceira falha com HTTP 400 por duplicidade
 - Resultado esperado: Máquina de estados íntegra para claim de recompensas de missões.
 - Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+#### LIB-UNIT-06 — Exposição de horas jogadas na checagem de posse (H-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_ownership.py -k "test_has_game_exposes_playtime_minutes"`
+- Pré-condições: Usuário sem e com licença concedida, com `playtime_minutes` variável.
+- Passos:
+  - Dado um usuário sem o jogo, depois com o jogo recém-concedido e depois com horas jogadas registradas
+  - Quando `GET /library/users/{id}/has-game/{game_id}` é chamado em cada estágio
+  - Então o campo `playtime_minutes` retorna 0, 0 e o valor real, respectivamente, mantendo `owned` correto
+- Resultado esperado: Extensão aditiva e retrocompatível do endpoint, consumida pelo `store-service` no Bloco H.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+### Mercado e Carteira (Market Service)
+#### MARKET-UNIT-01 — Esqueleto do serviço: health check e CORS (L-01)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_health.py`
+- Pré-condições: `market-service` inicializado com banco `market.db` dedicado.
+- Passos:
+  - Dado o serviço em execução
+  - Quando `GET /health` é chamado e uma requisição `OPTIONS` com origem `http://localhost:3000` é enviada
+  - Então o serviço responde `{"status": "healthy", "service": "market-service"}` e o CORS permite a origem do frontend
+- Resultado esperado: Esqueleto do microsserviço operacional, pronto para os endpoints de domínio dos tickets seguintes.
+- Rastreabilidade: `services/market-service/app/main.py`
+
+#### MARKET-UNIT-02 — Registro de lançamentos no extrato e direção crédito/débito por tipo (T-01/T-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_wallet.py -k "test_record_transaction_direction_by_type or test_record_transaction_rejects_unknown_type or test_record_transaction_rejects_non_positive_amount"`
+- Pré-condições: Nenhuma (banco em memória por teste).
+- Passos:
+  - Dado lançamentos dos tipos `compra`, `venda`, `recarga` e `resgate`, e tentativas com tipo/valor inválidos
+  - Quando `POST /wallet/transactions` (endpoint interno, sem autenticação de usuário) é chamado
+  - Então `compra` é classificada como débito e as demais como crédito; tipos desconhecidos ou valores não-positivos são rejeitados com HTTP 422
+- Resultado esperado: Ledger contábil consistente, pronto para ser acionado por outros microsserviços.
+- Rastreabilidade: `services/market-service/app/services/wallet_ledger.py`, `services/market-service/app/models/transaction.py`
+
+#### MARKET-UNIT-03 — Extrato paginado com filtro por tipo e período, isolado por usuário (T-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_wallet.py -k "test_get_history_only_returns_own_transactions or test_get_history_filters_by_type or test_get_history_filters_by_period or test_get_history_paginates"`
+- Pré-condições: Lançamentos de múltiplos usuários e datas cadastrados.
+- Passos:
+  - Dado o histórico de vários usuários e tipos, com datas distintas
+  - Quando `GET /wallet/history` é chamado com `X-User-Id`, filtros de `type`/`start_date` e paginação `skip`/`limit`
+  - Então retorna apenas os lançamentos do usuário autenticado, respeitando filtro e paginação, ordenados do mais recente para o mais antigo
+- Resultado esperado: Extrato correto, isolado por usuário e sem vazamento de dados entre contas.
+- Rastreabilidade: `services/market-service/app/services/wallet_ledger.py`, `services/market-service/app/api/wallet.py`
 
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
@@ -639,6 +744,45 @@
 - Resultado esperado: Layout contextualizado e priorização da intenção do usuário preservando a descoberta inteligente por IA.
 - Rastreabilidade: `frontend/src/pages/Store.tsx`, `frontend/src/pages/Store.test.tsx`
 
+#### FRONT-UNIT-24 — Formulário de avaliação: recomendação, validação e edição (H-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ReviewFormModal.test.tsx`
+- Pré-condições: `reviewApi.submitReview` mockado.
+- Passos:
+  - Dado o formulário aberto sem e com uma avaliação existente
+  - Quando o usuário escolhe Sim/Não, digita o texto (inclusive só espaços) e publica
+  - Então o botão de publicar só habilita com recomendação e texto não-vazio; uma avaliação existente pré-preenche os campos e rotula a ação como edição; erros da API são exibidos sem fechar a modal
+- Resultado esperado: Publicação/edição correta, com eventos `mist:review-submitted` disparados em caso de sucesso.
+- Rastreabilidade: `frontend/src/components/ReviewFormModal.tsx`
+
+#### FRONT-UNIT-25 — Lista de avaliações: ordenação, voto útil e integração na modal de detalhes (H-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ReviewsList.test.tsx src/components/GameDetailModal.test.tsx`
+- Pré-condições: `reviewApi.listReviews`/`markHelpful` mockados.
+- Passos:
+  - Dado avaliações de terceiros e do próprio usuário
+  - Quando as abas "Mais recentes"/"Mais úteis" são alternadas e o voto útil é acionado
+  - Então a lista recarrega com a ordenação correta, o botão útil é desabilitado na própria avaliação e para visitantes, e a `GameDetailModal` exibe a aprovação real e o botão de escrever/editar avaliação apenas quando o jogo é possuído
+- Resultado esperado: Fluxo de avaliações totalmente integrado à modal de detalhes do jogo.
+- Rastreabilidade: `frontend/src/components/ReviewsList.tsx`, `frontend/src/components/GameDetailModal.tsx`
+
+#### FRONT-UNIT-26 — Extrato da carteira: filtros, paginação e acesso pelo Header (T-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/WalletHistoryModal.test.tsx src/components/Header.test.tsx`
+- Pré-condições: `walletApi.getHistory` mockado.
+- Passos:
+  - Dado o saldo exibido no Header
+  - Quando o usuário autenticado clica no saldo, troca o filtro de tipo ou navega entre páginas
+  - Então a modal de extrato abre e recarrega com o filtro/página correspondente, com sinal e cor por direção (crédito/débito); para um visitante, o clique abre a autenticação em vez do extrato
+- Resultado esperado: Extrato acessível e funcional a partir do Header, sem exigir navegação a outra página.
+- Rastreabilidade: `frontend/src/components/WalletHistoryModal.tsx`, `frontend/src/components/Header.tsx`
+
 ## Integração
 
 ### Gateway e Autenticação
@@ -681,6 +825,19 @@
   - E quando a requisição contiver um Bearer JWT válido
   - Então o Gateway valida o JWT e encaminha a chamada para o library-service injetando o header seguro `X-User-Id`
 - Resultado esperado: Código HTTP 401 para requisições anônimas e 200 com repasse correto de identidade para usuários autenticados.
+- Rastreabilidade: `gateway/app/main.py`
+
+#### GATEWAY-INT-04 — Proxy reverso do market-service com injeção de identidade e fallback 503 (L-01/T-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_gateway.py -k "test_gateway_market_wallet_history_proxy or test_gateway_market_proxy_unavailable_returns_503"`
+- Pré-condições: Rota `/api/market/{path}` registrada no Gateway.
+- Passos:
+  - Dado uma requisição `GET /api/market/wallet/history` com JWT válido, e uma segunda simulando o market-service fora do ar
+  - Quando o Gateway processa cada requisição
+  - Então a primeira encaminha ao market-service com `X-User-Id` injetado a partir do JWT, e a segunda retorna HTTP 503 com mensagem explicativa
+- Resultado esperado: Mesmo padrão de proxy genérico já usado por `/api/store/*`, agora cobrindo `/api/market/*`.
 - Rastreabilidade: `gateway/app/main.py`
 
 ### Autenticação e Persistência
@@ -932,6 +1089,19 @@
   - Quando a rota POST /checkout for invocada
   - Então o fluxo não sofre erro 422/400 de valor mínimo, a licença é concedida no library-service e o saldo permanece intacto
 - Resultado esperado: Retorno HTTP 201 com total_paid: 0.0 e licença concedida.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`
+
+#### STORE-MARKET-INT-01 — Registro best-effort de lançamento no extrato após o checkout (T-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_records_wallet_ledger_transaction or test_checkout_free_game_does_not_record_wallet_ledger_transaction or test_checkout_succeeds_even_if_wallet_ledger_call_fails"`
+- Pré-condições: market-service mockado no client HTTP do store-service.
+- Passos:
+  - Dado um checkout pago bem-sucedido, um checkout de jogo gratuito e um checkout com o market-service indisponível
+  - Quando o fluxo de checkout é concluído em cada cenário
+  - Então o pago dispara `POST /wallet/transactions` (tipo `compra`, valor total) no market-service, o gratuito não dispara nenhum lançamento, e a falha no market-service é engolida sem impedir o HTTP 201 do checkout
+- Resultado esperado: Extrato da carteira alimentado organicamente pelas compras reais, sem acoplar a disponibilidade do market-service à compra em si.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`
 
 ### Amizades e Atividades (Social Service)

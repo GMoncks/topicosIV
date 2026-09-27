@@ -252,3 +252,43 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 - Backend: suíte completa com exatamente as mesmas 9 falhas de antes (as 8 pré-existentes + a corrida de teste do `social-service` já diagnosticada) — nenhuma falha nova introduzida pelo merge.
 - Frontend: **75/75 testes passando** (18 suítes, incluindo `CuratorSection`, `Store.test.tsx`, `ChatWindow`, `Social`, e os componentes do Bloco H). `tsc --noEmit` sem erros.
 - `dev` local segue **não publicada** em `origin/dev` (nenhum `push` realizado).
+
+---
+
+## 2026-09-27 — Prompt 12
+
+**Prompt do usuário:**
+
+> Cria uma nova e continua de lá
+
+**Decisões arquiteturais e técnicas:**
+
+1. Branch `gm-wallet-history` criada a partir da `dev` (já com Bloco H + L-01 + merge do PR #106), seguindo o padrão descritivo (`gm-game-reviews`, `gm-market-service`).
+2. Início do Bloco T (Histórico de Transações da Carteira): T-01 (`WalletTransaction`), T-02 (`wallet_ledger.py`), T-03 (`GET /wallet/history`) no `market-service`; T-04 (`WalletHistoryModal.tsx`) no frontend.
+
+**Resumo das saídas:** branch criada; implementação a seguir.
+
+**Decisões de escopo confirmadas com o usuário antes de codificar:**
+- Direção crédito/débito por tipo: `compra` = débito; `venda`, `recarga`, `resgate` = crédito.
+- Checkout do `store-service` liga ao ledger **agora** (chamada best-effort/fire-and-forget, mesmo padrão do evento `game_purchased` para o `social-service`: exceção é engolida, não derruba a compra).
+- **Bloqueio real encontrado ao chegar no T-04:** o Gateway não tinha rota de proxy para `/api/market/*` (decisão do L-01, quando não havia nada a expor). Perguntei de novo, já que agora existe um endpoint real e útil — decisão: **adicionar a rota agora**, mesmo padrão genérico de `/api/store/*`. Segue mantido: nenhuma mudança na lógica de auth do Gateway além disso.
+
+**Implementação do Bloco T (T-01 a T-04):**
+
+1. **Backend (`services/market-service/`):**
+   - `app/models/transaction.py`: `WalletTransaction` + constantes `TRANSACTION_TYPES`/`CREDIT_TYPES`/`DEBIT_TYPES`.
+   - `app/schemas/wallet.py`: `WalletTransactionCreate` (valida tipo e valor > 0), `WalletTransactionResponse` (com `direction` derivado), `WalletHistoryResponse`.
+   - `app/services/wallet_ledger.py`: `record_transaction` (não move saldo real, só audita) e `get_history` (filtro por tipo/período, paginação).
+   - `app/api/wallet.py`: `POST /wallet/transactions` (interno, sem `X-User-Id` — mesmo padrão do `POST /users/{id}/wallet/debit` do auth-service) e `GET /wallet/history` (autenticado via `X-User-Id`).
+2. **Integração real no `store-service`:** `execute_checkout` agora chama `POST /wallet/transactions` no market-service após um checkout pago (pulado para jogos gratuitos, `amount` teria que ser positivo). `MARKET_SERVICE_URL` adicionada ao `config.py`.
+3. **Gateway:** nova rota `/api/market/{path}` em `gateway/app/main.py`, idêntica ao padrão `proxy_store`.
+4. **Achado colateral corrigido:** `docker-compose.yml` do `store-service` não tinha `SOCIAL_SERVICE_URL` configurada, apesar do código já usá-la para o evento `game_purchased` — em produção/Docker isso cairia no fallback `localhost:8004`, errado dentro da rede do container. Corrigido de passagem (mesmo bloco que eu já estava editando para adicionar `MARKET_SERVICE_URL`).
+5. **Frontend:**
+   - `frontend/src/api/client.ts`: `walletApi.getHistory`, tipos `WalletTransactionApiResponse`/`WalletHistoryApiResponse`.
+   - `frontend/src/components/WalletHistoryModal.tsx` (T-04): extrato paginado, filtro por tipo (abas), sinal/cor por direção.
+   - `frontend/src/components/Header.tsx`: saldo da carteira virou botão — abre o extrato se autenticado, ou a tela de login se visitante.
+6. **Testes:** 23 no `market-service` (health + wallet), 3 novos no `store-service` (integração checkout→ledger, incluindo best-effort em falha), 2 novos no gateway (proxy + fallback 503), 10 novos no frontend (`WalletHistoryModal`, `Header`).
+7. **Débito de documentação quitado:** notei que o projeto mantém um catálogo detalhado de casos de teste em `TESTS.md` (convenção já usada desde antes do Bloco H, inclusive pelo trabalho de IA do PR #106) que eu **não** vinha alimentando. Adicionei entradas retroativas para H-01 a H-05 (`STORE-UNIT-07..10`, `LIB-UNIT-06`) e as novas do L-01/Bloco T (`MARKET-UNIT-01..03`, `GATEWAY-INT-04`, `STORE-MARKET-INT-01`, `FRONT-UNIT-24..26`).
+8. **Validação final:** backend com as mesmas 9 falhas pré-existentes (nenhuma nova); frontend **85/85 testes** (20 suítes); `tsc --noEmit` limpo.
+
+**Bloco T (Histórico de Transações da Carteira) concluído (T-01 a T-04)**, pronto para commit na branch `gm-wallet-history`.
