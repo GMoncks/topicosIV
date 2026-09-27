@@ -44,6 +44,7 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
                        └───────────────┘ Presença      │ Presença
                                        └───────────────┘
 ```
+> Um quinto microsserviço, **Market Service** (`:8005`, `market.db`), já existe como esqueleto (L-01) e ainda não está conectado ao Gateway — ver item 6 abaixo.
 
 ### Detalhamento dos Módulos:
 1. **API Gateway (`gateway/`, porta `8000`):**
@@ -70,7 +71,10 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
    - Chat 1:1 em tempo real com indicador de digitação (*typing indicator*) e histórico persistido.
    - Presença em tempo real com WebSocket e snapshot de status (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*).
    - Feed agregador multi-domínio (`GET /feed`) com compras, conquistas e progressão.
-6. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
+6. **Market Service (`services/market-service/`, porta `8005`):**
+   - Esqueleto criado (L-01): FastAPI, Dockerfile e `/health`, banco `market.db` dedicado.
+   - Endpoints de domínio (Mercado da Comunidade, Trocas, Extrato de Carteira) chegam nos próximos tickets do Bloco L/T.
+7. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
    - Servidor HTTP leve local em Python que ouve requisições da interface web e dispara jogos em novas janelas do sistema operacional.
 
 ---
@@ -187,6 +191,7 @@ Com o ambiente virtual ativado e a partir da raiz do repositório:
 | **Store Service** | `pytest` | `pytest services/store-service/tests` |
 | **Library Service** | `pytest` | `pytest services/library-service/tests` |
 | **Social Service** | `pytest` | `pytest services/social-service/tests` |
+| **Market Service** | `pytest` | `pytest services/market-service/tests` |
 | **API Gateway** | `pytest` | `pytest gateway/tests` |
 | **Frontend Unitários & Componentes** | `vitest` | `npm --prefix frontend run test:unit` |
 | **Sistema Completo (E2E)** | `playwright` | `npm --prefix frontend run test:e2e` |
