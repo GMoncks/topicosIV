@@ -1,4 +1,5 @@
 import os
+import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
@@ -12,7 +13,9 @@ DATABASE_URL = os.getenv("MARKET_DATABASE_URL", f"sqlite:///{DB_PATH}")
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {},
+    # Necessário a partir do TradeOffer (L-06), com colunas JSON contendo texto acentuado.
+    json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False),
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -30,5 +33,5 @@ def get_db():
 def init_db():
     import app.models.transaction  # noqa: F401
     import app.models.listing  # noqa: F401
-    # TradeOffer (trocas diretas) será importado aqui no próximo ticket (L-06).
+    import app.models.trade  # noqa: F401
     Base.metadata.create_all(bind=engine)

@@ -74,7 +74,8 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
 6. **Market Service (`services/market-service/`, porta `8005`):**
    - Extrato da Carteira (`GET /wallet/history`, paginado com filtro por tipo/período) e endpoint interno de registro de lançamentos (`POST /wallet/transactions`), acionado automaticamente pelo `store-service` após cada checkout pago e pelo próprio market-service após cada venda.
    - Mercado da Comunidade: anunciar (`POST /market/list`), listar/filtrar (`GET /market/listings`), comprar com Saga de compensação (`POST /market/buy/{id}`) e gerenciar anúncios próprios (`GET /market/my-listings`, `POST /market/listings/{id}/cancel`).
-   - Trocas diretas entre usuários (`TradeOffer`) chegam nos próximos tickets do Bloco L.
+   - Trocas diretas entre usuários: propor (`POST /trades/offer`), aceitar/recusar (`POST /trades/{id}/accept|decline`) e histórico (`GET /trades/received`, `GET /trades/sent`).
+   - **Pendência conhecida:** criar um anúncio ou uma troca no frontend depende do Inventário de Cosméticos (Bloco J, Dev 2), ainda não implementado. O backend já está pronto e testado contra o contrato assumido (documentado em `docs/architecture.md` §2.6); só falta a origem real dos dados de inventário.
 7. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
    - Servidor HTTP leve local em Python que ouve requisições da interface web e dispara jogos em novas janelas do sistema operacional.
 
