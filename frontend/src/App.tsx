@@ -7,6 +7,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Store } from './pages/Store';
+import { Market } from './pages/Market';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
 import { News } from './pages/News';
@@ -268,6 +269,8 @@ function AppContent() {
           {activeTab === 'library' && (
             <Library onNavigateToStore={() => setActiveTab('store')} />
           )}
+
+          {activeTab === 'market' && <Market />}
 
           {activeTab === 'social' && <Social />}
 

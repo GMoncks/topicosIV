@@ -119,11 +119,19 @@ graph TD
 
 ### 2.6. Market Service (`/services/market-service`, Porta `8005`)
 - **Banco de Dados:** `market.db` (SQLite dedicado).
-- **Status:** esqueleto (L-01) + Extrato da Carteira (Bloco T) implementados. Mercado da Comunidade e Trocas (Bloco L, `MarketListing`/`TradeOffer`) ainda pendentes.
+- **Status:** esqueleto (L-01), Extrato da Carteira (Bloco T) e Anúncios/Compra do Mercado (L-02 a L-05, L-11) implementados. Trocas diretas entre usuários (L-06 a L-08, L-10, `TradeOffer`) ainda pendentes.
 - **Extrato da Carteira (T-01 a T-03):**
   - `WalletTransaction`: `user_id`, `type` (`compra`, `venda`, `recarga`, `resgate`), `amount` (magnitude positiva), `description`, `created_at`.
-  - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, de forma *best-effort* (falha não derruba a compra).
+  - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, e o próprio market-service após toda venda no mercado, de forma *best-effort* (falha não derruba a compra).
   - `GET /wallet/history`: extrato paginado do usuário autenticado, com filtro por `type` e por período (`start_date`/`end_date`). Direção (`credit`/`debit`) é derivada do tipo: `compra` debita; `venda`, `recarga` e `resgate` creditam.
+- **Mercado da Comunidade (L-02 a L-05, L-11):**
+  - `MarketListing`: `seller_id`, `item_id`, `item_type` (`card`, `emoticon`, `background`, `avatar_frame`, `badge`), `item_name` (snapshot legível), `game_id` (opcional), `price`, `status` (`ativo`, `vendido`, `cancelado`), `buyer_id`.
+  - `POST /market/list`: anuncia um item. Valida posse e bloqueia o item no auth-service antes de criar o anúncio (falha fechada — 503/404/403/409 conforme a resposta do auth-service).
+  - `GET /market/listings`: catálogo público de anúncios ativos, com filtro por `item_type`/`game_id`, ordenado por menor preço.
+  - `GET /market/my-listings`: anúncios do usuário autenticado, em qualquer status.
+  - `POST /market/listings/{id}/cancel`: cancela um anúncio ativo próprio e libera o item no inventário.
+  - `POST /market/buy/{listing_id}`: compra um anúncio. Saga com compensação (mesmo padrão do checkout de jogos no store-service): débito do comprador → crédito do vendedor (estorna o comprador se falhar) → transferência de custódia do item (estorna ambos se falhar) → extrato da carteira (`compra`/`venda`, best-effort) para as duas partes.
+  - **Contrato assumido com o `auth-service`** (Bloco J do Dev 2, ainda não implementado — market-service falha fechado enquanto isso): `POST /inventory/items/{item_id}/lock` e `.../unlock`, body `{"user_id": <id>}` → 200 confirma/libera, 404/403/409 nos casos de erro; `POST /inventory/transfer`, body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono. **Dev 2:** o `unlock` não estava no contrato original do cronograma (§6) — foi adicionado por simetria, necessário para cancelar anúncios sem prender o item para sempre.
 - **Gateway:** `MARKET_SERVICE_URL` configurado e rota de proxy genérica `/api/market/*` em `gateway/app/main.py` (mesmo padrão de `/api/store/*`).
 
 ---

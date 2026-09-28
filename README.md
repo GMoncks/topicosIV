@@ -72,8 +72,9 @@ O sistema foi arquitetado como uma aplicação distribuída orientada a microsse
    - Presença em tempo real com WebSocket e snapshot de status (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*).
    - Feed agregador multi-domínio (`GET /feed`) com compras, conquistas e progressão.
 6. **Market Service (`services/market-service/`, porta `8005`):**
-   - Extrato da Carteira (`GET /wallet/history`, paginado com filtro por tipo/período) e endpoint interno de registro de lançamentos (`POST /wallet/transactions`), acionado automaticamente pelo `store-service` após cada checkout pago.
-   - Endpoints do Mercado da Comunidade e Trocas (`MarketListing`, `TradeOffer`) chegam nos próximos tickets do Bloco L.
+   - Extrato da Carteira (`GET /wallet/history`, paginado com filtro por tipo/período) e endpoint interno de registro de lançamentos (`POST /wallet/transactions`), acionado automaticamente pelo `store-service` após cada checkout pago e pelo próprio market-service após cada venda.
+   - Mercado da Comunidade: anunciar (`POST /market/list`), listar/filtrar (`GET /market/listings`), comprar com Saga de compensação (`POST /market/buy/{id}`) e gerenciar anúncios próprios (`GET /market/my-listings`, `POST /market/listings/{id}/cancel`).
+   - Trocas diretas entre usuários (`TradeOffer`) chegam nos próximos tickets do Bloco L.
 7. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
    - Servidor HTTP leve local em Python que ouve requisições da interface web e dispara jogos em novas janelas do sistema operacional.
 
