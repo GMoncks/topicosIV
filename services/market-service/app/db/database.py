@@ -29,6 +29,6 @@ def get_db():
 
 def init_db():
     import app.models.transaction  # noqa: F401
-    # Os demais modelos do domínio (MarketListing, TradeOffer, ...) serão
-    # importados aqui conforme forem criados nos próximos tickets (L-02, L-06).
+    import app.models.listing  # noqa: F401
+    # TradeOffer (trocas diretas) será importado aqui no próximo ticket (L-06).
     Base.metadata.create_all(bind=engine)

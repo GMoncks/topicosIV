@@ -96,7 +96,10 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8005
       - MARKET_DATABASE_URL=${MARKET_DATABASE_URL:-sqlite:///app/data/market.db}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:8001}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    depends_on:
+      - auth-service
     volumes:
       - market_data:/app/app/data
     networks:

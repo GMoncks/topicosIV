@@ -444,6 +444,45 @@
 - Resultado esperado: Extrato correto, isolado por usuário e sem vazamento de dados entre contas.
 - Rastreabilidade: `services/market-service/app/services/wallet_ledger.py`, `services/market-service/app/api/wallet.py`
 
+#### MARKET-UNIT-04 — Anúncio de item com validação e bloqueio no inventário, falha fechada (L-02/L-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_listings.py -k "test_create_listing_success_locks_item_and_persists or test_create_listing_propagates_inventory_validation_errors or test_create_listing_fails_closed_when_auth_service_unavailable"`
+- Pré-condições: auth-service mockado respondendo `POST /inventory/items/{id}/lock` (contrato assumido, Bloco J do Dev 2 ainda não implementado).
+- Passos:
+  - Dado um item válido e disponível, um item inexistente/de outro dono/já em uso, e o auth-service fora do ar
+  - Quando `POST /market/list` é chamado em cada cenário
+  - Então o primeiro cria o anúncio (201) após bloquear o item; os demais são rejeitados (404/403/409/503) sem criar nenhum registro
+- Resultado esperado: Nenhum anúncio é criado sem confirmação positiva de posse e bloqueio do item.
+- Rastreabilidade: `services/market-service/app/services/listing_service.py`
+
+#### MARKET-UNIT-05 — Catálogo público, "Meus Anúncios" e cancelamento com desbloqueio (L-04/L-11)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_listings.py -k "test_list_listings_only_shows_active_sorted_by_price or test_my_listings_only_returns_own_listings or test_cancel_listing_unlocks_item_and_updates_status"`
+- Pré-condições: Anúncios de múltiplos vendedores em diferentes status.
+- Passos:
+  - Dado anúncios ativos, vendidos e cancelados de vários usuários
+  - Quando `GET /market/listings`, `GET /market/my-listings` e `POST /market/listings/{id}/cancel` são chamados
+  - Então o catálogo público mostra só ativos ordenados por menor preço, "Meus Anúncios" isola por usuário, e o cancelamento desbloqueia o item no auth-service antes de marcar o anúncio como cancelado
+- Resultado esperado: Isolamento correto por status/usuário e liberação do item ao cancelar.
+- Rastreabilidade: `services/market-service/app/services/listing_service.py`, `services/market-service/app/api/listings.py`
+
+#### MARKET-UNIT-06 — Compra do mercado com Saga de compensação (L-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_checkout.py -k "test_buy_success_transfers_balance_and_custody or test_buy_seller_credit_failure_refunds_buyer or test_buy_item_transfer_failure_reverses_both_wallets"`
+- Pré-condições: auth-service mockado para débito/crédito de carteira e transferência de custódia.
+- Passos:
+  - Dado uma compra bem-sucedida, uma falha ao creditar o vendedor e uma falha ao transferir a custódia do item
+  - Quando `POST /market/buy/{listing_id}` é executado em cada cenário
+  - Então a compra bem-sucedida debita o comprador, credita o vendedor, transfere o item e grava o extrato (`compra`/`venda`) para ambos; as falhas disparam a compensação (estorno do comprador, e também reversão do crédito do vendedor quando a transferência falha), mantendo o anúncio "ativo" e sem lançamentos no extrato
+- Resultado esperado: Nenhuma operação parcial: ou a venda se completa integralmente, ou tudo é revertido.
+- Rastreabilidade: `services/market-service/app/services/checkout.py`
+
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
 - Prioridade: P1
@@ -782,6 +821,19 @@
   - Então a modal de extrato abre e recarrega com o filtro/página correspondente, com sinal e cor por direção (crédito/débito); para um visitante, o clique abre a autenticação em vez do extrato
 - Resultado esperado: Extrato acessível e funcional a partir do Header, sem exigir navegação a outra página.
 - Rastreabilidade: `frontend/src/components/WalletHistoryModal.tsx`, `frontend/src/components/Header.tsx`
+
+#### FRONT-UNIT-27 — Página do Mercado: catálogo, compra e gerenciamento de anúncios (L-09/L-11)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Market.test.tsx`
+- Pré-condições: `marketApi` mockado.
+- Passos:
+  - Dado o catálogo de anúncios ativos e os anúncios do próprio usuário
+  - Quando o usuário filtra por tipo, confirma uma compra, tenta comprar o próprio anúncio, acessa "Meus Anúncios" como visitante, ou cancela um anúncio ativo
+  - Então o filtro recarrega o catálogo, a compra atualiza o saldo exibido no Header e fecha a modal de confirmação (erros permanecem visíveis sem fechá-la), a compra do próprio anúncio fica desabilitada, o acesso sem login abre a autenticação, e o cancelamento remove a ação apenas de anúncios ativos
+- Resultado esperado: Fluxo completo de navegação, compra e gestão de anúncios, sem seletor de criação (dependente do Inventário do Dev 2, ainda pendente).
+- Rastreabilidade: `frontend/src/pages/Market.tsx`
 
 ## Integração
 

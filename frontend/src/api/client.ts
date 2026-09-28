@@ -376,6 +376,91 @@ export const walletApi = {
   },
 };
 
+// ========================================
+// Market API — Mercado da Comunidade (Bloco L)
+// ========================================
+
+export type MarketItemType = 'card' | 'emoticon' | 'background' | 'avatar_frame' | 'badge';
+export type MarketListingStatus = 'ativo' | 'vendido' | 'cancelado';
+
+export interface MarketListingApiResponse {
+  id: number;
+  seller_id: number;
+  item_id: number;
+  item_type: MarketItemType;
+  item_name: string | null;
+  game_id: number | null;
+  price: number;
+  status: MarketListingStatus;
+  buyer_id: number | null;
+  created_at: string;
+  sold_at: string | null;
+  cancelled_at: string | null;
+}
+
+export interface MarketListingPageApiResponse {
+  items: MarketListingApiResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface MarketBuyApiResponse {
+  listing: MarketListingApiResponse;
+  new_wallet_balance: number | null;
+}
+
+export const marketApi = {
+  async listListings(params?: {
+    item_type?: MarketItemType;
+    game_id?: number;
+    skip?: number;
+    limit?: number;
+  }): Promise<MarketListingPageApiResponse> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.set(key, String(value));
+        }
+      });
+    }
+    const qs = query.toString();
+    return fetchApi<MarketListingPageApiResponse>(`/api/market/market/listings${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getMyListings(params?: {
+    status?: MarketListingStatus;
+    skip?: number;
+    limit?: number;
+  }): Promise<MarketListingPageApiResponse> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          query.set(key, String(value));
+        }
+      });
+    }
+    const qs = query.toString();
+    return fetchApi<MarketListingPageApiResponse>(`/api/market/market/my-listings${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async buyListing(listingId: number): Promise<MarketBuyApiResponse> {
+    return fetchApi<MarketBuyApiResponse>(`/api/market/market/buy/${listingId}`, { method: 'POST' });
+  },
+
+  async cancelListing(listingId: number): Promise<MarketListingApiResponse> {
+    return fetchApi<MarketListingApiResponse>(`/api/market/market/listings/${listingId}/cancel`, {
+      method: 'POST',
+    });
+  },
+};
+
 export interface LibraryItemResponse {
   id: number;
   user_id: number;

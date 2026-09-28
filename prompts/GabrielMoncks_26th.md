@@ -292,3 +292,41 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 8. **Validação final:** backend com as mesmas 9 falhas pré-existentes (nenhuma nova); frontend **85/85 testes** (20 suítes); `tsc --noEmit` limpo.
 
 **Bloco T (Histórico de Transações da Carteira) concluído (T-01 a T-04)**, pronto para commit na branch `gm-wallet-history`.
+
+---
+
+## 2026-09-27 — Prompt 13
+
+**Prompt do usuário:**
+
+> Pode seguir
+
+**Decisões arquiteturais e técnicas:**
+
+1. Merge `gm-wallet-history` → `dev` (fast-forward). `origin/dev` já estava sincronizada com a `dev` local (alguém deu push fora desta sessão) — sem divergência desta vez.
+2. Branch `gm-market-listings` criada para a primeira metade do Bloco L (L-02, L-03, L-04, L-05, L-09, L-11 — catálogo, anúncio, compra e "Meus Anúncios"). Trocas diretas (L-06 a L-08, L-10) ficam para uma branch `gm-trade-offers` futura, seguindo o próprio faseamento do cronograma (Dia 6-8 vs. Dia 9-10).
+3. **Bloqueio real de dependência identificado:** o contrato Dev1↔Dev2 (§6 do cronograma: `GET /inventory`, `POST /inventory/items/{id}/lock`, `POST /inventory/transfer` no `auth-service`) ainda não existe — diferente do H/T, onde o serviço do outro lado já estava no ar. Decisão confirmada: **codificar contra o contrato documentado**, com falha fechada (503/404/403/409 conforme o caso) se o `auth-service` não responder como esperado. Isso significa que estou definindo, na prática, o formato exato do payload desse contrato (o cronograma só descreve os endpoints em prosa) — documentado abaixo para o Dev 2 seguir.
+4. **Escopo do frontend (L-09) reduzido conscientemente:** sem seletor visual de inventário (não existe ainda), a página de Mercado cobre navegação/busca/filtros/compra e "Meus Anúncios" (gerenciar/cancelar) por completo; a tela de **criar** anúncio fica pendente para quando o inventário do Dev 2 existir.
+
+**Contrato assumido com o `auth-service` (documentado em `docs/architecture.md` para o Dev 2):**
+- `POST /inventory/items/{item_id}/lock` — body `{"user_id": <seller_id>}` → 200 confirma posse e bloqueia o item; 404 não encontrado; 403 não é o dono; 409 já em uso/anunciado.
+- `POST /inventory/items/{item_id}/unlock` — mesmo formato, inverso do lock (usado ao cancelar anúncio). **Não estava no §6 original**; adicionado por simetria (sem ele, um anúncio cancelado deixaria o item preso para sempre).
+- `POST /inventory/transfer` — body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono.
+
+**Resumo das saídas (L-02, L-03, L-04, L-05, L-09, L-11 concluídos):**
+
+1. **Backend (`services/market-service/`):**
+   - `app/models/listing.py`: `MarketListing` com os campos do ticket (`seller_id`, `item_id`, `item_type`, `price`, `status`) mais `item_name` (snapshot legível), `game_id` (filtro "por jogo" do L-04) e `buyer_id`/timestamps (necessários para L-09/L-11 funcionarem de verdade) — extensões justificadas pelas próprias necessidades dos tickets de listagem/gestão.
+   - `app/services/listing_service.py`: criação (lock no auth-service), listagem pública (só ativos, por preço), "meus anúncios" (todos os status) e cancelamento (unlock).
+   - `app/services/checkout.py`: `MarketCheckoutService.buy_listing` — Saga completa (débito comprador → crédito vendedor com estorno em falha → transferência de custódia com reversão dupla em falha → extrato `compra`/`venda` best-effort para as duas partes), espelhando exatamente o padrão já usado no checkout de jogos do store-service.
+   - `app/api/listings.py`: `POST /market/list`, `GET /market/listings`, `GET /market/my-listings`, `POST /market/listings/{id}/cancel`, `POST /market/buy/{listing_id}`.
+   - `app/config.py`: `AUTH_SERVICE_URL` adicionada (primeira vez que o market-service efetivamente chama outro serviço).
+2. **Frontend:**
+   - `frontend/src/pages/Market.tsx` (L-09/L-11): nova aba "Mercado" na Sidebar. Catálogo com filtro por tipo e paginação, modal de confirmação de compra (atualiza o saldo do Header via `updateUserBalance`), aba "Meus Anúncios" com filtro por status e cancelamento. Aviso explícito ao usuário de que criar um novo anúncio depende do Inventário (Dev 2, pendente) — nada escondido.
+   - `frontend/src/api/client.ts`: `marketApi` (`listListings`, `getMyListings`, `buyListing`, `cancelListing`).
+   - `frontend/src/types/index.ts`: `NavigationTab` ganhou `'market'`.
+3. **Testes:** 31 novos no market-service (10 checkout/Saga incluindo cenários de compensação, 21 listagens/cancelamento/validação de inventário), 9 novos no frontend (`Market.test.tsx`, incluindo o fluxo completo de compra e a Saga vista do lado do usuário).
+4. **Validação final:** backend com as mesmas 9 falhas pré-existentes (nenhuma nova) — 54/54 testes do market-service passando; frontend **94/94 testes** (21 suítes); `tsc --noEmit` limpo.
+5. **Documentação:** `docs/architecture.md` §2.6 e `README.md` atualizados com os novos endpoints e o contrato assumido com o auth-service; `TESTS.md` com `MARKET-UNIT-04..06` e `FRONT-UNIT-27`.
+
+**Bloco L (primeira metade: catálogo, anúncio, compra e gestão) concluído**, pronto para commit na branch `gm-market-listings`. Faltam L-06 a L-08 e L-10 (Trocas Diretas) para fechar o Bloco L por completo.
