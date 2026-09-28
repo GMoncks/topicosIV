@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Market } from './Market';
-import { marketApi, MarketListingApiResponse } from '../api/client';
+import { marketApi, MarketListingApiResponse, TradeOfferApiResponse } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 vi.mock('../api/client', () => ({
@@ -10,6 +10,10 @@ vi.mock('../api/client', () => ({
     getMyListings: vi.fn(),
     buyListing: vi.fn(),
     cancelListing: vi.fn(),
+    getReceivedTrades: vi.fn(),
+    getSentTrades: vi.fn(),
+    acceptTrade: vi.fn(),
+    declineTrade: vi.fn(),
   },
 }));
 
@@ -35,6 +39,20 @@ function makeListing(overrides: Partial<MarketListingApiResponse> = {}): MarketL
   };
 }
 
+function makeTradeOffer(overrides: Partial<TradeOfferApiResponse> = {}): TradeOfferApiResponse {
+  return {
+    id: 1,
+    sender_id: 30,
+    receiver_id: 20,
+    offered_items: [{ item_id: 1, item_type: 'card', item_name: 'Carta A' }],
+    requested_items: [{ item_id: 2, item_type: 'emoticon', item_name: 'Emoticon B' }],
+    status: 'pending',
+    created_at: '2026-01-01T00:00:00Z',
+    responded_at: null,
+    ...overrides,
+  };
+}
+
 function mockAuth(overrides: Partial<ReturnType<typeof useAuth>> = {}) {
   (useAuth as any).mockReturnValue({
     isAuthenticated: true,
@@ -50,6 +68,8 @@ describe('Market Page Component', () => {
     vi.clearAllMocks();
     (marketApi.listListings as any).mockResolvedValue({ items: [], total: 0, skip: 0, limit: 12 });
     (marketApi.getMyListings as any).mockResolvedValue({ items: [], total: 0, skip: 0, limit: 12 });
+    (marketApi.getReceivedTrades as any).mockResolvedValue({ items: [], total: 0, skip: 0, limit: 12 });
+    (marketApi.getSentTrades as any).mockResolvedValue({ items: [], total: 0, skip: 0, limit: 12 });
     mockAuth();
   });
 
@@ -198,5 +218,92 @@ describe('Market Page Component', () => {
   it('mostra estado vazio quando não há anúncios no catálogo', async () => {
     render(<Market />);
     expect(await screen.findByText('Nenhum anúncio disponível no momento.')).toBeInTheDocument();
+  });
+
+  it('pede autenticação ao entrar em "Trocas" como visitante', () => {
+    const openAuthModal = vi.fn();
+    mockAuth({ isAuthenticated: false, user: undefined, openAuthModal });
+
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+
+    expect(openAuthModal).toHaveBeenCalled();
+    expect(marketApi.getReceivedTrades).not.toHaveBeenCalled();
+  });
+
+  it('lista trocas recebidas pendentes e permite aceitar', async () => {
+    (marketApi.getReceivedTrades as any).mockResolvedValue({
+      items: [makeTradeOffer()],
+      total: 1,
+      skip: 0,
+      limit: 12,
+    });
+    (marketApi.acceptTrade as any).mockResolvedValue(makeTradeOffer({ status: 'accepted' }));
+
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+
+    expect(await screen.findByText('Carta A')).toBeInTheDocument();
+    expect(screen.getByText('Emoticon B')).toBeInTheDocument();
+    expect(screen.getByText('De: usuário #30')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aceitar' }));
+
+    await waitFor(() => {
+      expect(marketApi.acceptTrade).toHaveBeenCalledWith(1);
+      expect(marketApi.getReceivedTrades).toHaveBeenCalledTimes(2); // carga inicial + reload pós-resposta
+    });
+  });
+
+  it('recusa uma troca recebida', async () => {
+    (marketApi.getReceivedTrades as any).mockResolvedValue({
+      items: [makeTradeOffer()],
+      total: 1,
+      skip: 0,
+      limit: 12,
+    });
+    (marketApi.declineTrade as any).mockResolvedValue(makeTradeOffer({ status: 'declined' }));
+
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Recusar' }));
+
+    await waitFor(() => {
+      expect(marketApi.declineTrade).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it('não mostra botões de aceitar/recusar para trocas já respondidas ou enviadas', async () => {
+    (marketApi.getReceivedTrades as any).mockResolvedValue({
+      items: [makeTradeOffer({ status: 'accepted' })],
+      total: 1,
+      skip: 0,
+      limit: 12,
+    });
+
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+
+    await screen.findByText('Carta A');
+    expect(screen.queryByRole('button', { name: 'Aceitar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Recusar' })).not.toBeInTheDocument();
+  });
+
+  it('alterna para trocas enviadas e busca com o fetcher correto', async () => {
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+
+    await waitFor(() => expect(marketApi.getReceivedTrades).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviadas' }));
+
+    await waitFor(() => expect(marketApi.getSentTrades).toHaveBeenCalled());
+  });
+
+  it('mostra estado vazio quando não há trocas', async () => {
+    render(<Market />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Trocas' }));
+    expect(await screen.findByText('Nenhuma troca recebida.')).toBeInTheDocument();
   });
 });

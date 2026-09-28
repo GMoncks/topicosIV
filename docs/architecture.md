@@ -119,7 +119,7 @@ graph TD
 
 ### 2.6. Market Service (`/services/market-service`, Porta `8005`)
 - **Banco de Dados:** `market.db` (SQLite dedicado).
-- **Status:** esqueleto (L-01), Extrato da Carteira (Bloco T) e Anúncios/Compra do Mercado (L-02 a L-05, L-11) implementados. Trocas diretas entre usuários (L-06 a L-08, L-10, `TradeOffer`) ainda pendentes.
+- **Status:** todo o Bloco L e Bloco T implementados (esqueleto L-01, Extrato T-01 a T-03, Mercado L-02 a L-05/L-11, Trocas Diretas L-06 a L-08). Único gap conhecido: a criação de anúncios/trocas no frontend depende do Inventário do Bloco J (Dev 2), ainda não implementado — ver nota no fim desta seção.
 - **Extrato da Carteira (T-01 a T-03):**
   - `WalletTransaction`: `user_id`, `type` (`compra`, `venda`, `recarga`, `resgate`), `amount` (magnitude positiva), `description`, `created_at`.
   - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, e o próprio market-service após toda venda no mercado, de forma *best-effort* (falha não derruba a compra).
@@ -131,8 +131,17 @@ graph TD
   - `GET /market/my-listings`: anúncios do usuário autenticado, em qualquer status.
   - `POST /market/listings/{id}/cancel`: cancela um anúncio ativo próprio e libera o item no inventário.
   - `POST /market/buy/{listing_id}`: compra um anúncio. Saga com compensação (mesmo padrão do checkout de jogos no store-service): débito do comprador → crédito do vendedor (estorna o comprador se falhar) → transferência de custódia do item (estorna ambos se falhar) → extrato da carteira (`compra`/`venda`, best-effort) para as duas partes.
-  - **Contrato assumido com o `auth-service`** (Bloco J do Dev 2, ainda não implementado — market-service falha fechado enquanto isso): `POST /inventory/items/{item_id}/lock` e `.../unlock`, body `{"user_id": <id>}` → 200 confirma/libera, 404/403/409 nos casos de erro; `POST /inventory/transfer`, body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono. **Dev 2:** o `unlock` não estava no contrato original do cronograma (§6) — foi adicionado por simetria, necessário para cancelar anúncios sem prender o item para sempre.
+- **Trocas Diretas (L-06 a L-08):**
+  - `TradeOffer`: `sender_id`, `receiver_id`, `offered_items`/`requested_items` (JSON, cada item `{item_id, item_type, item_name}`), `status` (`pending`, `accepted`, `declined`).
+  - `POST /trades/offer`: propõe uma troca. Bloqueia só os itens **oferecidos** (do remetente) — os solicitados só são validados/bloqueados no aceite, para não travar itens de alguém que ainda não viu a proposta.
+  - `POST /trades/{id}/accept`: só o destinatário pode aceitar. Valida e bloqueia os itens solicitados, transfere a custódia dos dois lados (com rollback de transferências já concluídas se alguma falhar no meio do caminho).
+  - `POST /trades/{id}/decline`: só o destinatário pode recusar; libera os itens do remetente.
+  - `GET /trades/received` e `GET /trades/sent`: histórico paginado, com filtro por status.
+  - Não existe endpoint de cancelamento pelo remetente (fora do escopo do L-07).
+- **Cliente compartilhado do inventário (`inventory_client.py`):** lock/unlock/transfer usados por anúncios, checkout e trocas centralizados num único módulo.
+  - **Contrato assumido com o `auth-service`** (Bloco J do Dev 2, ainda não implementado — market-service falha fechado enquanto isso): `POST /inventory/items/{item_id}/lock` e `.../unlock`, body `{"user_id": <id>}` → 200 confirma/libera, 404/403/409 nos casos de erro; `POST /inventory/transfer`, body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono. **Dev 2:** o `unlock` não estava no contrato original do cronograma (§6) — foi adicionado por simetria, necessário para cancelar anúncios/trocas sem prender o item para sempre.
 - **Gateway:** `MARKET_SERVICE_URL` configurado e rota de proxy genérica `/api/market/*` em `gateway/app/main.py` (mesmo padrão de `/api/store/*`).
+- **Frontend (`Market.tsx`):** catálogo, compra, "Meus Anúncios" e "Trocas" (gerenciar ofertas recebidas/enviadas: aceitar, recusar, histórico) estão completos e funcionais. **Pendente:** as telas de **criar** um anúncio ou uma nova troca (que exigem escolher itens do próprio inventário e, no caso de trocas, também do inventário do amigo) — não há dados reais de inventário em lugar nenhum do sistema ainda para alimentar esses seletores.
 
 ---
 

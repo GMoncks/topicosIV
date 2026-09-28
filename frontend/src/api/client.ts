@@ -466,7 +466,75 @@ export const marketApi = {
       method: 'POST',
     });
   },
+
+  async getReceivedTrades(params?: {
+    status?: TradeOfferStatus;
+    skip?: number;
+    limit?: number;
+  }): Promise<TradeOfferPageApiResponse> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) query.set(key, String(value));
+      });
+    }
+    const qs = query.toString();
+    return fetchApi<TradeOfferPageApiResponse>(`/api/market/trades/received${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getSentTrades(params?: {
+    status?: TradeOfferStatus;
+    skip?: number;
+    limit?: number;
+  }): Promise<TradeOfferPageApiResponse> {
+    const query = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) query.set(key, String(value));
+      });
+    }
+    const qs = query.toString();
+    return fetchApi<TradeOfferPageApiResponse>(`/api/market/trades/sent${qs ? `?${qs}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async acceptTrade(offerId: number): Promise<TradeOfferApiResponse> {
+    return fetchApi<TradeOfferApiResponse>(`/api/market/trades/${offerId}/accept`, { method: 'POST' });
+  },
+
+  async declineTrade(offerId: number): Promise<TradeOfferApiResponse> {
+    return fetchApi<TradeOfferApiResponse>(`/api/market/trades/${offerId}/decline`, { method: 'POST' });
+  },
 };
+
+export type TradeOfferStatus = 'pending' | 'accepted' | 'declined';
+
+export interface TradeItemApiResponse {
+  item_id: number;
+  item_type: MarketItemType;
+  item_name: string | null;
+}
+
+export interface TradeOfferApiResponse {
+  id: number;
+  sender_id: number;
+  receiver_id: number;
+  offered_items: TradeItemApiResponse[];
+  requested_items: TradeItemApiResponse[];
+  status: TradeOfferStatus;
+  created_at: string;
+  responded_at: string | null;
+}
+
+export interface TradeOfferPageApiResponse {
+  items: TradeOfferApiResponse[];
+  total: number;
+  skip: number;
+  limit: number;
+}
 
 export interface LibraryItemResponse {
   id: number;

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import AUTH_SERVICE_URL
 from app.models.listing import MarketListing
+from app.services.inventory_client import InventoryClient
 from app.services.wallet_ledger import WalletLedger
 
 
@@ -86,19 +87,9 @@ class MarketCheckoutService:
                 )
 
             # 3. Transferência de custódia do item — compensa ambos os saldos se falhar
-            transferred = False
-            try:
-                transfer_resp = await client.post(
-                    f"{auth_url}/inventory/transfer",
-                    json={
-                        "item_id": listing.item_id,
-                        "from_user_id": listing.seller_id,
-                        "to_user_id": buyer_id,
-                    },
-                )
-                transferred = transfer_resp.status_code == 200
-            except httpx.HTTPError:
-                transferred = False
+            transferred = await InventoryClient.transfer_item(
+                listing.item_id, listing.seller_id, buyer_id, client
+            )
 
             if not transferred:
                 await MarketCheckoutService._refund(client, auth_url, buyer_id, listing.price)

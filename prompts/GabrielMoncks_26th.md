@@ -330,3 +330,37 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 5. **Documentação:** `docs/architecture.md` §2.6 e `README.md` atualizados com os novos endpoints e o contrato assumido com o auth-service; `TESTS.md` com `MARKET-UNIT-04..06` e `FRONT-UNIT-27`.
 
 **Bloco L (primeira metade: catálogo, anúncio, compra e gestão) concluído**, pronto para commit na branch `gm-market-listings`. Faltam L-06 a L-08 e L-10 (Trocas Diretas) para fechar o Bloco L por completo.
+
+---
+
+## 2026-09-27 — Prompt 14
+
+**Prompt do usuário:**
+
+> Sim
+
+(resposta a: seguir com L-06 a L-08 e L-10 — Trocas Diretas)
+
+**Decisões arquiteturais e técnicas:**
+
+1. Merge `gm-market-listings` → `dev` (fast-forward). Branch `gm-trade-offers` criada para a segunda metade do Bloco L.
+2. **Bloqueio de Dev 2 ainda mais grave aqui:** L-10 pede selecionar itens do inventário do **amigo**, dado que nem existe em lugar nenhum (diferente do L-09, onde só a criação de anúncio dependia disso — o resto era real). Pergunta feita e confirmada: **frontend cobre só o gerenciamento de trocas reais** (ofertas pendentes recebidas/enviadas, aceitar/recusar, histórico) — a modal de **criar** uma nova troca (escolher itens dos dois inventários) fica pendente, igual ao "anunciar item" do L-09. Backend completo de qualquer forma (testável via API).
+3. **Refactor de escopo pequeno, motivado diretamente por este ticket:** extraí `InventoryClient` (lock/unlock/transfer) de `listing_service.py` para um módulo compartilhado, já que agora três lugares (listagens, checkout do mercado e trocas) chamam exatamente a mesma lógica contra o auth-service.
+4. **Regra de negócio decidida:** apenas o destinatário (`receiver_id`) pode aceitar/recusar uma oferta — não existe endpoint de cancelamento pelo remetente (fora do escopo do L-07, que só pede accept/decline).
+5. **Ordem de bloqueio ajustada para ser realista:** ao criar a oferta, só os itens **oferecidos** (do remetente) são bloqueados — os itens **solicitados** (do destinatário) só são bloqueados/validados no momento do aceite, para não travar itens de alguém que ainda nem viu a proposta.
+
+**Resumo das saídas (L-06, L-07, L-08, L-10 concluídos — Bloco L 100% completo):**
+
+1. **Backend (`services/market-service/`):**
+   - `app/services/inventory_client.py`: `InventoryClient` (lock/unlock/transfer) extraído de `listing_service.py`, agora reutilizado também por `checkout.py` e `trade_service.py`.
+   - `app/models/trade.py`: `TradeOffer` (`sender_id`, `receiver_id`, `offered_items`/`requested_items` como JSON, `status`).
+   - `app/schemas/trade.py`: `TradeItem`, `TradeOfferCreate` (mín. 1 item de cada lado), `TradeOfferResponse`, `TradeOfferPage`.
+   - `app/services/trade_service.py`: criação (bloqueia só o ofertado), aceite (bloqueia o solicitado só agora, transfere os dois lados com rollback se uma transferência falhar no meio do caminho), recusa (libera o ofertado), listagens recebidas/enviadas com filtro por status.
+   - `app/api/trades.py`: `POST /trades/offer`, `POST /trades/{id}/accept`, `POST /trades/{id}/decline`, `GET /trades/received`, `GET /trades/sent`.
+   - `app/db/database.py`: `json_serializer=ensure_ascii=False` adicionado ao engine (primeira coluna JSON do market-service, com texto acentuado).
+2. **Frontend:** nova sub-aba "Trocas" dentro de `Market.tsx` — sem view/arquivo novo, mesmo padrão estrutural das outras duas abas (catálogo/meus anúncios). Recebidas/Enviadas, filtro por status, aceitar/recusar (só em recebidas pendentes), aviso explícito sobre a ausência do seletor de criação (mesma linguagem já usada no aviso de "Meus Anúncios").
+3. **Testes:** 19 novos no market-service (validação de bloqueio assimétrico, Saga de aceite com rollback parcial, autorização por destinatário), 6 novos no frontend (`Market.test.tsx`).
+4. **Validação final:** backend com as mesmas 9 falhas pré-existentes (nenhuma nova) — 73/73 testes do market-service passando; frontend **100/100 testes** (21 suítes); `tsc --noEmit` limpo.
+5. **Documentação:** `docs/architecture.md` §2.6, `README.md` e `TESTS.md` (`MARKET-UNIT-07..09`, `FRONT-UNIT-28`) atualizados, incluindo nota clara sobre a pendência do seletor de criação (anúncio/troca) até o Inventário do Dev 2 existir.
+
+**Bloco L concluído por completo** (L-02 a L-11) — junto com H e T, fecha os 20 tickets originais da Trilha 1, pronto para commit na branch `gm-trade-offers`.

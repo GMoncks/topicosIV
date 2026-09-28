@@ -483,6 +483,45 @@
 - Resultado esperado: Nenhuma operação parcial: ou a venda se completa integralmente, ou tudo é revertido.
 - Rastreabilidade: `services/market-service/app/services/checkout.py`
 
+#### MARKET-UNIT-07 — Criação de oferta de troca bloqueando só os itens ofertados (L-06/L-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_trades.py -k "test_create_offer_locks_only_offered_items or test_create_offer_rejects_self_trade or test_create_offer_requires_at_least_one_item_each_side or test_create_offer_propagates_inventory_validation_errors"`
+- Pré-condições: auth-service mockado respondendo `POST /inventory/items/{id}/lock`.
+- Passos:
+  - Dado uma proposta válida, uma autoproposta, listas de itens vazias e uma falha de validação no auth-service
+  - Quando `POST /trades/offer` é chamado em cada cenário
+  - Então a proposta válida bloqueia apenas os itens **oferecidos** (do remetente) e cria a oferta como `pending`; os demais cenários são rejeitados (400/422/404/403/409) sem criar nenhuma oferta
+- Resultado esperado: Os itens do destinatário nunca são tocados antes de ele responder à proposta.
+- Rastreabilidade: `services/market-service/app/services/trade_service.py`
+
+#### MARKET-UNIT-08 — Aceite de troca com validação tardia do destinatário e rollback parcial (L-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_trades.py -k "test_accept_success_locks_requested_items_and_transfers_both_ways or test_accept_fails_when_requested_item_validation_fails or test_accept_rolls_back_completed_transfer_if_second_transfer_fails or test_decline_unlocks_offered_items"`
+- Pré-condições: oferta pendente existente; auth-service mockado para lock/transfer.
+- Passos:
+  - Dado um aceite bem-sucedido, um aceite onde o item do destinatário falha na validação, um aceite onde a segunda transferência falha após a primeira ter sido concluída, e uma recusa
+  - Quando `POST /trades/{id}/accept` ou `.../decline` são chamados em cada cenário
+  - Então o aceite bem-sucedido bloqueia os itens solicitados só agora e transfere a custódia dos dois lados; a falha de validação rejeita sem tocar em nada; a falha na segunda transferência reverte a primeira (devolve o item já transferido); a recusa libera os itens do remetente
+- Resultado esperado: Nenhuma troca fica pela metade — ou os dois lados trocam de dono, ou nenhum.
+- Rastreabilidade: `services/market-service/app/services/trade_service.py`
+
+#### MARKET-UNIT-09 — Histórico de trocas recebidas/enviadas com autorização e filtro por status (L-08)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/market-service/tests/test_trades.py -k "test_list_received_and_sent_offers or test_list_offers_filters_by_status or test_decline_requires_receiver or test_accept_requires_receiver"`
+- Pré-condições: ofertas de múltiplos remetentes/destinatários em diferentes status.
+- Passos:
+  - Dado ofertas enviadas e recebidas por vários usuários, e uma tentativa de aceitar/recusar por quem não é o destinatário
+  - Quando `GET /trades/received`, `GET /trades/sent`, `POST /trades/{id}/accept` e `.../decline` são chamados
+  - Então cada listagem mostra só as ofertas do usuário autenticado na direção correta, o filtro por status funciona, e apenas o destinatário pode responder à oferta (403 para qualquer outro)
+- Resultado esperado: Isolamento correto por usuário e direção, sem permitir resposta de terceiros.
+- Rastreabilidade: `services/market-service/app/services/trade_service.py`, `services/market-service/app/api/trades.py`
+
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
 - Prioridade: P1
@@ -833,6 +872,19 @@
   - Quando o usuário filtra por tipo, confirma uma compra, tenta comprar o próprio anúncio, acessa "Meus Anúncios" como visitante, ou cancela um anúncio ativo
   - Então o filtro recarrega o catálogo, a compra atualiza o saldo exibido no Header e fecha a modal de confirmação (erros permanecem visíveis sem fechá-la), a compra do próprio anúncio fica desabilitada, o acesso sem login abre a autenticação, e o cancelamento remove a ação apenas de anúncios ativos
 - Resultado esperado: Fluxo completo de navegação, compra e gestão de anúncios, sem seletor de criação (dependente do Inventário do Dev 2, ainda pendente).
+- Rastreabilidade: `frontend/src/pages/Market.tsx`
+
+#### FRONT-UNIT-28 — Aba "Trocas": ofertas recebidas/enviadas, aceitar e recusar (L-08/L-10)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Market.test.tsx`
+- Pré-condições: `marketApi` (métodos de trocas) mockado.
+- Passos:
+  - Dado ofertas de troca pendentes recebidas e enviadas
+  - Quando o usuário alterna entre "Recebidas"/"Enviadas", filtra por status, aceita ou recusa uma oferta pendente, ou acessa a aba como visitante
+  - Então a lista mostra os itens ofertados/solicitados e o autor correto; aceitar/recusar só aparece em ofertas recebidas pendentes e recarrega a lista após a resposta; o acesso sem login abre a autenticação
+- Resultado esperado: Gestão completa de trocas existentes, sem seletor de criação (depende do inventário do próprio usuário e do amigo, Dev 2, ainda pendente).
 - Rastreabilidade: `frontend/src/pages/Market.tsx`
 
 ## Integração

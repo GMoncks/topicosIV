@@ -6,9 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db.database import init_db
 from app.models.transaction import WalletTransaction
 from app.models.listing import MarketListing
+from app.models.trade import TradeOffer
 from app.api.routes import router as market_router
 from app.api.wallet import router as wallet_router
 from app.api.listings import router as listings_router
+from app.api.trades import router as trades_router
 
 
 @asynccontextmanager
@@ -39,6 +41,7 @@ app.add_middleware(
 app.include_router(market_router)
 app.include_router(wallet_router)
 app.include_router(listings_router)
+app.include_router(trades_router)
 
 
 if __name__ == "__main__":

@@ -5,9 +5,12 @@ import {
   MarketItemType,
   MarketListingApiResponse,
   MarketListingStatus,
+  TradeOfferApiResponse,
+  TradeOfferStatus,
 } from '../api/client';
 
-type MarketView = 'catalog' | 'my-listings';
+type MarketView = 'catalog' | 'my-listings' | 'trades';
+type TradesDirection = 'received' | 'sent';
 
 const ITEM_TYPE_LABELS: Record<MarketItemType, string> = {
   card: 'Carta',
@@ -21,6 +24,12 @@ const STATUS_LABELS: Record<MarketListingStatus, string> = {
   ativo: 'Ativo',
   vendido: 'Vendido',
   cancelado: 'Cancelado',
+};
+
+const TRADE_STATUS_LABELS: Record<TradeOfferStatus, string> = {
+  pending: 'Pendente',
+  accepted: 'Aceita',
+  declined: 'Recusada',
 };
 
 const PAGE_SIZE = 12;
@@ -58,6 +67,16 @@ export const Market: React.FC = () => {
 
   // Cancelamento
   const [cancellingId, setCancellingId] = useState<number | null>(null);
+
+  // Trocas Diretas (L-06 a L-08, L-10)
+  const [tradesDirection, setTradesDirection] = useState<TradesDirection>('received');
+  const [trades, setTrades] = useState<TradeOfferApiResponse[]>([]);
+  const [tradesTotal, setTradesTotal] = useState(0);
+  const [tradesSkip, setTradesSkip] = useState(0);
+  const [tradesStatusFilter, setTradesStatusFilter] = useState<TradeOfferStatus | ''>('');
+  const [tradesLoading, setTradesLoading] = useState(false);
+  const [tradesError, setTradesError] = useState<string | null>(null);
+  const [respondingTradeId, setRespondingTradeId] = useState<number | null>(null);
 
   const loadCatalog = useCallback(() => {
     let isMounted = true;
@@ -114,8 +133,36 @@ export const Market: React.FC = () => {
     if (view === 'my-listings') return loadMyListings();
   }, [view, loadMyListings]);
 
+  const loadTrades = useCallback(() => {
+    if (!isAuthenticated) return undefined;
+    let isMounted = true;
+    setTradesLoading(true);
+    setTradesError(null);
+    const fetcher = tradesDirection === 'received' ? marketApi.getReceivedTrades : marketApi.getSentTrades;
+    fetcher({ status: tradesStatusFilter || undefined, skip: tradesSkip, limit: PAGE_SIZE })
+      .then((data) => {
+        if (isMounted) {
+          setTrades(data.items);
+          setTradesTotal(data.total);
+        }
+      })
+      .catch((err) => {
+        if (isMounted) setTradesError(err.message || 'Não foi possível carregar as trocas.');
+      })
+      .finally(() => {
+        if (isMounted) setTradesLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated, tradesDirection, tradesStatusFilter, tradesSkip]);
+
+  useEffect(() => {
+    if (view === 'trades') return loadTrades();
+  }, [view, loadTrades]);
+
   const handleSelectView = (nextView: MarketView) => {
-    if (nextView === 'my-listings' && !isAuthenticated) {
+    if ((nextView === 'my-listings' || nextView === 'trades') && !isAuthenticated) {
       openAuthModal('login');
       return;
     }
@@ -163,6 +210,24 @@ export const Market: React.FC = () => {
     }
   };
 
+  const handleRespondTrade = async (offerId: number, action: 'accept' | 'decline') => {
+    if (respondingTradeId) return;
+    try {
+      setRespondingTradeId(offerId);
+      setTradesError(null);
+      if (action === 'accept') {
+        await marketApi.acceptTrade(offerId);
+      } else {
+        await marketApi.declineTrade(offerId);
+      }
+      loadTrades();
+    } catch (err: any) {
+      setTradesError(err.message || 'Falha ao responder à oferta de troca.');
+    } finally {
+      setRespondingTradeId(null);
+    }
+  };
+
   useEffect(() => {
     if (!buySuccessMessage) return;
     const timeout = setTimeout(() => setBuySuccessMessage(null), 4000);
@@ -171,6 +236,7 @@ export const Market: React.FC = () => {
 
   const catalogHasNextPage = catalogSkip + PAGE_SIZE < catalogTotal;
   const myListingsHasNextPage = myListingsSkip + PAGE_SIZE < myListingsTotal;
+  const tradesHasNextPage = tradesSkip + PAGE_SIZE < tradesTotal;
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -213,6 +279,19 @@ export const Market: React.FC = () => {
           }`}
         >
           Meus Anúncios
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'trades'}
+          onClick={() => handleSelectView('trades')}
+          className={`px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer ${
+            view === 'trades'
+              ? 'bg-brand-purple text-white'
+              : 'bg-brand-surface border border-gray-700 text-gray-300 hover:border-gray-500'
+          }`}
+        >
+          Trocas
         </button>
       </div>
 
@@ -321,7 +400,7 @@ export const Market: React.FC = () => {
             </div>
           )}
         </div>
-      ) : (
+      ) : view === 'my-listings' ? (
         <div>
           <div className="bg-brand-surface/60 border border-gray-700 rounded-xl p-4 mb-6 text-sm text-gray-400 flex items-start gap-3">
             <i className="fa-solid fa-circle-info text-brand-purple mt-0.5"></i>
@@ -425,6 +504,169 @@ export const Market: React.FC = () => {
                 type="button"
                 onClick={() => setMyListingsSkip((prev) => prev + PAGE_SIZE)}
                 disabled={!myListingsHasNextPage}
+                className="px-3 py-1.5 rounded-lg border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:border-gray-500 transition cursor-pointer"
+              >
+                Próxima
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <div className="bg-brand-surface/60 border border-gray-700 rounded-xl p-4 mb-6 text-sm text-gray-400 flex items-start gap-3">
+            <i className="fa-solid fa-circle-info text-brand-purple mt-0.5"></i>
+            <span>
+              Propor uma nova troca ainda depende do Inventário de Cosméticos (seu e do seu amigo), que
+              chega em um próximo módulo da plataforma. Por enquanto, aqui você acompanha e responde às
+              trocas já propostas.
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTradesDirection('received');
+                  setTradesSkip(0);
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${
+                  tradesDirection === 'received'
+                    ? 'bg-brand-purple/20 border-brand-purple text-brand-purple'
+                    : 'bg-brand-surface border-gray-600 text-gray-300 hover:border-gray-400'
+                }`}
+              >
+                Recebidas
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTradesDirection('sent');
+                  setTradesSkip(0);
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition cursor-pointer ${
+                  tradesDirection === 'sent'
+                    ? 'bg-brand-purple/20 border-brand-purple text-brand-purple'
+                    : 'bg-brand-surface border-gray-600 text-gray-300 hover:border-gray-400'
+                }`}
+              >
+                Enviadas
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['', 'pending', 'accepted', 'declined'] as const).map((s) => (
+                <button
+                  key={s || 'all'}
+                  type="button"
+                  onClick={() => {
+                    setTradesStatusFilter(s);
+                    setTradesSkip(0);
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${
+                    tradesStatusFilter === s
+                      ? 'bg-brand-purple/20 border-brand-purple text-brand-purple'
+                      : 'bg-brand-surface border-gray-600 text-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {s === '' ? 'Todos' : TRADE_STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {tradesLoading ? (
+            <div className="flex items-center gap-2 text-gray-400 py-10">
+              <i className="fa-solid fa-spinner fa-spin"></i>
+              <span>Carregando trocas...</span>
+            </div>
+          ) : tradesError ? (
+            <p className="text-red-300 text-sm py-6">{tradesError}</p>
+          ) : trades.length === 0 ? (
+            <p className="text-gray-400 text-sm py-6">
+              {tradesDirection === 'received' ? 'Nenhuma troca recebida.' : 'Nenhuma troca enviada.'}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {trades.map((offer) => (
+                <li key={offer.id} className="bg-brand-surface border border-gray-700 rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                        offer.status === 'pending'
+                          ? 'bg-amber-600/20 text-amber-300 border-amber-600/40'
+                          : offer.status === 'accepted'
+                          ? 'bg-emerald-600/20 text-emerald-300 border-emerald-600/40'
+                          : 'bg-gray-600/20 text-gray-400 border-gray-600/40'
+                      }`}
+                    >
+                      {TRADE_STATUS_LABELS[offer.status]}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {tradesDirection === 'received' ? `De: usuário #${offer.sender_id}` : `Para: usuário #${offer.receiver_id}`}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-1">Oferece</p>
+                      <ul className="text-white space-y-0.5">
+                        {offer.offered_items.map((item, idx) => (
+                          <li key={idx}>{item.item_name || `${ITEM_TYPE_LABELS[item.item_type]} #${item.item_id}`}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 font-bold text-xs uppercase tracking-wider mb-1">Solicita</p>
+                      <ul className="text-white space-y-0.5">
+                        {offer.requested_items.map((item, idx) => (
+                          <li key={idx}>{item.item_name || `${ITEM_TYPE_LABELS[item.item_type]} #${item.item_id}`}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {tradesDirection === 'received' && offer.status === 'pending' && (
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => handleRespondTrade(offer.id, 'accept')}
+                        disabled={respondingTradeId === offer.id}
+                        className="flex-1 bg-brand-green hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold py-2 rounded-lg transition cursor-pointer"
+                      >
+                        {respondingTradeId === offer.id ? 'Processando...' : 'Aceitar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRespondTrade(offer.id, 'decline')}
+                        disabled={respondingTradeId === offer.id}
+                        className="flex-1 bg-transparent border border-red-500/40 hover:border-red-400 text-red-400 hover:text-red-300 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold py-2 rounded-lg transition cursor-pointer"
+                      >
+                        Recusar
+                      </button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {tradesTotal > PAGE_SIZE && (
+            <div className="flex items-center justify-between mt-6 text-sm text-gray-400">
+              <button
+                type="button"
+                onClick={() => setTradesSkip((prev) => Math.max(0, prev - PAGE_SIZE))}
+                disabled={tradesSkip === 0}
+                className="px-3 py-1.5 rounded-lg border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:border-gray-500 transition cursor-pointer"
+              >
+                Anterior
+              </button>
+              <span>
+                {Math.min(tradesSkip + 1, tradesTotal)}–{Math.min(tradesSkip + PAGE_SIZE, tradesTotal)} de {tradesTotal}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTradesSkip((prev) => prev + PAGE_SIZE)}
+                disabled={!tradesHasNextPage}
                 className="px-3 py-1.5 rounded-lg border border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:border-gray-500 transition cursor-pointer"
               >
                 Próxima
