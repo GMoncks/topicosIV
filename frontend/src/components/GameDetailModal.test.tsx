@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { GameDetailModal } from './GameDetailModal';
 import { storeApi, reviewApi, GameDetailApiResponse } from '../api/client';
@@ -212,4 +212,39 @@ describe('GameDetailModal Component', () => {
     expect(await screen.findByText('Você recomenda este jogo?')).toBeInTheDocument();
     expect(await screen.findByText('Excelente!')).toBeInTheDocument();
   });
+
+  it('exibe a seção de informação relevante quando uma mensagem de recomendação/curador é passada', async () => {
+    const customMessage = 'Porque você jogou The Witcher 3 por mais de 50h, recomendamos este RPG!';
+
+    renderModal({ relevantInfo: customMessage });
+
+    await waitFor(() => {
+      expect(screen.getByText('Cyberpunk Odyssey')).toBeInTheDocument();
+    });
+
+    const relevantSection = screen.getByTestId('relevant-info-section');
+    expect(relevantSection).toBeInTheDocument();
+    expect(screen.getByText('Informações Relevantes para Você')).toBeInTheDocument();
+    expect(screen.getByText('Destaque do Curador MIST')).toBeInTheDocument();
+    expect(screen.getByText(customMessage)).toBeInTheDocument();
+  });
+
+  it('exibe o badge de desconto na seção de informação relevante quando o jogo possui promoção', async () => {
+    (storeApi.getGameDetails as any).mockResolvedValue({
+      ...mockGameDetails,
+      price: 89.99,
+      original_price: 149.99,
+      discount_percentage: 40,
+    });
+
+    renderModal();
+
+    await waitFor(() => {
+      expect(screen.getByText('Cyberpunk Odyssey')).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId('relevant-info-section')).toBeInTheDocument();
+    expect(screen.getByText(/Desconto ativo de 40% OFF na loja MIST/i)).toBeInTheDocument();
+  });
 });
+

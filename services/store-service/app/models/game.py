@@ -18,6 +18,8 @@ class Game(Base):
     publisher = Column(String(100), index=True, nullable=False)
     review_score = Column(Float, nullable=False, default=0.0)
     game_file = Column(String(255), nullable=True)
+    original_price = Column(Float, nullable=True)
+    discount_percentage = Column(Integer, nullable=True, default=0)
 
     def to_dict(self):
         return {
@@ -25,6 +27,8 @@ class Game(Base):
             "title": self.title,
             "description": self.description,
             "price": self.price,
+            "original_price": self.original_price if self.original_price is not None else self.price,
+            "discount_percentage": self.discount_percentage if self.discount_percentage is not None else 0,
             "tags": self.tags,
             "category": self.category,
             "banner_url": self.banner_url,
@@ -35,3 +39,4 @@ class Game(Base):
             "review_score": self.review_score,
             "game_file": self.game_file,
         }
+

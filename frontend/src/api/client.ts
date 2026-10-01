@@ -44,9 +44,10 @@ export function isNetworkError(err: unknown): boolean {
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
 
+  const isFormData = typeof FormData !== 'undefined' && options?.body instanceof FormData;
   // Interceptor de Requisição: injeta cabeçalhos padrão e Bearer token
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options?.headers as Record<string, string>),
   };
 
@@ -177,6 +178,18 @@ export interface GameDetailApiResponse extends GameApiResponse {
   approval_label: string;
 }
 
+export interface WishlistAlert {
+  game_id: number;
+  title: string;
+  banner_url?: string;
+  category: string;
+  original_price: number;
+  current_price: number;
+  discount_percentage: number;
+  savings: number;
+  message: string;
+}
+
 export interface ListGamesParams {
   category?: string;
   tag?: string;
@@ -210,6 +223,18 @@ export const storeApi = {
 
   async getRecommendations(limit: number = 4): Promise<GameApiResponse[]> {
     return fetchApi<GameApiResponse[]>(`/api/store/recommendations?limit=${limit}`, { method: 'GET' });
+  },
+
+  async getTopSellers(limit: number = 6): Promise<GameApiResponse[]> {
+    return fetchApi<GameApiResponse[]>(`/api/store/trends/top-sellers?limit=${limit}`, { method: 'GET' });
+  },
+
+  async getTrending(limit: number = 6): Promise<GameApiResponse[]> {
+    return fetchApi<GameApiResponse[]>(`/api/store/trends/trending?limit=${limit}`, { method: 'GET' });
+  },
+
+  async getWishlistAlerts(): Promise<WishlistAlert[]> {
+    return fetchApi<WishlistAlert[]>('/api/store/wishlist/alerts', { method: 'GET' });
   },
 
   async addToWishlist(gameId: number): Promise<{ id: number; created: boolean }> {
@@ -691,6 +716,467 @@ export const socialApi = {
   async getPresenceSnapshot(): Promise<UserPresence[]> {
     return fetchApi<UserPresence[]>('/api/social/presence', { method: 'GET' });
   },
+
+  async getNotifications(unreadOnly: boolean = false): Promise<NotificationListResponse> {
+    return fetchApi<NotificationListResponse>(`/api/social/notifications?unread_only=${unreadOnly}`, { method: 'GET' });
+  },
+
+  async markNotificationRead(id: number): Promise<NotificationItem> {
+    return fetchApi<NotificationItem>(`/api/social/notifications/${id}/read`, { method: 'POST' });
+  },
+
+  async markAllNotificationsRead(): Promise<{ status: string; updated_count: number }> {
+    return fetchApi<{ status: string; updated_count: number }>('/api/social/notifications/read-all', { method: 'POST' });
+  },
 };
+
+export interface NotificationItem {
+  id: number;
+  user_id: number;
+  type: string;
+  title: string;
+  message: string;
+  payload?: Record<string, any> | null;
+  is_read: boolean;
+  created_at?: string;
+}
+
+export interface NotificationListResponse {
+  items: NotificationItem[];
+  unread_count: number;
+  total: number;
+}
+
+// ========================================
+// Groups & Forum API (Tickets M-01 a M-05)
+// ========================================
+
+export interface GroupItem {
+  id: number;
+  name: string;
+  description?: string | null;
+  avatar_url?: string | null;
+  header_url?: string | null;
+  category: string;
+  is_private: boolean;
+  owner_id: number;
+  members_count: number;
+  posts_count: number;
+  created_at: string;
+  is_member?: boolean;
+  role?: string | null;
+}
+
+export interface GroupMemberItem {
+  id: number;
+  group_id: number;
+  user_id: number;
+  role: string;
+  joined_at: string;
+}
+
+export interface ForumPostItem {
+  id: number;
+  group_id: number;
+  author_id: number;
+  title: string;
+  content: string;
+  is_pinned: boolean;
+  is_locked: boolean;
+  views_count: number;
+  replies_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ForumReplyItem {
+  id: number;
+  post_id: number;
+  author_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface ForumPostDetailItem extends ForumPostItem {
+  replies: ForumReplyItem[];
+}
+
+export interface GroupMessageItem {
+  id: number;
+  group_id: number;
+  user_id: number;
+  username?: string | null;
+  content: string;
+  created_at: string;
+}
+
+export const groupsApi = {
+  async getGroups(params?: { category?: string; q?: string; my_groups?: boolean }): Promise<GroupItem[]> {
+    const query = new URLSearchParams();
+    if (params?.category && params.category !== 'all') query.set('category', params.category);
+    if (params?.q) query.set('q', params.q);
+    if (params?.my_groups) query.set('my_groups', 'true');
+    const qs = query.toString();
+    return fetchApi<GroupItem[]>(`/api/social/groups${qs ? `?${qs}` : ''}`, { method: 'GET' });
+  },
+
+  async getGroup(id: number): Promise<GroupItem> {
+    return fetchApi<GroupItem>(`/api/social/groups/${id}`, { method: 'GET' });
+  },
+
+  async createGroup(data: {
+    name: string;
+    description?: string;
+    category?: string;
+    avatar_url?: string;
+    header_url?: string;
+    is_private?: boolean;
+  }): Promise<GroupItem> {
+    return fetchApi<GroupItem>('/api/social/groups', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async joinGroup(id: number): Promise<GroupItem> {
+    return fetchApi<GroupItem>(`/api/social/groups/${id}/join`, { method: 'POST' });
+  },
+
+  async leaveGroup(id: number): Promise<GroupItem> {
+    return fetchApi<GroupItem>(`/api/social/groups/${id}/leave`, { method: 'POST' });
+  },
+
+  async getMembers(groupId: number): Promise<GroupMemberItem[]> {
+    return fetchApi<GroupMemberItem[]>(`/api/social/groups/${groupId}/members`, { method: 'GET' });
+  },
+
+  async getPosts(groupId: number): Promise<ForumPostItem[]> {
+    return fetchApi<ForumPostItem[]>(`/api/social/groups/${groupId}/posts`, { method: 'GET' });
+  },
+
+  async createPost(groupId: number, data: { title: string; content: string; is_pinned?: boolean }): Promise<ForumPostItem> {
+    return fetchApi<ForumPostItem>(`/api/social/groups/${groupId}/posts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getPost(postId: number): Promise<ForumPostDetailItem> {
+    return fetchApi<ForumPostDetailItem>(`/api/social/posts/${postId}`, { method: 'GET' });
+  },
+
+  async updatePost(postId: number, data: { is_pinned?: boolean; is_locked?: boolean; title?: string; content?: string }): Promise<ForumPostItem> {
+    return fetchApi<ForumPostItem>(`/api/social/posts/${postId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async createReply(postId: number, data: { content: string }): Promise<ForumReplyItem> {
+    return fetchApi<ForumReplyItem>(`/api/social/posts/${postId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getChatMessages(groupId: number): Promise<GroupMessageItem[]> {
+    return fetchApi<GroupMessageItem[]>(`/api/social/groups/${groupId}/chat/messages`, { method: 'GET' });
+  },
+
+  async sendChatMessage(groupId: number, content: string): Promise<GroupMessageItem> {
+    return fetchApi<GroupMessageItem>(`/api/social/groups/${groupId}/chat/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  },
+};
+
+export interface GlobalSearchGameItem {
+  id: number;
+  title: string;
+  price: number;
+  header_image?: string;
+  category?: string;
+  tags?: string[];
+}
+
+export interface GlobalSearchUserItem {
+  id: number;
+  username: string;
+  email: string;
+  level: number;
+  avatar_url?: string;
+}
+
+export interface GlobalSearchGroupItem {
+  id: number;
+  name: string;
+  description?: string;
+  avatar_url?: string;
+  category?: string;
+  members_count: number;
+}
+
+export interface GlobalSearchMarketItem {
+  id: number;
+  item_name: string;
+  item_type: string;
+  price: number;
+  game_id?: number;
+}
+
+export interface GlobalSearchResult {
+  query: string;
+  total: number;
+  games: GlobalSearchGameItem[];
+  users: GlobalSearchUserItem[];
+  groups: GlobalSearchGroupItem[];
+  market_items: GlobalSearchMarketItem[];
+}
+
+export const searchApi = {
+  async search(query: string, limit: number = 5): Promise<GlobalSearchResult> {
+    if (!query || !query.trim()) {
+      return {
+        query: '',
+        total: 0,
+        games: [],
+        users: [],
+        groups: [],
+        market_items: [],
+      };
+    }
+    return fetchApi<GlobalSearchResult>(`/api/search?q=${encodeURIComponent(query.trim())}&limit=${limit}`, {
+      method: 'GET',
+    });
+  },
+};
+
+export interface ScreenshotItem {
+  id: number;
+  user_id: number;
+  user_name?: string;
+  username?: string;
+  user_avatar?: string;
+  game_id: number;
+  game_title?: string;
+  title?: string;
+  caption?: string;
+  image_url?: string;
+  file_url?: string;
+  filename?: string;
+  width?: number;
+  height?: number;
+  size_bytes?: number;
+  file_size?: number;
+  likes_count: number;
+  liked_by_me: boolean;
+  created_at: string;
+}
+
+export interface ScreenshotPageResponse {
+  items: ScreenshotItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface ScreenshotUploadPayload {
+  file: File;
+  game_id: number;
+  game_title?: string;
+  caption?: string;
+}
+
+export interface WorkshopItem {
+  id: number;
+  game_id: number;
+  game_title?: string;
+  author_id: number;
+  author_name: string;
+  author_avatar?: string;
+  title: string;
+  description?: string;
+  category: string;
+  tags: string[];
+  file_url: string;
+  filename: string;
+  file_size: number;
+  preview_url?: string;
+  version: string;
+  downloads_count: number;
+  subscriptions_count: number;
+  rating: number;
+  is_subscribed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkshopPageResponse {
+  items: WorkshopItem[];
+  total: number;
+  skip?: number;
+  limit?: number;
+  page: number;
+  pages: number;
+}
+
+export interface WorkshopUploadPayload {
+  file: File | Blob;
+  title: string;
+  game_id: number;
+  game_title?: string;
+  category?: string;
+  tags?: string;
+  description?: string;
+  version?: string;
+  preview_file?: File | Blob;
+}
+
+export function getUgcImageUrl(path?: string): string {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('/uploads/')) return `${API_GATEWAY_URL}/api/ugc${path}`;
+  if (path.startsWith('/api/ugc/')) return `${API_GATEWAY_URL}${path}`;
+  return `${API_GATEWAY_URL}/api/ugc/uploads/${path.replace(/^\//, '')}`;
+}
+
+export const ugcApi = {
+  async getScreenshots(params?: {
+    game_id?: number;
+    user_id?: number;
+    sort_by?: 'recent' | 'popular';
+    page?: number;
+    size?: number;
+  }): Promise<ScreenshotPageResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.game_id) searchParams.append('game_id', params.game_id.toString());
+    if (params?.user_id) searchParams.append('user_id', params.user_id.toString());
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.size) searchParams.append('size', params.size.toString());
+    const query = searchParams.toString();
+    return fetchApi<ScreenshotPageResponse>(`/api/ugc/screenshots${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getScreenshot(id: number): Promise<ScreenshotItem> {
+    return fetchApi<ScreenshotItem>(`/api/ugc/screenshots/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  async uploadScreenshot(payload: ScreenshotUploadPayload): Promise<ScreenshotItem> {
+    const formData = new FormData();
+    formData.append('file', payload.file);
+    formData.append('game_id', payload.game_id.toString());
+    if (payload.game_title) formData.append('game_title', payload.game_title);
+    if (payload.caption) formData.append('caption', payload.caption);
+
+    return fetchApi<ScreenshotItem>('/api/ugc/screenshots/upload', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  async likeScreenshot(id: number): Promise<{ screenshot_id: number; likes_count: number; liked: boolean }> {
+    return fetchApi(`/api/ugc/screenshots/${id}/like`, {
+      method: 'POST',
+    });
+  },
+
+  async unlikeScreenshot(id: number): Promise<{ screenshot_id: number; likes_count: number; liked: boolean }> {
+    return fetchApi(`/api/ugc/screenshots/${id}/like`, {
+      method: 'DELETE',
+    });
+  },
+
+  async deleteScreenshot(id: number): Promise<{ message: string }> {
+    return fetchApi(`/api/ugc/screenshots/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Workshop de Conteúdo: Mods e Skins (Bloco O)
+  async getWorkshopItems(params?: {
+    game_id?: number;
+    author_id?: number;
+    category?: string;
+    tag?: string;
+    search?: string;
+    sort_by?: 'popular' | 'downloads' | 'recent' | 'rating';
+    subscribed_only?: boolean;
+    page?: number;
+    size?: number;
+  }): Promise<WorkshopPageResponse> {
+    const searchParams = new URLSearchParams();
+    if (params?.game_id) searchParams.append('game_id', params.game_id.toString());
+    if (params?.author_id) searchParams.append('author_id', params.author_id.toString());
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.tag) searchParams.append('tag', params.tag);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.sort_by) searchParams.append('sort_by', params.sort_by);
+    if (params?.subscribed_only) searchParams.append('subscribed_only', 'true');
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.size) searchParams.append('size', params.size.toString());
+    const query = searchParams.toString();
+    return fetchApi<WorkshopPageResponse>(`/api/ugc/workshop/items${query ? `?${query}` : ''}`, {
+      method: 'GET',
+    });
+  },
+
+  async getWorkshopItem(id: number): Promise<WorkshopItem> {
+    return fetchApi<WorkshopItem>(`/api/ugc/workshop/items/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  async uploadWorkshopItem(payload: WorkshopUploadPayload): Promise<WorkshopItem> {
+    const formData = new FormData();
+    formData.append('file', payload.file);
+    formData.append('title', payload.title);
+    formData.append('game_id', payload.game_id.toString());
+    if (payload.game_title) formData.append('game_title', payload.game_title);
+    if (payload.category) formData.append('category', payload.category);
+    if (payload.tags) formData.append('tags', payload.tags);
+    if (payload.description) formData.append('description', payload.description);
+    if (payload.version) formData.append('version', payload.version);
+    if (payload.preview_file) formData.append('preview_file', payload.preview_file);
+
+    return fetchApi<WorkshopItem>('/api/ugc/workshop/items', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  async subscribeWorkshopItem(id: number): Promise<{ item_id: number; subscribed: boolean; subscriptions_count: number }> {
+    return fetchApi(`/api/ugc/workshop/items/${id}/subscribe`, {
+      method: 'POST',
+    });
+  },
+
+  async unsubscribeWorkshopItem(id: number): Promise<{ item_id: number; subscribed: boolean; subscriptions_count: number }> {
+    return fetchApi(`/api/ugc/workshop/items/${id}/subscribe`, {
+      method: 'DELETE',
+    });
+  },
+
+  async downloadWorkshopItem(id: number): Promise<{ item_id: number; downloads_count: number; file_url: string }> {
+    return fetchApi(`/api/ugc/workshop/items/${id}/download`, {
+      method: 'POST',
+    });
+  },
+
+  async deleteWorkshopItem(id: number): Promise<void> {
+    return fetchApi(`/api/ugc/workshop/items/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+
+
 
 

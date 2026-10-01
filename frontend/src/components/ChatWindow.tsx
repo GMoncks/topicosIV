@@ -338,7 +338,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           value={inputText}
           onChange={handleInputChange}
           placeholder="Escreva uma mensagem..."
-          className="flex-1 bg-brand-dark/80 text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-purple transition"
+          className="flex-1 bg-white text-black placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-purple shadow-sm transition"
         />
         <button
           type="submit"

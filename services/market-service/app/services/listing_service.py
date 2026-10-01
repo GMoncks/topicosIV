@@ -48,6 +48,7 @@ class ListingService:
         db: Session,
         item_type: Optional[str] = None,
         game_id: Optional[int] = None,
+        search: Optional[str] = None,
         skip: int = 0,
         limit: int = 20,
     ) -> Tuple[List[MarketListing], int]:
@@ -57,6 +58,8 @@ class ListingService:
             query = query.filter(MarketListing.item_type == item_type)
         if game_id:
             query = query.filter(MarketListing.game_id == game_id)
+        if search and search.strip():
+            query = query.filter(MarketListing.item_name.ilike(f"%{search.strip()}%"))
 
         total = query.count()
         items = query.order_by(MarketListing.price.asc(), MarketListing.id.asc()).offset(skip).limit(limit).all()

@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { walletApi, WalletTransactionApiResponse, WalletTransactionType } from '../api/client';
 
 interface WalletHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
+  topOffset?: number;
 }
 
 const PAGE_SIZE = 10;
@@ -27,7 +29,11 @@ function formatDateTime(iso: string): string {
   }
 }
 
-export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({ isOpen, onClose }) => {
+export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({
+  isOpen,
+  onClose,
+  topOffset = 16,
+}) => {
   const [items, setItems] = useState<WalletTransactionApiResponse[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -72,27 +78,33 @@ export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({ isOpen, 
   }, [isOpen]);
 
   if (!isOpen) return null;
+  if (typeof document === 'undefined') return null;
 
   const hasPrevPage = skip > 0;
   const hasNextPage = skip + PAGE_SIZE < total;
   const currentPage = Math.floor(skip / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wallet-history-title"
+      data-testid="wallet-history-modal"
+      className="fixed inset-0 z-[130] flex items-start justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      style={{ paddingTop: `${topOffset}px` }}
       onClick={(e) => {
         e.stopPropagation();
         onClose();
       }}
     >
       <div
-        className="relative w-full max-w-2xl max-h-[85vh] bg-brand-card border border-gray-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="relative w-full max-w-2xl max-h-[calc(100vh-32px)] bg-brand-card border border-gray-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
           <div>
-            <h2 className="text-xl font-display font-bold text-white">Extrato da Carteira</h2>
+            <h2 id="wallet-history-title" className="text-xl font-display font-bold text-white">Extrato da Carteira</h2>
             <p className="text-sm text-gray-400">Histórico de compras, vendas, recargas e resgates</p>
           </div>
           <button
@@ -192,4 +204,6 @@ export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({ isOpen, 
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

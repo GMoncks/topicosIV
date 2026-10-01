@@ -130,7 +130,7 @@ export const ReviewFormModal: React.FC<ReviewFormModalProps> = ({
             maxLength={MAX_TEXT_LENGTH}
             rows={5}
             placeholder="Conte o que achou do jogo..."
-            className="w-full bg-brand-surface border border-gray-600 rounded-xl p-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-purple resize-none"
+            className="w-full bg-white border border-gray-300 rounded-xl p-3 text-sm text-black placeholder-gray-500 focus:outline-none focus:border-brand-purple resize-none shadow-sm"
           />
           <div className="flex items-center justify-between mt-2">
             <span className="text-xs text-gray-500 flex items-center gap-1.5">

@@ -1,5 +1,5 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from typing import Optional, List
+from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,7 @@ from app.services.auth_service import (
     get_user_by_username,
     get_user_by_email,
     get_user_by_id,
+    search_users,
     create_user,
     authenticate_user,
     create_access_token,
@@ -110,6 +111,20 @@ def get_current_user_profile(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
 
     return user
+
+
+@router.get("/users/search", response_model=List[UserProfileResponse], status_code=status.HTTP_200_OK)
+def search_users_endpoint(
+    q: Optional[str] = Query(None, description="Termo de busca por username ou email"),
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Busca pública de usuários por username ou email (para busca global e convites).
+    """
+    if not q or not q.strip():
+        return []
+    return search_users(db=db, query=q.strip(), limit=limit)
 
 
 @router.get("/users/{user_id}", response_model=UserProfileResponse)

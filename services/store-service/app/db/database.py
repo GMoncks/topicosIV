@@ -44,6 +44,8 @@ def init_db():
                 "publisher": "VARCHAR(100) DEFAULT 'Steam Imported'",
                 "review_score": "FLOAT DEFAULT 0.0",
                 "game_file": "VARCHAR(255) DEFAULT NULL",
+                "original_price": "FLOAT DEFAULT NULL",
+                "discount_percentage": "INTEGER DEFAULT 0",
             }
 
             for col_name, col_def in column_definitions.items():
