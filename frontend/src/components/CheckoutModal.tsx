@@ -23,6 +23,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [purchasedTitle, setPurchasedTitle] = useState('');
+  const [finalBalance, setFinalBalance] = useState<number | null>(null);
 
   if (!isOpen || !game) return null;
 
@@ -50,13 +51,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setError(null);
       const res = await storeApi.checkout({ game_id: Number(game.id) });
       
-      updateUserBalance(res.new_wallet_balance);
+      const newPoints = (user?.pointsBalance || 0) + (res.points_earned || 0);
+      updateUserBalance(res.new_wallet_balance, newPoints);
       if (onSuccess) onSuccess(res.new_wallet_balance);
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('mist:wishlist-updated'));
+        window.dispatchEvent(new CustomEvent('mist:points-updated', { detail: { points: newPoints } }));
       }
 
+      setFinalBalance(res.new_wallet_balance);
       setPurchasedTitle(game.title);
       setIsSuccess(true);
     } catch (err: any) {
@@ -70,6 +74,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const handleClose = () => {
     setIsSuccess(false);
     setError(null);
+    setFinalBalance(null);
     onClose();
   };
 
@@ -210,7 +215,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </p>
 
             <div className="bg-brand-surface border border-gray-700 rounded-xl p-3 mb-6 text-xs text-gray-400">
-              Novo saldo disponível: <span className="text-emerald-400 font-bold">{formatCurrency(projectedBalance)}</span>
+              Novo saldo disponível: <span className="text-emerald-400 font-bold">{formatCurrency(finalBalance !== null ? finalBalance : projectedBalance)}</span>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">

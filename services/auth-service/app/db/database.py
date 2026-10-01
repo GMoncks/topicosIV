@@ -29,4 +29,21 @@ def get_db():
 
 def init_db():
     import app.models.user  # noqa: F401
+    import app.models.inventory  # noqa: F401
     Base.metadata.create_all(bind=engine)
+
+    # Migração leve para SQLite existente: adiciona colunas se não existirem
+    if DATABASE_URL.startswith("sqlite"):
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            try:
+                res = conn.execute(text("PRAGMA table_info(users)"))
+                columns = [row[1] for row in res.fetchall()]
+                if "avatar_frame_url" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN avatar_frame_url VARCHAR(255)"))
+                if "profile_background_url" not in columns:
+                    conn.execute(text("ALTER TABLE users ADD COLUMN profile_background_url VARCHAR(255)"))
+                conn.commit()
+            except Exception:
+                pass
+

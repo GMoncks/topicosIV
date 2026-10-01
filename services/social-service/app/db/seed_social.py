@@ -78,7 +78,41 @@ def seed_social_data(db: Session):
         db.add_all(sample_messages)
         db.commit()
 
-    # 3. Seed de Atividades do Feed se não existirem
+    # 3. Saneamento e Purga de Atividades Duplicadas / Inválidas
+    all_activities = db.query(Activity).order_by(Activity.id.desc()).all()
+    seen_activity_keys = set()
+    to_delete_ids = []
+
+    for act in all_activities:
+        p = act.payload if isinstance(act.payload, dict) else {}
+        game_title = str(p.get("game_title") or p.get("game") or "").lower()
+
+        # Remove atividades falsas de jogos inexistentes (Space Marine 2, etc.)
+        if "space marine" in game_title:
+            to_delete_ids.append(act.id)
+            continue
+
+        # Corrige registros de Primeira Palavra com game_id 13 (era MIST Forca antes da sincronização)
+        ach_id = p.get("achievement_id") or p.get("name")
+        if ach_id == "first_word" and p.get("game_id") == 13:
+            p["game_id"] = 14
+            p["game_title"] = "MIST Forca"
+            act.payload = p
+
+        ach_key = str(p.get("achievement_id") or p.get("achievement_name") or p.get("name") or "").lower().strip()
+        game_key = str(p.get("game_id") or p.get("game_title") or "").lower().strip()
+        dedup_key = f"{act.user_id}:{act.type}:{game_key}:{ach_key}"
+
+        if dedup_key in seen_activity_keys:
+            to_delete_ids.append(act.id)
+        else:
+            seen_activity_keys.add(dedup_key)
+
+    if to_delete_ids:
+        db.query(Activity).filter(Activity.id.in_(to_delete_ids)).delete(synchronize_session=False)
+        db.commit()
+
+    # 4. Seed de Atividades Canônicas se o feed estiver vazio
     existing_activities_count = db.query(Activity).count()
     if existing_activities_count == 0:
         logger.info("Populando feed de atividades inicial...")
@@ -87,10 +121,14 @@ def seed_social_data(db: Session):
                 user_id=2,
                 type="achievement_unlocked",
                 payload={
+                    "user_id": 2,
                     "username": "CyberKnight",
-                    "game_title": "Helldivers 2",
-                    "achievement_name": "Espalhando Democracia",
-                    "description": "Elimine 500 inimigos com armas pesadas",
+                    "game_id": 1,
+                    "game_title": "The Blood of the Dawnwalker",
+                    "name": "Conquistador Lendário",
+                    "achievement_name": "Conquistador Lendário",
+                    "rarity": "Épico",
+                    "description": "Dominou as principais missões e desafios em The Blood of the Dawnwalker.",
                     "icon_url": "https://picsum.photos/seed/ach1/120/120",
                 },
                 created_at=now - timedelta(minutes=15),
@@ -99,8 +137,10 @@ def seed_social_data(db: Session):
                 user_id=3,
                 type="game_purchased",
                 payload={
+                    "user_id": 3,
                     "username": "Valkyrie",
-                    "game_title": "Hollow Knight",
+                    "game_id": 10,
+                    "game_title": "Hollow Knight: Silksong",
                     "price": 46.99,
                     "banner_url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop",
                 },
@@ -110,10 +150,14 @@ def seed_social_data(db: Session):
                 user_id=1,
                 type="achievement_unlocked",
                 payload={
+                    "user_id": 1,
                     "username": "GGTorres2001",
-                    "game_title": "Space Marine 2",
-                    "achievement_name": "Primeira Baixa",
-                    "description": "Conclua o prólogo em qualquer dificuldade",
+                    "game_id": 1,
+                    "game_title": "The Blood of the Dawnwalker",
+                    "name": "Início de The Blood of the Dawnwalker",
+                    "achievement_name": "Início de The Blood of the Dawnwalker",
+                    "rarity": "Comum",
+                    "description": "Iniciou The Blood of the Dawnwalker pela primeira vez e registrou telemetria.",
                     "icon_url": "https://picsum.photos/seed/ach2/120/120",
                 },
                 created_at=now - timedelta(hours=3),
@@ -122,6 +166,7 @@ def seed_social_data(db: Session):
                 user_id=4,
                 type="level_up",
                 payload={
+                    "user_id": 4,
                     "username": "PixelMage",
                     "old_level": 4,
                     "new_level": 5,

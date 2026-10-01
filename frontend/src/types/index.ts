@@ -39,7 +39,9 @@ export interface UserProfile {
   avatarText: string;
   avatarUrl?: string;
   avatarFrameUrl?: string;
+  profileBackgroundUrl?: string;
   status: 'Online' | 'Offline' | 'Em Jogo';
+
   walletBalance: number;
   pointsBalance: number;
   featuredBadge: {
@@ -85,13 +87,26 @@ export interface NewsArticle {
 export interface PointsShopItem {
   id: string;
   name: string;
-  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado';
-  itemType: 'background' | 'emoticon' | 'profile_bundle' | 'avatar';
+  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado' | 'Moldura de avatar';
+  itemType: 'background' | 'emoticon' | 'profile_bundle' | 'avatar' | 'avatar_frame';
   pricePoints: number;
   image: string;
   previewUrl?: string;
   isOwned?: boolean;
 }
+
+export interface InventoryItem {
+  id: number;
+  user_id: number;
+  item_id: string;
+  name: string;
+  item_type: 'avatar_frame' | 'background' | 'emoticon' | 'profile_bundle';
+  asset_url: string;
+  price_points: number;
+  is_equipped: boolean;
+  acquired_at: string;
+}
+
 
 export type NavigationTab = 'store' | 'library' | 'social' | 'news' | 'points' | 'profile' | 'login';
 

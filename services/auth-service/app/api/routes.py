@@ -13,6 +13,17 @@ from app.schemas.user import (
     WalletCreditRequest,
     WalletOperationResponse,
 )
+from app.schemas.inventory import (
+    PointsCreditRequest,
+    PointsOperationResponse,
+    PointsShopItemResponse,
+    PointsPurchaseRequest,
+    PointsPurchaseResponse,
+    CosmeticEquipRequest,
+    CosmeticEquipResponse,
+    InventoryListResponse,
+    InventoryItemResponse,
+)
 from app.services.auth_service import (
     get_user_by_username,
     get_user_by_email,
@@ -23,7 +34,13 @@ from app.services.auth_service import (
     decode_access_token,
     debit_wallet,
     credit_wallet,
+    credit_points,
+    get_points_shop_items,
+    purchase_points_item,
+    equip_cosmetic,
+    get_user_inventory,
 )
+
 
 router = APIRouter(tags=["Auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
@@ -164,3 +181,136 @@ def credit_user_wallet(
         if "não encontrado" in msg:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+
+def resolve_authenticated_user_id(
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    token: Optional[str] = Depends(oauth2_scheme)
+) -> int:
+    """Extrai e valida ID do usuário via header X-User-Id ou token JWT."""
+    if x_user_id:
+        try:
+            return int(x_user_id)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ID de usuário inválido")
+    elif token:
+        try:
+            payload = decode_access_token(token)
+            return int(payload.get("sub"))
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido ou expirado")
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Não autenticado")
+
+
+def optional_authenticated_user_id(
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    token: Optional[str] = Depends(oauth2_scheme)
+) -> Optional[int]:
+    """Extrai ID do usuário caso esteja autenticado, caso contrário retorna None."""
+    if x_user_id:
+        try:
+            return int(x_user_id)
+        except ValueError:
+            return None
+    elif token:
+        try:
+            payload = decode_access_token(token)
+            return int(payload.get("sub"))
+        except Exception:
+            return None
+    return None
+
+
+@router.post(
+    "/users/{user_id}/points/credit",
+    response_model=PointsOperationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Credita Pontos MIST ao usuário (ex: após checkout de jogos ou premiações)"
+)
+def credit_user_points(
+    user_id: int,
+    payload: PointsCreditRequest,
+    db: Session = Depends(get_db)
+):
+    try:
+        return credit_points(db=db, user_id=user_id, amount=payload.amount)
+    except ValueError as e:
+        msg = str(e)
+        if "não encontrado" in msg:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+
+@router.get(
+    "/points-shop/items",
+    response_model=list[PointsShopItemResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Lista itens disponíveis no catálogo da Loja de Pontos"
+)
+def list_points_shop_items(
+    db: Session = Depends(get_db),
+    user_id: Optional[int] = Depends(optional_authenticated_user_id)
+):
+    return get_points_shop_items(db=db, user_id=user_id)
+
+
+@router.post(
+    "/points-shop/purchase",
+    response_model=PointsPurchaseResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resgata um item cosmético utilizando Pontos MIST"
+)
+def purchase_cosmetic_item(
+    payload: PointsPurchaseRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(resolve_authenticated_user_id)
+):
+    try:
+        return purchase_points_item(db=db, user_id=user_id, item_id=payload.item_id)
+    except KeyError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e).strip("'\""))
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+
+@router.post(
+    "/profile/equip",
+    response_model=CosmeticEquipResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Equipa ou desequipa cosméticos (moldura de avatar, plano de fundo)"
+)
+def equip_profile_cosmetic(
+    payload: CosmeticEquipRequest,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(resolve_authenticated_user_id)
+):
+    try:
+        return equip_cosmetic(
+            db=db,
+            user_id=user_id,
+            inventory_item_id=payload.inventory_item_id,
+            action=payload.action or "equip"
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/inventory",
+    response_model=InventoryListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retorna os itens cosméticos adquiridos no inventário do usuário"
+)
+def get_inventory(
+    item_type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(resolve_authenticated_user_id)
+):
+    items = get_user_inventory(db=db, user_id=user_id, item_type=item_type)
+    return InventoryListResponse(items=items, total=len(items))
+

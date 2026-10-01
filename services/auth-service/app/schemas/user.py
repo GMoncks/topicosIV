@@ -39,9 +39,12 @@ class UserProfileResponse(BaseModel):
     points_balance: int
     level: int
     avatar_url: Optional[str] = None
+    avatar_frame_url: Optional[str] = None
+    profile_background_url: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
 
 
 class TokenResponse(BaseModel):

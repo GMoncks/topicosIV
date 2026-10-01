@@ -21,7 +21,23 @@ export const Social: React.FC = () => {
         socialApi.getFeed().catch(() => []),
       ]);
       setFriends(friendsData);
-      setFeed(feedData);
+
+      const uniqueFeed: ActivityItem[] = [];
+      const seenFeedKeys = new Set<string>();
+      for (const act of Array.isArray(feedData) ? feedData : []) {
+        const p = act.payload || {};
+        const achKey = String(p.achievement_id || p.achievement_name || p.name || '').toLowerCase().trim();
+        const gameKey = String(p.game_id || p.game_title || '').toLowerCase().trim();
+        const key = act.type === 'achievement_unlocked'
+          ? `${act.user_id}:${act.type}:${gameKey}:${achKey}`
+          : `${act.user_id}:${act.type}:${act.id}`;
+
+        if (!seenFeedKeys.has(key)) {
+          seenFeedKeys.add(key);
+          uniqueFeed.push(act);
+        }
+      }
+      setFeed(uniqueFeed);
     } catch (err) {
       console.warn('Erro ao carregar dados sociais:', err);
     } finally {

@@ -14,6 +14,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigateToLibrary }) =
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [purchasedCount, setPurchasedCount] = useState(0);
+  const [finalBalance, setFinalBalance] = useState<number | null>(null);
 
   if (!isCartOpen) return null;
 
@@ -43,14 +44,17 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigateToLibrary }) =
       const gameIds = cart.map(item => Number(item.id));
       const res = await storeApi.checkout({ game_ids: gameIds });
 
-      updateUserBalance(res.new_wallet_balance);
+      const newPoints = (user?.pointsBalance || 0) + (res.points_earned || 0);
+      updateUserBalance(res.new_wallet_balance, newPoints);
       setPurchasedCount(cart.length);
       clearCart();
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('mist:wishlist-updated'));
+        window.dispatchEvent(new CustomEvent('mist:points-updated', { detail: { points: newPoints } }));
       }
 
+      setFinalBalance(res.new_wallet_balance);
       setIsSuccess(true);
     } catch (err: any) {
       console.error('Erro ao finalizar carrinho:', err);
@@ -63,6 +67,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigateToLibrary }) =
   const handleClose = () => {
     setIsSuccess(false);
     setError(null);
+    setFinalBalance(null);
     closeCart();
   };
 
@@ -194,7 +199,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigateToLibrary }) =
               <div className="bg-brand-card border border-gray-800 rounded-xl p-4 w-full mb-6 text-xs text-gray-400">
                 Novo saldo disponível na carteira:{' '}
                 <span className="text-emerald-400 font-bold text-sm block mt-1">
-                  {formatCurrency(walletBalance)}
+                  {formatCurrency(finalBalance !== null ? finalBalance : walletBalance)}
                 </span>
               </div>
               <div className="flex flex-col gap-3 w-full">

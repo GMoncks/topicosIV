@@ -319,5 +319,29 @@ describe('Library Page Component (D-04 & D-05)', () => {
       expect(libraryApi.startSession).toHaveBeenCalled();
     });
   });
+
+  it('filtra e não exibe jogo inexistente ou corrompido com game_id 0', async () => {
+    vi.mocked(libraryApi.getMyGames).mockResolvedValueOnce([
+      ...mockGamesData,
+      {
+        id: 999,
+        user_id: 1,
+        game_id: 0,
+        acquired_at: '2026-09-26T12:00:00Z',
+        playtime_minutes: 0,
+        is_installed: false,
+        last_played: null,
+        game: null as any,
+      },
+    ]);
+
+    render(<Library />);
+
+    await waitFor(() => {
+      expect(screen.getByText('MIST Forca')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Jogo #0')).toBeNull();
+  });
 });
 
