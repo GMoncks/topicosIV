@@ -4,7 +4,8 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.db.database import UPLOADS_DIR, init_db
+from app.db.database import UPLOADS_DIR, init_db, SessionLocal
+from app.db.seed_ugc import seed_ugc_data
 from app.api.screenshots import router as screenshots_router
 from app.api.workshop import router as workshop_router
 
@@ -12,6 +13,11 @@ from app.api.workshop import router as workshop_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    db = SessionLocal()
+    try:
+        seed_ugc_data(db)
+    finally:
+        db.close()
     yield
 
 
