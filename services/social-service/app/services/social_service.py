@@ -208,6 +208,32 @@ class SocialService:
     @staticmethod
     def record_activity(db: Session, user_id: int, activity_type: str, payload: dict) -> dict:
         from app.models.activity import Activity
+
+        # Deduplicação inteligente de conquistas e compras repetidas
+        if activity_type == "achievement_unlocked":
+            ach_id = payload.get("achievement_id") or payload.get("id") or payload.get("name")
+            gid = payload.get("game_id")
+            existing = db.query(Activity).filter(
+                Activity.user_id == user_id,
+                Activity.type == "achievement_unlocked"
+            ).all()
+            for act in existing:
+                p = act.payload if isinstance(act.payload, dict) else {}
+                existing_ach_id = p.get("achievement_id") or p.get("id") or p.get("name")
+                existing_gid = p.get("game_id")
+                if existing_ach_id == ach_id and (gid is None or existing_gid == gid):
+                    return act.to_dict()
+        elif activity_type == "game_purchased":
+            gid = payload.get("game_id")
+            existing = db.query(Activity).filter(
+                Activity.user_id == user_id,
+                Activity.type == "game_purchased"
+            ).all()
+            for act in existing:
+                p = act.payload if isinstance(act.payload, dict) else {}
+                if p.get("game_id") == gid:
+                    return act.to_dict()
+
         activity = Activity(
             user_id=user_id,
             type=activity_type,
@@ -225,6 +251,31 @@ class SocialService:
         query = db.query(Activity)
         if user_id:
             query = query.filter(Activity.user_id == user_id)
-        activities = query.order_by(Activity.created_at.desc()).limit(limit).all()
-        return [a.to_dict() for a in activities]
+        raw_activities = query.order_by(Activity.created_at.desc()).limit(limit * 3).all()
+
+        dedup_list = []
+        seen_keys = set()
+
+        for a in raw_activities:
+            p = a.payload if isinstance(a.payload, dict) else {}
+            # Ignora atividades mockadas com jogos inexistentes
+            game_title = str(p.get("game_title") or p.get("game") or "").lower()
+            if "space marine" in game_title:
+                continue
+
+            # Chave única de deduplicação por tipo de atividade
+            ach_key = str(p.get("achievement_id") or p.get("achievement_name") or p.get("name") or "").lower().strip()
+            game_key = str(p.get("game_id") or p.get("game_title") or "").lower().strip()
+            dedup_key = f"{a.user_id}:{a.type}:{game_key}:{ach_key}"
+
+            if dedup_key in seen_keys:
+                continue
+
+            seen_keys.add(dedup_key)
+            dedup_list.append(a.to_dict())
+
+            if len(dedup_list) >= limit:
+                break
+
+        return dedup_list
 

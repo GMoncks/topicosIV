@@ -336,7 +336,7 @@ class AIClient:
             profile_name = (user_profile or {}).get("username", "Gamer")
             prompt = f"Histórico:\n{history_str}\n\n{profile_name}: {user_message}\nMIST Bot:"
             try:
-                return await self.generate_text(
+                res = await self.generate_text(
                     prompt=prompt,
                     system_instruction=(
                         "Você é o MIST Companion Bot, o amigo gamer oficial da plataforma MIST. "
@@ -344,19 +344,99 @@ class AIClient:
                         "de jogos e responda de forma concisa em português."
                     )
                 )
+                if res and not res.strip().startswith("[MIST AI Mock]"):
+                    return res
             except Exception:
                 pass
 
         msg_lower = user_message.lower()
 
-        if any(w in msg_lower for w in ["oi", "olá", "ola", "hey", "e aí", "e ai", "bom dia", "boa tarde"]):
-            return "E aí! Tudo certo no lobby? Qual jogo estamos grindando hoje?"
+        # 1. Reconhecimento de Jogos Específicos e Intenções Contextuais
+        if any(w in msg_lower for w in ["silksong", "hollow knight", "hornet", "pharloom"]):
+            if any(w in msg_lower for w in ["conquista", "dica", "ajuda", "platinar", "ganhar", "como", "chefe", "boss"]):
+                return (
+                    "Para platinar Hollow Knight: Silksong e dominar as conquistas, a dica de ouro é dominar o ataque "
+                    "com a agulha em diagonal da Hornet e treinar a mobilidade vertical! Guarde carretéis de seda para "
+                    "a cura rápida somente nos momentos de abertura dos chefes e cumpra todas as missões secundárias "
+                    "dos NPCs nas Cidadelas de Pharloom para desbloquear ferramentas raras e conquistas secretas."
+                )
+            return (
+                "Hollow Knight: Silksong é um dos jogos mais espetaculares do catálogo! O combate é super veloz e dinâmico. "
+                "Quer algumas dicas estratégicas para enfrentar chefes ou desbloquear as conquistas mais desafiadoras?"
+            )
 
-        if any(w in msg_lower for w in ["recomenda", "indica", "qual jogo", "sugestão", "sugestao"]):
-            return "Se você curte desafios rápidos de raciocínio, recomendo muito o MIST Forca e o MIST Labirinto direto do catálogo! Ambos têm conquistas prontas para desbloquear."
+        if any(w in msg_lower for w in ["baldur", "bg3", "larian", "faerun", "d&d"]):
+            if any(w in msg_lower for w in ["conquista", "dica", "ajuda", "platinar", "ganhar", "como"]):
+                return (
+                    "Em Baldur's Gate 3, muitas conquistas exigem abordagens criativas! Abuse das reações e do terreno tático "
+                    "(empurrando inimigos ou combinando superfícies de água e eletricidade). Além disso, faça descansos longos "
+                    "com frequência no acampamento para não perder diálogos cruciais dos companheiros."
+                )
+            return (
+                "Baldur's Gate 3 é puro RPG tático de alto nível! Suas escolhas realmente mudam os rumos do jogo. "
+                "Precisa de ajuda com alguma build ou conquista específica?"
+            )
+
+        if any(w in msg_lower for w in ["forca", "mist forca", "hangman"]):
+            return (
+                "No MIST Forca, a estratégia para a conquista 'Mente Afiada' (vencer sem errar nenhuma letra) é começar "
+                "sempre pelas vogais frequentes (A, E, O) e lembrar que quase todas as palavras são termos de computação "
+                "como KERNEL, BUFFER, POINTER e SOCKET!"
+            )
+
+        if any(w in msg_lower for w in ["labirinto", "mist labirinto", "maze"]):
+            return (
+                "Para a conquista 'Velocista da Masmorra' no MIST Labirinto, a técnica infalível é a regra da mão direita nas paredes "
+                "para traçar o caminho sem retroceder e pegar apenas os itens que estiverem na sua rota direta até a saída!"
+            )
+
+        if any(w in msg_lower for w in ["quiz", "mist quiz"]):
+            return (
+                "Para o troféu 'Gênio da Computação' no MIST Quiz, revise conceitos clássicos de estruturas de dados "
+                "(árvores, filas, pilhas), portas lógicas e redes. Não há limite de tempo por questão, então pense com calma!"
+            )
+
+        if any(w in msg_lower for w in ["elden ring", "erdtree", "malenia"]):
+            return (
+                "Nas Terras Intermédias de Elden Ring, explore muito as catacumbas antes de enfrentar os semideuses! "
+                "Subir o nível das suas armas e usar espíritos de cinzas adequados é o segredo para garantir as conquistas sem arrancar os cabelos."
+            )
+
+        if any(w in msg_lower for w in ["cyberpunk", "phantom liberty", "night city"]):
+            return (
+                "Em Cyberpunk 2077: Phantom Liberty, aproveite a árvore de talentos do Relic em Dogtown para potencializar seus cibernéticos. "
+                "Fique atento aos contratos do Mr. Hands para liberar todas as conquistas da DLC!"
+            )
+
+        # 2. Respostas de Continuidade e Afirmação
+        if any(msg_lower.startswith(w) for w in ["sim", "claro", "com certeza", "quero", "gostaria", "ajuda", "pode ser", "manda"]):
+            return (
+                "Com certeza! De qual jogo você está caçando conquistas ou dicas no momento? "
+                "Posso te ajudar com Hollow Knight: Silksong, Baldur's Gate 3, Elden Ring ou os jogos exclusivos do MIST Studios!"
+            )
+
+        # 3. Perguntas Mais Comuns e Sugestões da Interface
+        if any(w in msg_lower for w in ["jogos mais jogados", "mais jogados", "populares", "top jogos"]):
+            return (
+                "Os jogos mais jogados no MIST no momento são Hollow Knight: Silksong, Baldur's Gate 3 e The Blood of the Dawnwalker, "
+                "além das disputas rápidas de recorde no MIST Forca e MIST Labirinto!"
+            )
 
         if any(w in msg_lower for w in ["conquista", "trofeu", "troféu", "achievement", "quest"]):
-            return "Conquistas são a melhor parte! A cada nova conquista você ganha XP para subir de nível no MIST. Precisa de dicas para alguma?"
+            return (
+                "Conquistas no MIST são desbloqueadas ao completar desafios nos jogos e ficam salvas no seu Perfil. "
+                "A cada conquista obtida, você sobe de nível e ganha destaque na comunidade! "
+                "Quer dicas para as conquistas de Silksong, Baldur's Gate 3 ou dos jogos MIST Studios?"
+            )
+
+        if any(w in msg_lower for w in ["recomenda", "indica", "qual jogo", "sugestão", "sugestao"]):
+            return (
+                "Se você busca uma jornada épica, recomendo muito Baldur's Gate 3 e Hollow Knight: Silksong! "
+                "E para uma pausa rápida entre partidas, o MIST Forca e o MIST Labirinto já vêm prontos para jogar."
+            )
+
+        if any(w in msg_lower for w in ["oi", "olá", "ola", "hey", "e aí", "e ai", "bom dia", "boa tarde"]):
+            return "E aí! Tudo certo no lobby? Qual jogo estamos grindando hoje?"
 
         if any(w in msg_lower for w in ["amigo", "social", "chat", "jogar junto"]):
             return "Adicionar amigos na MIST é super fácil! Vá até a aba Social, envie o convite com o ID do seu amigo e vocês já podem bater papo em tempo real."

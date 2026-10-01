@@ -179,5 +179,57 @@ describe('Social Page Component (F-06 & F-08)', () => {
       expect(screen.getByText('BOT IA')).toBeInTheDocument();
     });
   });
+
+  it('deve deduplicar itens repetidos do feed de atividades (REG-SOC-01)', async () => {
+    const duplicatedFeed: ActivityItem[] = [
+      {
+        id: 10,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 11,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 12,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+    ];
+
+    vi.spyOn(socialApi, 'getFeed').mockResolvedValue(duplicatedFeed);
+    render(<Social />);
+
+    await waitFor(() => {
+      const matches = screen.getAllByText('Primeira Palavra');
+      expect(matches.length).toBe(1);
+    });
+  });
 });
 

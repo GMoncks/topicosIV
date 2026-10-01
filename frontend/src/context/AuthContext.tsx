@@ -18,6 +18,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   clearSessionNotice: () => void;
   updateUserBalance: (wallet?: number, points?: number) => void;
+  updateUserCosmetics: (avatarFrameUrl?: string | null, profileBackgroundUrl?: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +31,12 @@ function mapAuthUserToProfile(authUser: AuthUserResponse): UserProfile {
     level: authUser.level || 1,
     avatarText: authUser.username.slice(0, 2).toUpperCase(),
     avatarUrl: authUser.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authUser.username}`,
+    avatarFrameUrl: authUser.avatar_frame_url,
+    profileBackgroundUrl: authUser.profile_background_url,
     status: 'Online',
     walletBalance: authUser.wallet_balance ?? 200.0,
     pointsBalance: authUser.points_balance ?? 500,
+
     featuredBadge: {
       title: 'Pioneiro MIST',
       xp: 100,
@@ -85,6 +89,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
   }, []);
+
+  const updateUserCosmetics = useCallback((avatarFrameUrl?: string | null, profileBackgroundUrl?: string | null) => {
+    setUser(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        avatarFrameUrl: avatarFrameUrl !== undefined ? (avatarFrameUrl || undefined) : prev.avatarFrameUrl,
+        profileBackgroundUrl: profileBackgroundUrl !== undefined ? (profileBackgroundUrl || undefined) : prev.profileBackgroundUrl,
+      };
+    });
+  }, []);
+
 
   const refreshProfile = useCallback(async () => {
     const currentToken = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -181,7 +197,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshProfile,
     clearSessionNotice,
     updateUserBalance,
+    updateUserCosmetics,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

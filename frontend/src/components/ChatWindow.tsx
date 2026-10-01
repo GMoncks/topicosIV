@@ -323,7 +323,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               onClick={() => {
                 setInputText(promptText);
               }}
-              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-dark hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
+              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-card hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
             >
               {promptText}
             </button>
@@ -338,7 +338,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           value={inputText}
           onChange={handleInputChange}
           placeholder="Escreva uma mensagem..."
-          className="flex-1 bg-brand-dark/80 text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-purple transition"
+          className="flex-1 bg-brand-card text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition"
         />
         <button
           type="submit"

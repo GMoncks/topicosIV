@@ -45,7 +45,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PUBLIC_AUTH_PATHS = {"register", "login", "health"}
+PUBLIC_AUTH_PATHS = {"register", "login", "health", "points-shop/items"}
+
 
 
 @app.get("/health")
@@ -129,7 +130,28 @@ async def proxy_auth(path: str, request: Request):
         )
 
 
+@app.api_route("/api/points-shop/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_points_shop(path: str, request: Request):
+    """Proxy reverso para operações da Loja de Pontos no auth-service."""
+    return await proxy_auth(f"points-shop/{path}", request)
+
+
+@app.api_route("/api/profile/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_profile(path: str, request: Request):
+    """Proxy reverso para perfil e equipamento de cosméticos no auth-service."""
+    return await proxy_auth(f"profile/{path}", request)
+
+
+@app.api_route("/api/inventory", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+@app.api_route("/api/inventory/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_inventory(request: Request, path: str = ""):
+    """Proxy reverso para inventário de cosméticos no auth-service."""
+    subpath = f"/{path}" if path else ""
+    return await proxy_auth(f"inventory{subpath}", request)
+
+
 @app.api_route("/api/games", methods=["GET", "OPTIONS"])
+
 @app.api_route("/api/games/{path:path}", methods=["GET", "OPTIONS"])
 async def proxy_games(request: Request, path: str = ""):
     """

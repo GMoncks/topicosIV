@@ -134,3 +134,32 @@ def test_bot_websocket_chat_flow(client):
         assert bot_reply["type"] == "message"
         assert bot_reply["sender_id"] == 0
         assert "conquista" in bot_reply["content"].lower() or "xp" in bot_reply["content"].lower() or len(bot_reply["content"]) > 0
+
+
+def test_bot_contextual_game_strategy_reply(client):
+    """
+    SOC-UNIT-09 — Resposta inteligente contextual com estratégias específicas para Hollow Knight: Silksong
+    """
+    headers = {"X-User-Id": "1"}
+    room_id = "direct_0_1"
+
+    send_resp = client.post(
+        f"/chat/{room_id}/messages",
+        headers=headers,
+        json={"content": "Sim, eu gostaria de ajuda para ganhar as conquistas do Silksong"}
+    )
+    assert send_resp.status_code == 201
+
+    hist_resp = client.get(f"/chat/{room_id}/messages", headers=headers)
+    assert hist_resp.status_code == 200
+    messages = hist_resp.json()
+    assert len(messages) >= 2
+
+    bot_msg = messages[-1]
+    assert bot_msg["sender_id"] == 0
+    content = bot_msg["content"].lower()
+    # Verifica que a resposta é rica e contextual sobre Silksong (Hornet / seda / Pharloom)
+    assert "silksong" in content or "hornet" in content or "pharloom" in content or "seda" in content
+    # Garante que não é a resposta genérica repetida
+    assert "a cada nova conquista você ganha xp" not in content
+

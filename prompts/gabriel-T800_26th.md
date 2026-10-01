@@ -504,3 +504,230 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 - Atualizado [`resultados.json`](../resultados.json) com as métricas e tempos de execução.
 - Registrado o Prompt 54 em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
 - Resposta apresentada de acordo com o formato estrito solicitado.
+
+---
+
+## 2026-09-26 — Prompt 55
+
+**Prompt do usuário:**
+
+> Esses testes estão simplesmente legados em termos das novas rotas do sistema. Por favor, atualize os arquivos frontend\e2e\auth.spec.ts e frontend/e2e/navigation.spec.ts de modo a não falharem mais por estarem legados
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Adequação do Teste de Navegação E2E (`frontend/e2e/navigation.spec.ts` - `E2E-NAV-01`):**
+   - Atualizado o seletor rígido `text=Minha Biblioteca` para aceitar de forma resiliente tanto a tela de biblioteca em modo visitante (*"Faça login para ver sua biblioteca"*) quanto em modo autenticado (*"Minha Biblioteca"*), utilizando `page.locator('h1, h2').filter({ hasText: /biblioteca/i }).first()`.
+
+2. **Adequação do Teste de Autenticação e Sessão E2E (`frontend/e2e/auth.spec.ts` - `E2E-AUTH-01`):**
+   - Identificada a causa raiz da instabilidade no logout: após o registro com token mockado (`fake_jwt_token_e2e_123`), os hooks e efeitos assíncronos do frontend (`fetchWishlistCount`, `authApi.getMe()`, `libraryApi.getMyGames()`) enviavam requisições autenticadas para o Gateway real; como o token fake não era reconhecido pelo Gateway, este respondia com 401 Unauthorized, disparando o interceptor global de expiração de sessão e forçando o deslogue prematuro no meio da ação de logout.
+   - Implementado o mock de rotas autenticadas correspondentes (`/api/auth/me`, `/api/store/wishlist`, `/api/library/my-games`) no Playwright, garantindo isolamento hermético do teste E2E de autenticação.
+
+3. **Reexecução e Validação via `qa_tester`:**
+   - Ambos os testes foram executados nos 3 navegadores (Chromium, Firefox e WebKit) com 100% de taxa de aprovação.
+   - Acionado o executor utilitário oficial `.agents/skills/qa_tester/scripts/runner_adapter.py` para atualizar [`resultados.json`](../resultados.json). O catálogo consolidado agora possui 80 testes aprovados (`pass`), 2 pendentes (`pending` / planejados) e 0 falhas (`fail`).
+
+**Resumo das saídas:**
+
+- Modificado [`frontend/e2e/navigation.spec.ts`](../frontend/e2e/navigation.spec.ts).
+- Modificado [`frontend/e2e/auth.spec.ts`](../frontend/e2e/auth.spec.ts).
+- Executados os testes com Playwright e validados no `runner_adapter.py`.
+- Atualizado [`resultados.json`](../resultados.json) com todos os testes válidos.
+- Registrado histórico em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+
+---
+
+## 2026-09-26 — Prompt 56
+
+**Prompt do usuário:**
+
+> Ótimo planejamento. Ao final da implementação, chamar o qa_writer para escrever os novos testes
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Implementação do Backend e Gamificação (`auth-service`):**
+   - Criação do modelo `InventoryItem` ([`services/auth-service/app/models/inventory.py`](../services/auth-service/app/models/inventory.py)) com campos de categoria, ativo visual e estado de equipamento.
+   - Atualização do modelo `User` para armazenar `avatar_frame_url` e `profile_background_url`, com relacionamento para itens e rotina de auto-migração não-destrutiva no SQLite.
+   - Criação do catálogo canônico da Loja de Pontos ([`services/auth-service/app/data/points_shop_catalog.py`](../services/auth-service/app/data/points_shop_catalog.py)).
+   - Implementação de endpoints no `auth-service`:
+     - `POST /users/{user_id}/points/credit`: concessão atômica de pontos.
+     - `GET /points-shop/items`: catálogo com status de posse do usuário.
+     - `POST /points-shop/purchase`: dedução atômica de pontos, concessão do item ao inventário e prevenção de duplicidades (409 Conflict) ou saldo insuficiente (400 Bad Request).
+     - `POST /profile/equip`: desativação de cosméticos anteriores da mesma categoria, ativação do item e atualização visual do perfil (suporta também `action='unequip'`).
+     - `GET /inventory`: listagem dos itens cosméticos adquiridos com filtros por categoria.
+
+2. **Conexão do Acúmulo de Pontos ao Checkout (`store-service`):**
+   - Atualização do schema `CheckoutResponse` para incluir `points_earned: int`.
+   - No `StoreService.execute_checkout`, após a concessão bem-sucedida de licenças, cálculo de `points_earned = int(total_amount * 100)` (100 pontos por R$ 1,00) e crédito assíncrono no `auth-service`.
+
+3. **Configuração de Proxies no Gateway:**
+   - Adicionadas rotas proxy com injeção segura de `X-User-Id` e sanitização anti-spoofing para `/api/points-shop/*`, `/api/profile/*` e `/api/inventory` no Gateway.
+
+4. **Experiência Visual e Gamificada no Frontend:**
+   - `Profile.tsx`: Renderização do plano de fundo decorativo com efeito de sobreposição e moldura de avatar animada com iluminação ciano em torno da foto.
+   - Adicionada a **Seção de Inventário** integrada no Perfil (com filtros de categoria, grid de cosméticos e botões dinâmicos de equipar/desequipar).
+   - `PointsShop.tsx`: Conexão do fluxo de compra à API real com dedução imediata de saldo e indicação de itens já adquiridos.
+   - `AuthContext.tsx`: Adição de `avatarFrameUrl`, `profileBackgroundUrl` e método `updateUserCosmetics`.
+
+5. **Ativação da Skill `qa_writer` e Catálogo de Testes:**
+   - Criação e execução dos testes unitários de backend (`services/auth-service/tests/test_points_and_inventory.py` e `services/store-service/tests/test_checkout.py`) e de frontend (`src/pages/Profile.test.tsx` e `src/pages/PointsShop.test.tsx`), com 100% de sucesso.
+   - Inclusão incremental de 6 novos testes aprovados no catálogo [`TESTS.md`](../TESTS.md):
+     - `AUTH-UNIT-06`: Crédito atômico de Pontos MIST (I-01).
+     - `AUTH-UNIT-07`: Resgate de cosméticos na Loja de Pontos (I-02 & I-03).
+     - `AUTH-UNIT-08`: Equipamento e desequipamento de cosméticos no perfil (I-04).
+     - `STORE-UNIT-07`: Acúmulo de 100 pontos por R$ 1,00 no checkout (I-01).
+     - `FRONT-UNIT-24`: Moldura, background e inventário no Profile (I-04).
+     - `FRONT-UNIT-25`: Catálogo, resgate e atualização de pontos no PointsShop (I-05).
+
+6. **Deploy nos Containers Docker:**
+   - Reconstrução e reinicialização dos containers `mist-auth-service`, `mist-store-service`, `mist-gateway` e `mist-frontend` com sucesso.
+
+**Resumo das saídas:**
+
+- Criados: `services/auth-service/app/models/inventory.py`, `services/auth-service/app/data/points_shop_catalog.py`, `services/auth-service/app/schemas/inventory.py`, `services/auth-service/tests/test_points_and_inventory.py`.
+- Modificados: `services/auth-service/app/models/user.py`, `services/auth-service/app/db/database.py`, `services/auth-service/app/schemas/user.py`, `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`.
+- Modificados: `services/store-service/app/schemas/checkout.py`, `services/store-service/app/services/store_service.py`, `services/store-service/tests/test_checkout.py`.
+- Modificado: `gateway/app/main.py`.
+- Criados: `frontend/src/pages/Profile.test.tsx`, `frontend/src/pages/PointsShop.test.tsx`.
+- Modificados: `frontend/src/types/index.ts`, `frontend/src/api/client.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/pages/PointsShop.tsx`, `frontend/src/pages/Profile.tsx`.
+- Atualizado: `TESTS.md` (6 novos testes catalogados pela skill `qa_writer`).
+- Containers Docker atualizados e ativos.
+- Registrado histórico em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+
+
+---
+
+### Prompt 57
+
+**Prompt do usuário:**
+
+> Erro no build do docker, dando continuamente erro no auth-service:
+> mist-auth-service     | ModuleNotFoundError: No module named 'app.data.points_shop_catalog'
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico da Causa Raiz:**
+   - No `docker-compose.yml`, o container `auth-service` possui o volume `auth_data:/app/app/data` para persistência do arquivo SQLite `auth.db`.
+   - Como um volume Docker montado sobrepõe o diretório existente da imagem, o diretório `/app/app/data` foi ocultado pelo volume no host, impedindo o Python de localizar qualquer script novo copiado para `app/data` durante o build do Dockerfile (`ModuleNotFoundError: No module named 'app.data.points_shop_catalog'`).
+
+2. **Isolamento de Código-Fonte e Dados:**
+   - Criado o pacote canônico `app.constants` ([`services/auth-service/app/constants/points_shop_catalog.py`](../services/auth-service/app/constants/points_shop_catalog.py)) com seu respectivo `__init__.py`, desvinculando o catálogo estático de qualquer diretório montado como volume de banco de dados.
+   - Atualizada a importação em [`services/auth-service/app/services/auth_service.py`](../services/auth-service/app/services/auth_service.py) para utilizar `from app.constants.points_shop_catalog import POINTS_SHOP_CATALOG, get_catalog_item`.
+
+3. **Validação e Rebuild:**
+   - Executados os testes unitários do `auth-service` (`pytest services/auth-service/tests/ -v`), confirmando 20 testes aprovados.
+   - Reconstruído e reiniciado o container via `docker compose up --build -d auth-service`.
+   - Verificados os logs com `docker logs mist-auth-service`, confirmando inicialização bem-sucedida do Uvicorn sem exceções e container operando em estado saudável (Up).
+
+**Resumo das saídas:**
+
+- Criado: `services/auth-service/app/constants/points_shop_catalog.py` e `__init__.py`.
+- Modificado: `services/auth-service/app/services/auth_service.py`.
+- Suíte de testes: 20/20 testes unitários do `auth-service` aprovados.
+
+---
+
+### Prompt 58
+
+**Prompt do usuário:**
+
+> Modificações a serem feitas na página do usuário, que parece estar em sua grande parte ainda mockada:
+> - Tornar a atividade recente inteligente, com conquistas e aquisições de jogos
+> - Contador de jogos inteligente
+> - Botão de "Jogos" deve abrir uma listagem dos jogos que o usuário possui, além de sua barra de progresso de conquistas e seu tempo de jogo (atualmente abre a listagem de atividade recente).
+> - Remover a seta apontando para baixo do lado do nome do usuário
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Atividade Recente Inteligente:**
+   - Integrado o feed de atividades do `socialApi.getFeed` na aba de "Atividade recente" do [`Profile.tsx`](../frontend/src/pages/Profile.tsx).
+   - Renderização dinâmica e contextual de eventos reais:
+     - Conquistas desbloqueadas (`achievement_unlocked`): exibe ícone de troféu dourado, nome da conquista, título do jogo associado, nível de raridade e data/hora.
+     - Aquisições de jogos (`game_purchased`): exibe ícone de sacola verde, título do jogo adquirido, preço pago e data da compra.
+   - Preservado fallback gracioso para jogos com horas jogadas e conquistas locais caso o feed social esteja vazio ou ocorra falha de rede.
+
+2. **Contador de Jogos Inteligente:**
+   - O contador de jogos na barra lateral e nas abas agora calcula a quantidade real a partir dos jogos retornados pelo `libraryApi.getMyGames()`.
+   - Se o usuário não possuir biblioteca ou estiver deslogado, utiliza o valor estatístico do perfil como fallback.
+
+3. **Seção e Aba Dedicada de Jogos com Progresso de Conquistas e Tempo de Jogo:**
+   - Implementada a seção `games` e adicionada a aba "Meus Jogos" no topo do perfil, além de reconfigurar o clique no botão "Jogos" da coluna lateral para abrir diretamente essa listagem.
+   - Cada jogo da biblioteca exibe:
+     - Arte/banner do jogo e título.
+     - Tempo de jogo acumulado formatado em horas ou minutos (`formatPlaytime`).
+     - Data da última sessão jogada (`formatRelativeDate`).
+     - Barra de progresso visual em gradiente (`brand-purple` para `cyan-400`) refletindo a proporção exata de conquistas desbloqueadas em relação ao total do jogo (`X/Y (Z%)`).
+
+4. **Remoção de Elemento Supérfluo:**
+   - Removido o ícone `<i className="fa-solid fa-angle-down"></i>` ao lado do nome do usuário no cabeçalho do perfil.
+
+5. **Testes Unitários e Catálogo:**
+   - Atualizado [`frontend/src/pages/Profile.test.tsx`](../frontend/src/pages/Profile.test.tsx) com 5 testes aprovados cobrindo todas as novas capacidades.
+   - Suíte de frontend completa: 66/66 testes aprovados via Vitest (`npm test`).
+   - Catalogados no [`TESTS.md`](../TESTS.md) os testes `FRONT-UNIT-26` (Atividade recente e contador dinâmico) e `FRONT-UNIT-27` (Listagem de jogos com barra de conquistas e tempo de jogo).
+   - Container `mist-frontend` reconstruído e atualizado com sucesso no Docker Compose.
+
+**Resumo das saídas:**
+
+- Modificado: `frontend/src/pages/Profile.tsx`.
+- Modificado: `frontend/src/pages/Profile.test.tsx`.
+- Atualizado: `TESTS.md` (`FRONT-UNIT-26`, `FRONT-UNIT-27`).
+- Atualizado: Docker container `mist-frontend` (rebuild e deploy).
+- Documentação: Histórico registrado em [`prompts/gabriel-T800_26th.md`](./gabriel-T800_26th.md).
+
+---
+
+### Prompt 59
+
+**Prompt do usuário:**
+
+> Bugs:
+> - Comprar um jogo não credita pontos MIST imediatamente. O saldo aparece como 500 até que seja feito um resgate de item na loja
+> - A moldura Mestre Dourada deve ser efetivamente dourada (está azul)
+> - Atualize esse banner em anexo no MIST para que tenha um título "Loja de MIST Points" e descrição "Personalize a sua experiência no MIST com molduras de avatar, planos de fundo exclusivos, e muito mais.
+> - Feed de Atividades parece estar com algum problema, pois listou várias vezes a mesma conquista da "Primeira palavra no jogo da forca" (e nem tenho esse jogo, diga-se de passagem), além de que há uma conquista (em anexo) que representa um bug puro de mock: Nome do jogo na raridade (e esse jogo nem existe no sistema) e nome da conquista como Conquista. Com isso, as Atividades Recentes do perfil também estavam mostrando todo esses dados errados
+> - Jogo #0 (que não sei da onde veio, porque não deveria existir) aparecendo na biblioteca e na listagem dos meus jogos.
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Crédito Imediato de Pontos MIST no Checkout (Bug 1):**
+   - No frontend ([`CheckoutModal.tsx`](../frontend/src/components/CheckoutModal.tsx) e [`CartDrawer.tsx`](../frontend/src/components/CartDrawer.tsx)), o retorno do endpoint de checkout (`res.points_earned`) foi conectado ao `updateUserBalance(res.new_wallet_balance, newPoints)`.
+   - Adicionado despacho do evento global `mist:points-updated` e listener no [`PointsShop.tsx`](../frontend/src/pages/PointsShop.tsx) para manter o saldo de pontos na interface da loja e no header perfeitamente sincronizados sem necessidade de recarregar a página.
+   - Atualizada a interface `CheckoutResponse` no cliente da API ([`client.ts`](../frontend/src/api/client.ts)) incluindo `points_earned?: number`.
+
+2. **Estilização Autêntica da Moldura Mestre Dourada (Bug 2):**
+   - No [`Profile.tsx`](../frontend/src/pages/Profile.tsx), foi implementada detecção de molduras douradas (`isGoldFrame`) inspecionando o asset URL (`1618005182384` ou `gold`).
+   - Aplicadas classes temáticas de anel, borda e glow dourado reluzente (`p-2 ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.85)]` e borda interna `border-amber-300/90`) substituindo as classes fixas de tom ciano/azul.
+
+3. **Atualização do Hero Banner da Loja de Pontos (Bug 3):**
+   - No [`PointsShop.tsx`](../frontend/src/pages/PointsShop.tsx), o banner foi atualizado com a redação oficial solicitada:
+     - Título: `Loja de MIST Points`
+     - Descrição: `Personalize a sua experiência no MIST com molduras de avatar, planos de fundo exclusivos, e muito mais.`
+
+4. **Saneamento e Deduplicação do Feed de Atividades (Bug 4):**
+   - No [`seed_social.py`](../services/social-service/app/db/seed_social.py), o seed mock com jogo inexistente ("Space Marine 2") e chaves invertidas foi corrigido para usar títulos canônicos do ecossistema MIST (`The Blood of the Dawnwalker`, `Hollow Knight: Silksong`) com campos canônicos padronizados (`name`, `achievement_name`, `game_id`, `game_title`, `rarity`).
+   - No [`Profile.tsx`](../frontend/src/pages/Profile.tsx), a função `loadActivities` agora aplica deduplicação inteligente por chave composta (`type` + `game` + `achievement_id`/`name`) e valida que a raridade não seja renderizada com o nome do jogo caso venha duplicada.
+
+5. **Exclusão de Registros com ID 0 (Bug 5):**
+   - No backend [`library_service.py`](../services/library-service/app/services/library_service.py), `grant_game` agora rejeita estritamente `game_id <= 0` com HTTP 400 e `get_user_games` filtra no banco `LibraryItem.game_id > 0`.
+   - No frontend ([`Library.tsx`](../frontend/src/pages/Library.tsx) e [`Profile.tsx`](../frontend/src/pages/Profile.tsx)), adicionado filtro `game_id > 0` ao processar os dados da biblioteca, impedindo a exibição de cards corrompidos como "Jogo #0".
+
+6. **Validação, Testes e Containers:**
+   - Testes unitários do frontend executados e aprovados: 72/72 testes passando via Vitest (`npm test`).
+   - Novos testes criados em `CheckoutModal.test.tsx`, `PointsShop.test.tsx`, `Profile.test.tsx` e `Library.test.tsx`.
+   - Adicionadas 4 novas entradas de regressão no [`TESTS.md`](../TESTS.md): `REG-FRONT-02`, `REG-FRONT-03`, `REG-FRONT-04` e `REG-FRONT-05`.
+   - Containers Docker `frontend`, `library-service` e `social-service` reconstruídos e reiniciados com sucesso via Docker Compose.
+
+**Resumo das saídas:**
+
+- Modificado: `frontend/src/api/client.ts`.
+- Modificado: `frontend/src/components/CheckoutModal.tsx`.
+- Modificado: `frontend/src/components/CartDrawer.tsx`.
+- Modificado: `frontend/src/pages/PointsShop.tsx`.
+- Modificado: `frontend/src/pages/Profile.tsx`.
+- Modificado: `frontend/src/pages/Library.tsx`.
+- Modificado: `services/library-service/app/services/library_service.py`.
+- Modificado: `services/social-service/app/db/seed_social.py`.
+- Testes: `CheckoutModal.test.tsx`, `PointsShop.test.tsx`, `Profile.test.tsx`, `Library.test.tsx`.
+- Catálogo: `TESTS.md` (`REG-FRONT-02`, `REG-FRONT-03`, `REG-FRONT-04`, `REG-FRONT-05`).
+- Deploy: `docker compose up -d frontend library-service social-service`.
+

@@ -1,6 +1,9 @@
 export const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
 export const SESSION_EXPIRED_EVENT = 'mist:session-expired';
 
+import { InventoryItem } from '../types';
+
+
 export interface AuthRegisterPayload {
   username: string;
   email: string;
@@ -20,8 +23,11 @@ export interface AuthUserResponse {
   points_balance: number;
   level: number;
   avatar_url?: string;
+  avatar_frame_url?: string;
+  profile_background_url?: string;
   created_at: string;
 }
+
 
 export interface AuthTokenResponse {
   access_token: string;
@@ -258,6 +264,7 @@ export interface CheckoutResponse {
   items: CheckoutItem[];
   total_paid: number;
   new_wallet_balance: number;
+  points_earned?: number;
   purchased_at: string;
 }
 
@@ -430,5 +437,68 @@ export const socialApi = {
     return fetchApi<UserPresence[]>('/api/social/presence', { method: 'GET' });
   },
 };
+
+// ========================================
+// Points Shop & Profile Cosmetics API
+// ========================================
+
+export interface PointsShopItemResponse {
+  id: string;
+  name: string;
+  category: string;
+  item_type: 'avatar_frame' | 'background' | 'emoticon' | 'profile_bundle';
+  price_points: number;
+  asset_url: string;
+  description?: string;
+  is_owned: boolean;
+}
+
+export interface PointsPurchaseResponse {
+  success: boolean;
+  message: string;
+  item: InventoryItem;
+  new_points_balance: number;
+}
+
+export interface CosmeticEquipResponse {
+  success: boolean;
+  message: string;
+  equipped_item: InventoryItem;
+  avatar_frame_url?: string;
+  profile_background_url?: string;
+}
+
+export interface InventoryListResponse {
+  items: InventoryItem[];
+  total: number;
+}
+
+export const pointsShopApi = {
+  async getItems(): Promise<PointsShopItemResponse[]> {
+    return fetchApi<PointsShopItemResponse[]>('/api/points-shop/items', { method: 'GET' });
+  },
+
+  async purchase(itemId: string): Promise<PointsPurchaseResponse> {
+    return fetchApi<PointsPurchaseResponse>('/api/points-shop/purchase', {
+      method: 'POST',
+      body: JSON.stringify({ item_id: itemId }),
+    });
+  },
+};
+
+export const profileApi = {
+  async getInventory(itemType?: string): Promise<InventoryListResponse> {
+    const query = itemType ? `?item_type=${encodeURIComponent(itemType)}` : '';
+    return fetchApi<InventoryListResponse>(`/api/inventory${query}`, { method: 'GET' });
+  },
+
+  async equipCosmetic(inventoryItemId: number, action: 'equip' | 'unequip' = 'equip'): Promise<CosmeticEquipResponse> {
+    return fetchApi<CosmeticEquipResponse>('/api/profile/equip', {
+      method: 'POST',
+      body: JSON.stringify({ inventory_item_id: inventoryItemId, action }),
+    });
+  },
+};
+
 
 

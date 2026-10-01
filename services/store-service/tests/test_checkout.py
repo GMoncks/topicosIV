@@ -148,6 +148,8 @@ async def test_checkout_single_game_success(client, seed_games_data):
             return httpx.Response(200, json={"new_balance": 150.0})
         if "library/grant" in str(url):
             return httpx.Response(201, json={"created": True})
+        if "points/credit" in str(url):
+            return httpx.Response(200, json={"new_balance": 5500})
         return httpx.Response(404)
 
     mock_client.get = mock_get
@@ -160,8 +162,10 @@ async def test_checkout_single_game_success(client, seed_games_data):
         assert data["status"] == "success"
         assert data["total_paid"] == 50.0
         assert data["new_wallet_balance"] == 150.0
+        assert data["points_earned"] == 5000
         assert len(data["items"]) == 1
         assert data["items"][0]["title"] == "Jogo Aventura MIST"
+
 
     # Valida que foi removido da wishlist
     db = TestingSessionLocal()
@@ -191,6 +195,8 @@ async def test_checkout_cart_multiple_games_success(client, seed_games_data):
             return httpx.Response(200, json={"new_balance": 120.0})
         if "library/grant" in str(url):
             return httpx.Response(201, json={"created": True})
+        if "points/credit" in str(url):
+            return httpx.Response(200, json={"new_balance": 8500})
         return httpx.Response(404)
 
     mock_client.get = mock_get
@@ -203,8 +209,10 @@ async def test_checkout_cart_multiple_games_success(client, seed_games_data):
         # 50.0 + 30.0 = 80.0
         assert data["total_paid"] == 80.0
         assert data["new_wallet_balance"] == 120.0
+        assert data["points_earned"] == 8000
         assert len(data["items"]) == 2
         assert debited_amounts == [80.0]
+
 
 
 @pytest.mark.asyncio
@@ -337,6 +345,8 @@ async def test_checkout_dispatches_activity_to_social_service(client, seed_games
         if "activities" in str(url):
             activities_sent.append(json)
             return httpx.Response(201, json={"id": 1, "type": "game_purchased"})
+        if "points/credit" in str(url):
+            return httpx.Response(200, json={"new_balance": 5500})
         return httpx.Response(404)
 
     mock_client.get = mock_get
@@ -352,5 +362,42 @@ async def test_checkout_dispatches_activity_to_social_service(client, seed_games
     assert act["type"] == "game_purchased"
     assert act["payload"]["game_title"] == "Jogo Aventura MIST"
     assert act["payload"]["price"] == 50.0
+
+
+@pytest.mark.asyncio
+async def test_checkout_credits_points_to_auth_service(client, seed_games_data):
+    """Valida que o checkout credita 100 Pontos MIST por R$ 1,00 gasto no auth-service."""
+    mock_client = AsyncMock(spec=httpx.AsyncClient)
+    points_credited = []
+
+    async def mock_get(url, *args, **kwargs):
+        if "has-game" in str(url):
+            return httpx.Response(200, json={"owned": False})
+        return httpx.Response(404)
+
+    async def mock_post(url, json=None, *args, **kwargs):
+        if "wallet/debit" in str(url):
+            return httpx.Response(200, json={"new_balance": 150.0})
+        if "library/grant" in str(url):
+            return httpx.Response(201, json={"created": True})
+        if "points/credit" in str(url):
+            points_credited.append(json)
+            return httpx.Response(200, json={"new_balance": 5500})
+        return httpx.Response(200)
+
+    mock_client.get = mock_get
+    mock_client.post = mock_post
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        resp = client.post("/checkout", json={"game_id": 1}, headers={"X-User-Id": "10"})
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["total_paid"] == 50.0
+        assert data["points_earned"] == 5000
+
+    assert len(points_credited) == 1
+    assert points_credited[0]["amount"] == 5000
+    assert "Checkout MIST" in points_credited[0]["reason"]
+
 
 
