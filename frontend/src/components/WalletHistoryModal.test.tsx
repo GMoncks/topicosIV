@@ -112,4 +112,13 @@ describe('WalletHistoryModal Component', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Fechar' }));
     expect(props.onClose).toHaveBeenCalled();
   });
+
+  it('alinha o topo da modal na mesma altura do botão financeiro através de topOffset', async () => {
+    (walletApi.getHistory as any).mockResolvedValue({ items: [], total: 0, skip: 0, limit: 10 });
+    renderModal({ topOffset: 24 });
+
+    const modal = screen.getByTestId('wallet-history-modal');
+    expect(modal).toHaveClass('items-start');
+    expect(modal).toHaveStyle({ paddingTop: '24px' });
+  });
 });

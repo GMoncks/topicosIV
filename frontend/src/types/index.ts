@@ -1,7 +1,7 @@
-﻿export interface GameItem {
+export interface GameItem {
   id: string;
   title: string;
-  category: 'EXPANSÃƒÆ’O' | 'DESEJO' | 'PACOTE' | 'JOGO';
+  category: 'EXPANSÃƒO' | 'DESEJO' | 'PACOTE' | 'JOGO';
   publisherOrParent?: string;
   tags?: string;
   image: string;
@@ -40,7 +40,6 @@ export interface UserProfile {
   avatarText: string;
   avatarUrl?: string;
   avatarFrameUrl?: string;
-  profileBackgroundUrl?: string;
   status: 'Online' | 'Offline' | 'Em Jogo';
   walletBalance: number;
   pointsBalance: number;
@@ -87,27 +86,15 @@ export interface NewsArticle {
 export interface PointsShopItem {
   id: string;
   name: string;
-  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado' | 'Moldura de avatar';
-  itemType: 'background' | 'emoticon' | 'profile_bundle' | 'avatar' | 'avatar_frame';
+  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado';
+  itemType: 'background' | 'emoticon' | 'profile_bundle' | 'avatar';
   pricePoints: number;
   image: string;
   previewUrl?: string;
   isOwned?: boolean;
 }
 
-export interface InventoryItem {
-  id: number;
-  user_id: number;
-  item_id: string;
-  name: string;
-  item_type: 'avatar_frame' | 'background' | 'emoticon' | 'profile_bundle';
-  asset_url: string;
-  price_points: number;
-  is_equipped: boolean;
-  acquired_at: string;
-}
-
-export type NavigationTab = 'store' | 'library' | 'social' | 'news' | 'points' | 'profile' | 'login';
+export type NavigationTab = 'store' | 'library' | 'market' | 'social' | 'groups' | 'news' | 'points' | 'profile' | 'login' | 'workshop';
 
 export interface LibraryGame {
   id: number;
@@ -130,7 +117,7 @@ export interface AchievementResponse {
   name: string;
   description: string | null;
   icon_url: string | null;
-  rarity: 'Comum' | 'Raro' | 'Ã‰pico' | 'LendÃ¡rio';
+  rarity: 'Comum' | 'Raro' | 'Épico' | 'Lendário';
   is_unlocked: boolean;
   unlocked_at: string | null;
 }

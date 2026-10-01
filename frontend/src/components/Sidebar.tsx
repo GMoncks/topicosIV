@@ -93,6 +93,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
 
           <button
+            onClick={() => onSelectTab('workshop')}
+            className={`w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group ${
+              activeTab === 'workshop'
+                ? 'bg-brand-purple/20 text-white neon-border'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+            }`}
+            title="Oficina"
+          >
+            <i className={`fa-solid fa-wrench text-lg group-hover:scale-110 transition ${activeTab === 'workshop' ? 'text-brand-purple' : ''}`}></i>
+            <span className={`hidden lg:block ${activeTab === 'workshop' ? 'font-bold' : 'font-medium'}`}>
+              Oficina
+            </span>
+          </button>
+
+          <button
             onClick={() => onSelectTab('news')}
             className={`w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group ${
               activeTab === 'news'

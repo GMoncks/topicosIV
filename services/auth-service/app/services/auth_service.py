@@ -174,165 +174,20 @@ def credit_wallet(db: Session, user_id: int, amount: float) -> Dict[str, Any]:
     }
 
 
-from app.models.inventory import InventoryItem
-from app.constants.points_shop_catalog import POINTS_SHOP_CATALOG, get_catalog_item
-
-
-def credit_points(db: Session, user_id: int, amount: int) -> Dict[str, Any]:
-    """Credita Pontos MIST de forma atômica na conta do usuário."""
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise ValueError("Usuário não encontrado")
-    if amount <= 0:
-        raise ValueError("O montante de pontos a creditar deve ser positivo")
-
-    previous_balance = int(user.points_balance)
-    db.query(User).filter(User.id == user_id).update(
-        {User.points_balance: User.points_balance + amount},
-        synchronize_session="fetch"
+def search_users(db: Session, query: str, limit: int = 10):
+    """Busca usuários por correspondência parcial de username ou email."""
+    if not query or not query.strip():
+        return []
+    term = f"%{query.strip()}%"
+    return (
+        db.query(User)
+        .filter(
+            or_(
+                User.username.ilike(term),
+                User.email.ilike(term),
+            )
+        )
+        .limit(limit)
+        .all()
     )
-    db.commit()
-    db.refresh(user)
-
-    return {
-        "user_id": user_id,
-        "previous_balance": previous_balance,
-        "amount": amount,
-        "new_balance": int(user.points_balance),
-        "operation": "credit"
-    }
-
-
-def get_points_shop_items(db: Session, user_id: Optional[int] = None) -> list:
-    """Retorna itens do catálogo da Loja de Pontos marcando quais o usuário já possui."""
-    owned_ids = set()
-    if user_id:
-        items = db.query(InventoryItem.item_id).filter(InventoryItem.user_id == user_id).all()
-        owned_ids = {i[0] for i in items}
-
-    catalog = []
-    for item in POINTS_SHOP_CATALOG:
-        catalog.append({
-            **item,
-            "is_owned": item["id"] in owned_ids
-        })
-    return catalog
-
-
-def purchase_points_item(db: Session, user_id: int, item_id: str) -> Dict[str, Any]:
-    """Deduz pontos e adiciona cosmético ao inventário do usuário."""
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise ValueError("Usuário não encontrado")
-
-    catalog_item = get_catalog_item(item_id)
-    if not catalog_item:
-        raise LookupError(f"Item cosmético '{item_id}' não encontrado no catálogo da Loja de Pontos")
-
-    existing = db.query(InventoryItem).filter(
-        InventoryItem.user_id == user_id,
-        InventoryItem.item_id == item_id
-    ).first()
-    if existing:
-        raise KeyError("Você já possui este item cosmético em seu inventário")
-
-    price = catalog_item["price_points"]
-    if user.points_balance < price:
-        raise ValueError(f"Saldo insuficiente de Pontos MIST. Necessário: {price}, Atual: {user.points_balance}")
-
-    # Dedução atômica condicional
-    result = db.query(User).filter(
-        User.id == user_id,
-        User.points_balance >= price
-    ).update(
-        {User.points_balance: User.points_balance - price},
-        synchronize_session="fetch"
-    )
-    if result == 0:
-        raise ValueError("Saldo insuficiente de Pontos MIST")
-
-    new_item = InventoryItem(
-        user_id=user_id,
-        item_id=catalog_item["id"],
-        name=catalog_item["name"],
-        item_type=catalog_item["item_type"],
-        asset_url=catalog_item["asset_url"],
-        price_points=price,
-        is_equipped=False
-    )
-    db.add(new_item)
-    db.commit()
-    db.refresh(user)
-    db.refresh(new_item)
-
-    return {
-        "success": True,
-        "message": f"Cosmético '{catalog_item['name']}' resgatado com sucesso!",
-        "item": new_item,
-        "new_points_balance": int(user.points_balance)
-    }
-
-
-def equip_cosmetic(db: Session, user_id: int, inventory_item_id: int, action: str = "equip") -> Dict[str, Any]:
-    """Equipa ou desequipa cosmético (moldura ou background) e atualiza o perfil."""
-    user = get_user_by_id(db, user_id)
-    if not user:
-        raise ValueError("Usuário não encontrado")
-
-    item = db.query(InventoryItem).filter(
-        InventoryItem.id == inventory_item_id,
-        InventoryItem.user_id == user_id
-    ).first()
-    if not item:
-        raise LookupError("Item cosmético não encontrado no seu inventário")
-
-    if action == "unequip":
-        item.is_equipped = False
-        if item.item_type == "avatar_frame":
-            user.avatar_frame_url = None
-        elif item.item_type == "background":
-            user.profile_background_url = None
-        db.commit()
-        db.refresh(user)
-        db.refresh(item)
-        return {
-            "success": True,
-            "message": f"'{item.name}' desequipado com sucesso",
-            "equipped_item": item,
-            "avatar_frame_url": user.avatar_frame_url,
-            "profile_background_url": user.profile_background_url
-        }
-
-    # Desequipa outros do mesmo tipo pertencentes ao usuário
-    db.query(InventoryItem).filter(
-        InventoryItem.user_id == user_id,
-        InventoryItem.item_type == item.item_type,
-        InventoryItem.id != item.id
-    ).update({"is_equipped": False}, synchronize_session="fetch")
-
-    item.is_equipped = True
-    if item.item_type == "avatar_frame":
-        user.avatar_frame_url = item.asset_url
-    elif item.item_type == "background":
-        user.profile_background_url = item.asset_url
-
-    db.commit()
-    db.refresh(user)
-    db.refresh(item)
-
-    return {
-        "success": True,
-        "message": f"'{item.name}' equipado com sucesso!",
-        "equipped_item": item,
-        "avatar_frame_url": user.avatar_frame_url,
-        "profile_background_url": user.profile_background_url
-    }
-
-
-def get_user_inventory(db: Session, user_id: int, item_type: Optional[str] = None):
-    """Lista todos os itens de cosméticos adquiridos pelo usuário."""
-    query = db.query(InventoryItem).filter(InventoryItem.user_id == user_id)
-    if item_type:
-        query = query.filter(InventoryItem.item_type == item_type)
-    return query.order_by(InventoryItem.acquired_at.desc()).all()
 

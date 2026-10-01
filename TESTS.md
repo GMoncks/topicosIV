@@ -205,8 +205,76 @@
 - Resultado esperado: Extrato de utilidade e aprovação sempre consistentes com os dados reais.
 - Rastreabilidade: `services/store-service/app/services/review_service.py`, `services/store-service/app/api/routes.py`
 
+#### STORE-UNIT-11 — Cálculo e rota de Top Vendidos a partir de checkouts (S-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_ai_curator_advanced.py -k "test_calculate_top_sellers_ranking or test_top_sellers_api_endpoint"`
+- Pré-condições: Módulo `ai_trends.py` e compras registradas na tabela `purchases`.
+- Passos:
+  - Dado compras com status "completed" registradas no banco para diferentes jogos
+  - Quando a função de cálculo de Top Vendidos e o endpoint GET /store/trends/top-sellers forem acionados
+  - Então o ranking reflete a contagem decrescente exata de vendas de cada jogo
+- Resultado esperado: Retorno HTTP 200 com array ordenado por popularidade de vendas.
+- Rastreabilidade: `services/store-service/app/services/ai_trends.py`, `services/store-service/app/api/routes.py`
+
+#### STORE-UNIT-12 — Algoritmo de jogos 'Em Alta' (Trending) com compras recentes e notas (S-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_ai_curator_advanced.py -k "test_calculate_trending_games or test_trending_api_endpoint"`
+- Pré-condições: Módulo `ai_trends.py` com fórmula de peso para compras recentes, review_score e desconto.
+- Passos:
+  - Dado jogos com compras na janela de 7 dias e avaliações positivas
+  - Quando a função de cálculo de trending e o endpoint GET /store/trends/trending forem chamados
+  - Então os jogos com maior tração recente e satisfação recebem os maiores scores de tendência
+- Resultado esperado: Retorno HTTP 200 com ordenação correta e justificativa de tendência.
+- Rastreabilidade: `services/store-service/app/services/ai_trends.py`, `services/store-service/app/api/routes.py`
+
+#### STORE-UNIT-13 — Justificativas contextuais em linguagem natural do AI Curator (S-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_ai_curator_advanced.py -k "test_contextual_ai_curator_justifications"`
+- Pré-condições: Módulo `ai_curator.py` com gerador de justificativa por biblioteca e tags.
+- Passos:
+  - Dado uma lista de jogos jogados pelo usuário e um jogo alvo da loja
+  - Quando o gerador de justificativa for acionado
+  - Então gera explicação em linguagem natural conectando o jogo anterior com o jogo sugerido ("Porque você jogou...")
+- Resultado esperado: Textos explicativos coesos, amigáveis e contextuais.
+- Rastreabilidade: `services/store-service/app/services/ai_curator.py`, `services/store-service/app/services/store_service.py`
+
+#### STORE-UNIT-14 — Notificador proativo de descontos em itens da Wishlist (S-03)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_ai_curator_advanced.py -k "test_wishlist_discount_alerts or test_wishlist_discount_alerts_api_endpoint"`
+- Pré-condições: Jogos com desconto na tabela `games` e salvos na lista de desejos do usuário.
+- Passos:
+  - Dado um usuário com jogos em promoção na Wishlist
+  - Quando a rota GET /store/wishlist/alerts for consultada com cabeçalho de autenticação
+  - Então retorna apenas os itens com desconto ativo, percentual, economia em reais e mensagem de oportunidade
+- Resultado esperado: Alertas proativos com cálculo exato de economia e mensagem personalizada.
+- Rastreabilidade: `services/store-service/app/services/wishlist_ai.py`, `services/store-service/app/api/routes.py`
+
+#### STORE-UNIT-15 — Catálogo expandido, jogos promocionais e persistência de modificações em banco pós-restart
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `.venv/bin/pytest services/store-service/tests/test_promotional_games_and_persistence.py`
+- Pré-condições: Módulo `seed.py` e `database.py` com esquema de persistência idempotente e jogos promocionais configurados.
+- Passos:
+  - Dado o catálogo de 25 jogos com múltiplos títulos em promoção ativa (descontos de 15% a 75%)
+  - Quando a aplicação inicializa, `seed_games` popula o catálogo inicial e os jogos promocionais
+  - Quando um dado do jogo é modificado posteriormente no banco de dados (ex: preço, desconto, descrição)
+  - Quando a aplicação reinicia e executa novamente o ciclo de boot
+  - Então as modificações feitas em banco são preservadas intactas, não sendo sobrescritas pelo seed
+- Resultado esperado: Catálogo com 25 jogos carregado no boot e modificações feitas em tempo de execução 100% persistidas.
+- Rastreabilidade: `services/store-service/app/db/seed.py`, `services/store-service/app/db/database.py`, `services/store-service/app/schemas/game.py`
+
 ### Social e Amigos (Social Service)
 #### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
+
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
@@ -296,6 +364,46 @@
   - Então o servidor emite indicador de digitação, chama o `AIClient.companion_chat_reply` e persiste/transmite a resposta do bot (`sender_id: 0`)
 - Resultado esperado: Conversação fluida e automática do bot com respostas contextuais em tempo real.
 - Rastreabilidade: `services/social-service/app/api/routes.py`, `services/common/ai_client.py`
+
+#### SOCIAL-UNIT-08 — Modelo e ciclo de vida de Notificações com unread_count (Q-01 & Q-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_notification_model_creation or test_create_and_list_notifications"`
+- Pré-condições: Modelo `Notification` e rotas `/notifications` implementadas no `social-service`.
+- Passos:
+  - Dado notificações criadas para um usuário (pedidos de amizade, ofertas de desconto na wishlist, etc.)
+  - Quando a listagem de notificações for requisitada com o header `X-User-Id`
+  - Então retorna a lista ordenada por data decrescente com cálculo exato de `unread_count` e suporte a paginação
+- Resultado esperado: Retorno HTTP 200/201 e integridade dos metadados de notificação.
+- Rastreabilidade: `services/social-service/app/models/notification.py`, `services/social-service/app/services/notification_service.py`
+
+#### SOCIAL-UNIT-09 — Marcação individual e em lote de notificações como lidas com isolamento entre usuários (Q-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_mark_notification_as_read or test_mark_all_notifications_as_read or test_notification_user_isolation"`
+- Pré-condições: Endpoints `/notifications/{id}/read` e `/notifications/read-all` implementados.
+- Passos:
+  - Dado notificações não lidas associadas a um usuário
+  - Quando o usuário marcar uma notificação individual ou todas como lidas
+  - Então o status é atualizado para `is_read = True`, decrementando o `unread_count`
+  - E quando outro usuário tenta acessar ou marcar como lida notificação de terceiro, a operação é rejeitada com 404
+- Resultado esperado: Atualização correta de status e isolamento estrito entre usuários.
+- Rastreabilidade: `services/social-service/app/api/notifications.py`
+
+#### SOCIAL-UNIT-10 — Push de notificações em tempo real via WebSocket e NotificationManager (Q-03 & Q-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_websocket_notifications_broadcast"`
+- Pré-condições: `NotificationManager` e endpoint `WS /ws/notifications` ativos no `social-service`.
+- Passos:
+  - Dado um usuário conectado ao WebSocket de notificações com seu ID
+  - Quando uma nova notificação for criada no sistema para esse usuário
+  - Então o payload completo da notificação é transmitido em tempo real através do socket ativo sem requisição de polling
+- Resultado esperado: Entrega imediata de eventos via WebSocket com formato JSON padronizado.
+- Rastreabilidade: `services/social-service/app/services/notification_manager.py`, `services/social-service/app/api/notifications.py`
 
 
 ### Inteligência Artificial e Agentes (MIST AI)
@@ -521,6 +629,163 @@
   - Então cada listagem mostra só as ofertas do usuário autenticado na direção correta, o filtro por status funciona, e apenas o destinatário pode responder à oferta (403 para qualquer outro)
 - Resultado esperado: Isolamento correto por usuário e direção, sem permitir resposta de terceiros.
 - Rastreabilidade: `services/market-service/app/services/trade_service.py`, `services/market-service/app/api/trades.py`
+
+### UGC e Capturas de Tela (UGC Service)
+#### UGC-UNIT-01 — Upload multipart de captura de tela com metadados e validação de formato (N-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_upload_screenshot_success or test_upload_rejects_invalid_extension or test_upload_rejects_empty_file"`
+- Pré-condições: ugc-service iniciado com pasta de uploads configurada.
+- Passos:
+  - Dado o envio de imagens PNG, JPG ou WebP e arquivos não permitidos (.exe, .txt)
+  - Quando o endpoint `POST /screenshots/upload` é acionado via multipart/form-data
+  - Então imagens válidas são armazenadas e registradas com metadados no banco (201); arquivos inválidos são rejeitados com HTTP 400
+- Resultado esperado: Armazenamento seguro de arquivos de imagem e geração de URL pública.
+- Rastreabilidade: `services/ugc-service/app/api/screenshots.py`, `services/ugc-service/app/services/screenshot_service.py`
+
+#### UGC-UNIT-02 — Listagem paginada e filtros por jogo, usuário e ordenação (N-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_list_screenshots_default or test_list_screenshots_filter_by_game_and_user or test_list_screenshots_sort_popular"`
+- Pré-condições: Capturas de múltiplos jogos e autores cadastradas.
+- Passos:
+  - Dado capturas salvas com diferentes contagens de likes e datas
+  - Quando `GET /screenshots` é consultado com filtros `game_id`, `user_id` e `sort_by=popular|recent`
+  - Então retorna apenas as capturas correspondentes aos filtros e ordenadas corretamente
+- Resultado esperado: Paginação e filtros eficientes com tempo de resposta inferior a 200ms.
+- Rastreabilidade: `services/ugc-service/app/services/screenshot_service.py`
+
+#### UGC-UNIT-03 — Curtir e descurtir capturas com idempotência e contagem reativa (N-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_like_and_unlike_screenshot_lifecycle"`
+- Pré-condições: Captura cadastrada e usuário autenticado.
+- Passos:
+  - Dado uma captura com likes_count inicial 0
+  - Quando o usuário aciona `POST /screenshots/{id}/like` e posteriormente `DELETE /screenshots/{id}/like`
+  - Então o contador sobe para 1 (`liked=True`) e retorna para 0 (`liked=False`), com garantia de unicidade por usuário
+- Resultado esperado: Curtidas atômicas e idempotentes sem duplicidade.
+- Rastreabilidade: `services/ugc-service/app/models/screenshot.py`, `services/ugc-service/app/services/screenshot_service.py`
+
+#### UGC-UNIT-04 — Exclusão de captura de tela com autorização e limpeza de arquivos
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_delete_screenshot_owner_only"`
+- Pré-condições: Captura cadastrada pelo usuário A.
+- Passos:
+  - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo usuário A (autor)
+  - Quando `DELETE /screenshots/{id}` for acionado
+  - Então o usuário B é barrado com HTTP 403 e o usuário A remove a captura e o arquivo físico do disco
+- Resultado esperado: Isolamento de posse e integridade do armazenamento.
+- Rastreabilidade: `services/ugc-service/app/services/screenshot_service.py`
+
+#### UGC-UNIT-05 — SDK MIST - Captura de tela com fallback tolerante a falhas offline (N-02)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_sdk_take_screenshot_offline_fallback"`
+- Pré-condições: SDK MIST em ambiente isolado sem conexão com o servidor UGC.
+- Passos:
+  - Dado a chamada `mist_sdk.take_screenshot("Minha jogada")` durante a execução de um jogo
+  - Quando o UGC service estiver inacessível
+  - Então o SDK não levanta exceção, salvando a captura em buffer local tolerante a falhas
+- Resultado esperado: Resiliência total do cliente sem interrupção da partida do jogador.
+- Rastreabilidade: `services/store-service/app/data/mist_sdk.py`
+
+#### GATEWAY-UNIT-03 — Proxy reverso para UGC Service com sanitização e injeção de identidade confiável
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_ugc_proxy.py`
+- Pré-condições: API Gateway em execução com rota `/api/ugc/*`.
+- Passos:
+  - Dado requisições de listagem pública, upload de screenshot e curtidas com e sem token JWT
+  - Quando acionadas através do Gateway
+  - Então listagem pública é permitida; rotas mutativas sem token retornam 401; e com token válido injetam `X-User-Id` e `X-User-Name` confiáveis expurgando tentativas de spoofing
+- Resultado esperado: Segurança na borda e roteamento transparente.
+- Rastreabilidade: `gateway/app/main.py`, `gateway/tests/test_ugc_proxy.py`
+
+#### UGC-UNIT-06 — Upload de mod e skin multipart com metadados, validação de extensão e versionamento (O-01, O-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_upload_workshop_item_success or test_upload_workshop_item_requires_auth or test_upload_workshop_item_invalid_extension"`
+- Pré-condições: Microsserviço UGC inicializado e diretório de uploads montado.
+- Passos:
+  - Dado um arquivo de mod compactado (.zip, .pak, .rar) com metadados (jogo, título, categoria, versão, tags)
+  - Quando enviado via multipart/form-data com headers confiáveis de autenticação
+  - Então o arquivo é salvo no disco seguro com identificador único, registro criado no banco de dados e metadados persistidos
+- Resultado esperado: Retorno HTTP 201 Created com objeto `WorkshopItemResponse` completo.
+- Rastreabilidade: `services/ugc-service/app/services/workshop_service.py`, `services/ugc-service/app/api/workshop.py`
+
+#### UGC-UNIT-07 — Listagem paginada, busca textual e filtros combinados por jogo e categoria (O-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_list_workshop_items_filters_and_search"`
+- Pré-condições: Itens do Workshop de múltiplos jogos e categorias cadastrados.
+- Passos:
+  - Dado múltiplos itens de mods e skins
+  - Quando o endpoint GET `/workshop/items` é consultado com filtros de `game_id`, `category`, `search` ou `sort_by` (popular, downloads, recent, rating)
+  - Então retorna exatamente os itens compatíveis respeitando a paginação e metadados calculados
+- Resultado esperado: Listagem flexível e performática para a vitrine da Oficina.
+- Rastreabilidade: `services/ugc-service/app/services/workshop_service.py`
+
+#### UGC-UNIT-08 — Inscrição e cancelamento idempotente de mods (O-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_subscribe_and_unsubscribe_workshop_item"`
+- Pré-condições: Mod publicado e usuário autenticado.
+- Passos:
+  - Dado um mod existente
+  - Quando o usuário executa inscrição via POST `/workshop/items/{id}/subscribe` e posterior cancelamento via DELETE
+  - Então a relação de subscrição é criada/removida atomicamente e o contador `subscriptions_count` é incrementado/decrementado
+- Resultado esperado: Idempotência garantida via UniqueConstraint no banco de dados.
+- Rastreabilidade: `services/ugc-service/app/models/workshop.py`, `services/ugc-service/app/services/workshop_service.py`
+
+#### UGC-UNIT-09 — Download com incremento atômico de contadores de downloads (O-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_download_workshop_item_increments_count"`
+- Pré-condições: Item de mod registrado com arquivo físico no disco.
+- Passos:
+  - Dado um mod publicado na Oficina
+  - Quando o endpoint POST `/workshop/items/{id}/download` é requisitado
+  - Então a URL segura do pacote é retornada e o contador `downloads_count` é incrementado
+- Resultado esperado: Telemetria de downloads precisa para ranqueamento de popularidade.
+- Rastreabilidade: `services/ugc-service/app/services/workshop_service.py`
+
+#### UGC-UNIT-10 — Exclusão de modificação pelo criador e bloqueio de exclusão por terceiros (O-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_delete_workshop_item_authorization"`
+- Pré-condições: Mod criado pelo autor A.
+- Passos:
+  - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo autor A
+  - Quando DELETE `/workshop/items/{id}` for acionado
+  - Então usuário B recebe HTTP 403 Forbidden e o autor A exclui o mod e remove as inscrições associadas
+- Resultado esperado: Proteção rigorosa de propriedade intelectual de criadores da comunidade.
+- Rastreabilidade: `services/ugc-service/app/services/workshop_service.py`
+
+#### GATEWAY-UNIT-04 — Proxy reverso para Workshop de Conteúdo com injeção de identidade e acesso público
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `PYTHONPATH=gateway pytest gateway/tests/test_ugc_proxy.py -k "test_proxy_workshop_items_public_list or test_proxy_workshop_upload_injects_auth"`
+- Pré-condições: Gateway MIST ativo.
+- Passos:
+  - Dado requisições GET públicas e POST/DELETE autenticadas para `/api/ugc/workshop/*`
+  - Quando roteadas pelo Gateway
+  - Então permite leitura pública sem token e injeta headers de identidade validados nas rotas de publicação e subscrição
+- Resultado esperado: Borda segura e proxy transparente para o microsserviço UGC.
+- Rastreabilidade: `gateway/app/main.py`, `gateway/tests/test_ugc_proxy.py`
 
 ### Frontend Components
 #### FRONT-UNIT-01 — Renderização do Card de Jogo com Preço e Desconto
@@ -887,7 +1152,174 @@
 - Resultado esperado: Gestão completa de trocas existentes, sem seletor de criação (depende do inventário do próprio usuário e do amigo, Dev 2, ainda pendente).
 - Rastreabilidade: `frontend/src/pages/Market.tsx`
 
+#### FRONT-UNIT-29 — AI Curator Avançado: abas dinâmicas, tendências e banner inteligente de Wishlist (S-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/CuratorSection.test.tsx`
+- Pré-condições: Componente `CuratorSection.tsx` implementado com abas de recomendação, top sellers, trending e alertas de wishlist.
+- Passos:
+  - Dado o componente CuratorSection montado na Loja
+  - Quando o usuário alterna entre as abas "Para Você", "Top Vendidos" e "Em Alta"
+  - Então renderiza os cartões correspondentes com badges temáticos (afinidade, volume de vendas e pontuação de tendência)
+  - E quando houver itens em promoção na lista de desejos, exibe o banner inteligente com economia e ação direta de compra/dispensa
+- Resultado esperado: Navegação fluida entre os filtros do Curator e renderização responsiva do banner promocional.
+- Rastreabilidade: `frontend/src/components/CuratorSection.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-30 — Tooltips informativos nos cards de jogos e Seção de Informação Relevante na modal de detalhes
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/Tooltip.test.tsx src/components/GameDetailModal.test.tsx`
+- Pré-condições: Componentes `Tooltip.tsx`, `CuratorSection.tsx`, `GameCard.tsx` e `GameDetailModal.tsx` implementados.
+- Passos:
+  - Dado cards de jogos com mensagens truncadas ou recomendações personalizadas do curador
+  - Quando o usuário passar o cursor sobre os textos ou badges com reticências
+  - Então um tooltip elegante com efeito glassmorphism e iluminação neon é exibido revelando o texto integral
+  - E quando o usuário clica no card de jogo
+  - Então o modal de detalhes abre destacando a mensagem e contexto na "Seção de Informação Relevante para o Usuário" com layout premium
+- Resultado esperado: Acesso completo ao texto pelo hover com tooltip e destaque agradável da mensagem no modal de detalhes.
+- Rastreabilidade: `frontend/src/components/Tooltip.tsx`, `frontend/src/components/CuratorSection.tsx`, `frontend/src/components/GameCard.tsx`, `frontend/src/components/GameDetailModal.tsx`
+
+#### FRONT-UNIT-31 — Dropdown de Notificações com badge dinâmico, lista categorizada e marcação de leitura (Q-05 & Q-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/NotificationsDropdown.test.tsx`
+- Pré-condições: Componente `NotificationsDropdown.tsx` integrado ao `Header.tsx` e cliente `socialApi` implementado.
+- Passos:
+  - Dado o cabeçalho principal da aplicação montado com usuário autenticado
+  - Quando houver notificações não lidas
+  - Então o ícone do sino exibe o badge vermelho pulsante com o número exato de pendências
+  - E quando o usuário clica no botão, o painel dropdown abre exibindo os itens categorizados com ícones temáticos
+  - E quando clica em uma notificação ou em "Marcar lidas", a API atualiza o status de leitura e zera o badge
+- Rastreabilidade: `frontend/src/components/NotificationsDropdown.tsx`, `frontend/src/components/Header.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-32 — Redirecionamento Contextual de Notificações para Jogos, Biblioteca, Carteira e Comunicados
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/NotificationsDropdown.test.tsx`
+- Pré-condições: Dropdown de notificações montado com notificações de tipos diversificados (wishlist, catálogo, conquista, carteira, amizade).
+- Passos:
+  - Dado o dropdown de notificações aberto exibindo itens de múltiplas categorias
+  - Quando o usuário clica em uma notificação de wishlist, redireciona para a Loja e dispara o evento `mist:open-game-detail` com as informações da oferta
+  - E quando clica em comunicado oficial ou notícia de catálogo, dispara o evento `mist:open-system-notice` abrindo os detalhes do comunicado
+  - E quando clica em notificação de conquista, redireciona para a Biblioteca e dispara `mist:open-library-game` focando o jogo
+  - E quando clica em notificação de carteira/recarga, dispara `mist:open-wallet` abrindo o extrato da carteira
+- Resultado esperado: Redirecionamento instantâneo e contextual para o local com detalhes do item notificado.
+- Rastreabilidade: `frontend/src/components/NotificationsDropdown.tsx`, `frontend/src/App.tsx`, `frontend/src/pages/Store.tsx`, `frontend/src/pages/Library.tsx`
+
+#### FRONT-UNIT-33 — Modal de Comunicados Oficiais do Sistema (SystemNoticeModal) com Jogos Deixando o Catálogo
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/SystemNoticeModal.test.tsx`
+- Pré-condições: Componente `SystemNoticeModal.tsx` montado com dados de comunicado do sistema.
+- Passos:
+  - Dado o modal de comunicado aberto com dados de jogos deixando o catálogo MIST
+  - Quando os elementos são renderizados, exibe o título oficial, observação importante, selo de comunicado e os jogos afetados com desconto de despedida de até 75% OFF
+  - E quando o usuário clica em "Ver na Loja" para um título específico, fecha o comunicado e abre a loja no jogo selecionado
+  - E quando clica no botão principal de ação ou no botão de fechar, executa o redirecionamento ou encerra o modal
+- Resultado esperado: Apresentação estética e funcional de avisos críticos de sistema e catálogo.
+#### FRONT-UNIT-34 — Alinhamento Vertical Dinâmico e Desacoplamento via Portal da Modal de Carteira (WalletHistoryModal)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/WalletHistoryModal.test.tsx`
+- Pré-condições: Componente `WalletHistoryModal.tsx` montado com `topOffset` e renderização via `createPortal`.
+- Passos:
+  - Dado a modal de extrato da carteira acionada pelo clique no botão financeiro do Header
+  - Quando a modal é aberta com `topOffset` correspondente à coordenada vertical do botão clicado
+  - Então a árvore do modal é renderizada via `createPortal` diretamente no `document.body` com `z-[130]`, utiliza alinhamento `items-start`, aplica `paddingTop` dinâmico em pixels e limita a altura máxima (`max-h-[calc(100vh-32px)]`)
+#### FRONT-UNIT-35 — Interface de Grupos, Fórum de Discussões e Chat Coletivo (Groups.tsx)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/pages/Groups.test.tsx`
+- Pré-condições: Componente `Groups.tsx` montado com mocks da `groupsApi`.
+- Passos:
+  - Dado o catálogo de grupos renderizado com cards informativos e filtros de categoria
+  - Quando o usuário filtra por categorias ou busca por termos
+  - E quando clica em um card de grupo, abre a visão completa com cabeçalho, fórum de discussões e contadores
+  - E quando abre um tópico, exibe o conteúdo original e todas as respostas da comunidade
+  - E quando alterna para as abas de bate-papo coletivo e membros, exibe o histórico de mensagens e os papéis dos membros
+- Resultado esperado: Navegação fluida, visualização completa das discussões e interação em tempo real com o chat e fórum.
+- Rastreabilidade: `frontend/src/pages/Groups.tsx`, `frontend/src/pages/Groups.test.tsx`, `frontend/src/pages/Social.tsx`
+
+#### FRONT-UNIT-36 — Dropdown de Busca Global com 4 seções categorizadas, debounce e navegação (R-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/GlobalSearchDropdown.test.tsx`
+- Pré-condições: Componente `GlobalSearchDropdown.tsx` renderizado com mock da `searchApi`.
+- Passos:
+  - Dado o componente `GlobalSearchDropdown` montado com a prop query ativa
+  - Quando a busca é disparada após o debounce de 250ms
+  - Então renderiza com sucesso as 4 seções categorizadas (Jogos, Jogadores, Grupos e Mercado da Comunidade)
+  - E quando não há resultados correspondentes, exibe mensagem amigável informativa
+  - E quando a tecla Escape é pressionada ou o usuário clica fora da modal, o callback `onClose` é acionado
+  - E quando o usuário clica em qualquer item retornado, o callback `onNavigate` é acionado para a rota de destino
+- Resultado esperado: Experiência de busca agregada fluida, categorizada, responsiva e acessível por teclado.
+- Rastreabilidade: `frontend/src/components/GlobalSearchDropdown.tsx`, `frontend/src/components/GlobalSearchDropdown.test.tsx`, `frontend/src/components/Header.tsx`
+
+#### FRONT-UNIT-37 — Modal de Upload de Capturas com validação, preview instantâneo e feedback (N-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ScreenshotUploadModal.test.tsx`
+- Pré-condições: Componente `ScreenshotUploadModal.tsx` montado com usuário autenticado.
+- Passos:
+  - Dado a seleção de arquivo de imagem via drag-and-drop ou input file
+  - Quando uma imagem válida (.png, .jpg, .webp) é selecionada
+  - Então gera pré-visualização instantânea na tela, habilita botão de envio e rejeita arquivos executáveis ou que excedam 15 MB
+  - E quando enviado, dispara chamada multipart para a API e fecha modal com sucesso
+- Resultado esperado: Upload intuitivo com validação antecipada no frontend e estados de carregamento claros.
+- Rastreabilidade: `frontend/src/components/ScreenshotUploadModal.tsx`, `frontend/src/components/ScreenshotUploadModal.test.tsx`
+
+#### FRONT-UNIT-38 — Galeria de Capturas com ordenação (Recentes/Populares), curtidas e visualizador Lightbox (N-05)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ScreenshotsGallery.test.tsx`
+- Pré-condições: Componente `ScreenshotsGallery.tsx` carregado.
+- Passos:
+  - Dado a listagem de capturas com títulos, autores e contadores de curtidas
+  - Quando o usuário alterna entre as abas 'Mais Recentes' e 'Mais Populares'
+  - Então recarrega a lista reordenada pela API;
+  - E quando o usuário clica no botão de like, o contador reage instantaneamente;
+  - E quando o usuário clica em um card, abre o visualizador Lightbox fullscreen com controles de navegação e teclado (Escape, setas)
+- Resultado esperado: Experiência visual imersiva e responsiva idêntica ao hub de capturas da comunidade Steam.
+- Rastreabilidade: `frontend/src/components/ScreenshotsGallery.tsx`, `frontend/src/components/ScreenshotsGallery.test.tsx`
+
+#### FRONT-UNIT-39 — Catálogo e Navegação da Oficina (Workshop) com filtros, busca e detalhe de mod (O-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Workshop.test.tsx`
+- Pré-condições: Componente `Workshop.tsx` carregado.
+- Passos:
+  - Dado o catálogo de itens do Workshop com filtros por jogo, categoria (Mod, Skin, etc.) e busca textual
+  - Quando o usuário filtra por categoria, busca termos ou clica em um card
+  - Então os itens são filtrados reativamente, modal de detalhes do mod é aberto exibindo guia de uso, tags e opções de download e inscrição
+- Resultado esperado: Experiência completa e fluida de navegação na Oficina.
+- Rastreabilidade: `frontend/src/pages/Workshop.tsx`, `frontend/src/pages/Workshop.test.tsx`
+
+#### FRONT-UNIT-40 — Integração do Criador no Perfil: contagem, estatísticas acumuladas e modal de criações (O-06)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
+- Pré-condições: Página de perfil carregada com usuário autenticado.
+- Passos:
+  - Dado o menu lateral do perfil exibindo "Itens da Oficina"
+  - Quando o usuário clica no item
+  - Então abre modal de gerenciamento de criações exibindo o total de publicações, soma acumulada de downloads e soma acumulada de inscrições ativas, com atalho de redirecionamento para a Oficina
+- Resultado esperado: Reconhecimento do criador de conteúdo e métricas consolidadas.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
 ## Integração
+
 
 ### Gateway e Autenticação
 #### GATEWAY-INT-01 — Encaminhamento de requisição com injeção de header de identidade
@@ -944,6 +1376,21 @@
 - Resultado esperado: Mesmo padrão de proxy genérico já usado por `/api/store/*`, agora cobrindo `/api/market/*`.
 - Rastreabilidade: `gateway/app/main.py`
 
+#### GATEWAY-INT-05 — Agregação assíncrona da Busca Global e resiliência a falhas downstream (R-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest gateway/tests/test_global_search.py`
+- Pré-condições: Endpoint `GET /api/search` implementado no Gateway com `asyncio.gather(*tasks, return_exceptions=True)`.
+- Passos:
+  - Dado uma requisição `GET /api/search?q={query}&limit={limit}`
+  - Quando o Gateway processa a busca
+  - Então dispara paralelamente consultas assíncronas para Store, Auth, Social e Market
+  - E quando qualquer microsserviço falha com 500, timeout ou fica offline
+  - Então degrada graciosamente retornando lista vazia na seção correspondente sem derrubar a busca global
+- Resultado esperado: Retorno agregado 200 com seções games, users, groups e market_items consolidadas e total acumulado.
+- Rastreabilidade: `gateway/app/main.py`, `gateway/tests/test_global_search.py`
+
 ### Autenticação e Persistência
 #### AUTH-INT-01 — Registro de usuário com saldo inicial de R$ 200,00 e login com JWT
 - Prioridade: P0
@@ -957,6 +1404,19 @@
   - Então o usuário é persistido com R$ 200,00 de saldo inicial, recebe JWT válido e obtém os dados do perfil autenticado
 - Resultado esperado: Persistência no SQLite, concessão de R$ 200,00 e validação completa de login.
 - Rastreabilidade: `services/auth-service/app/api/routes.py`
+
+#### AUTH-INT-02 — Busca pública de jogadores por username ou e-mail com limite e case-insensitive (R-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_search.py`
+- Pré-condições: Endpoint interno `GET /users/search` implementado no auth-service e posicionado antes de `/users/{user_id}`.
+- Passos:
+  - Dado termos de busca parciais, case-insensitive, ou sem correspondência
+  - Quando `GET /users/search?q={query}&limit={limit}` é acionado
+  - Então retorna apenas perfis públicos (sem dados sensíveis de credenciais/hash) respeitando a ordenação por level e limite
+- Resultado esperado: Lista ordenada de usuários correspondentes sem colisões com rotas dinâmicas de id numérico.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
 
 ### Catálogo de Jogos (Store Service)
 #### STORE-INT-01 — Listagem completa e filtros do catálogo de jogos (GET /games)
@@ -1261,6 +1721,48 @@
 - Resultado esperado: Feed agregador consistente multi-domínio com status 200.
 - Rastreabilidade: `services/social-service/app/api/routes.py`, `services/social-service/app/services/social_service.py`
 
+#### SOCIAL-INT-05 — Ciclo de vida de grupos da comunidade: criação, busca, adesão e saída (M-01 & M-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_create_and_list_groups or test_join_and_leave_group"`
+- Pré-condições: Banco de dados com tabelas `groups` e `group_members` ativas.
+- Passos:
+  - Dado um usuário autenticado criando um grupo com nome, descrição, categoria e URLs de imagens
+  - Quando o grupo é persistido, o criador é automaticamente associado como `owner`
+  - E quando outro usuário aciona `POST /groups/{id}/join` e posteriormente `POST /groups/{id}/leave`
+  - Então o contador de membros é incrementado/decrementado atomicamente e o histórico de associação é atualizado
+- Resultado esperado: Retorno HTTP 201 na criação, 200 na adesão/saída e validação estrita de associação e papéis.
+- Rastreabilidade: `services/social-service/app/api/groups.py`, `services/social-service/app/models/group.py`
+
+#### SOCIAL-INT-06 — Fórum de discussões com tópicos, replies e moderação (M-03 & M-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_forum_topic_and_replies or test_forum_pin_and_lock_topic"`
+- Pré-condições: Grupo existente e membro autenticado.
+- Passos:
+  - Dado a criação de um tópico de discussão via `POST /groups/{id}/posts`
+  - Quando membros submetem respostas via `POST /posts/{id}/replies`
+  - E o proprietário/moderador aciona `PATCH /posts/{id}` para fixar (`is_pinned`) e trancar (`is_locked`)
+  - Então o contador de respostas é mantido em sincronia e o tópico trancado bloqueia novas respostas com HTTP 400
+- Resultado esperado: Persistência relacional de threads de fórum, moderação por papéis e integridade referencial.
+- Rastreabilidade: `services/social-service/app/api/forum.py`, `services/social-service/app/models/forum.py`
+
+#### SOCIAL-INT-07 — Bate-papo coletivo do grupo com WebSocket e histórico (M-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_group_chat_websocket_and_history"`
+- Pré-condições: Grupo existente com mensagens persistidas na tabela `group_messages`.
+- Passos:
+  - Dado uma conexão WebSocket em `/ws/group/{id}/chat`
+  - Quando o usuário envia uma mensagem de texto pelo socket
+  - Então a mensagem é transmitida para todos os membros conectados na sala e persistida no banco SQLite
+  - E a chamada REST `GET /groups/{id}/chat/messages` retorna o histórico completo ordenado
+- Resultado esperado: Entrega assíncrona bidirecional e recuperação instantânea do histórico com status 200.
+- Rastreabilidade: `services/social-service/app/api/groups.py`, `services/social-service/app/services/group_chat_manager.py`
+
 ### Integração Cross-Service (Store, Library, Social)
 #### LIB-SOC-INT-01 — Integração de presença: início e encerramento de sessão de jogo notificando Social Service (F-05)
 - Prioridade: P0
@@ -1352,6 +1854,38 @@
 - Resultado esperado: Estilos computados correspondem à cor `#1F4D36`.
 - Rastreabilidade: `prompts.md` (Prompt 3)
 - Observações: Regressão originada da substituição de paleta definida no Prompt 3.
+
+#### REG-FRONT-02 — Garantia de alta legibilidade com texto preto (#000000) e fundo branco em inputs, textareas e selects
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Groups.test.tsx`
+- Causa raiz: Inputs em modais de grupos, chat e campos de formulário utilizavam `text-white` com fundos sujeitos a resets de navegador ou falta de contraste, resultando em caracteres digitados invisíveis ou ilegíveis.
+- Reprodução original: Digitar texto no chat de grupo, título de nova comunidade ou buscas e visualizar caracteres brancos de baixo contraste.
+- PR/Commit relacionado: Prompt 12 (frontend/src/styles/global.css, Groups.tsx, ChatWindow.tsx, Header.tsx, Library.tsx, News.tsx, Social.tsx, AuthModal.tsx, Login.tsx, ReviewFormModal.tsx).
+- Pré-condições: Aplicação frontend carregada no navegador.
+- Passos:
+  - Dado qualquer campo `<input>`, `<textarea>` ou `<select>` na interface (chat, criação de grupo, tópicos, buscas, autenticação)
+  - Quando o usuário digita qualquer caractere no campo
+  - Então o texto é renderizado estritamente na cor preta (`#000000` / `text-black`) sobre fundo branco limpo (`#ffffff` / `bg-white`) com placeholder cinza contrastante (`#6b7280`)
+- Resultado esperado: Total legibilidade de caracteres inseridos em 100% dos formulários da aplicação.
+- Rastreabilidade: `frontend/src/styles/global.css`, `frontend/src/pages/Groups.tsx`
+
+#### REG-FRONT-03 — Fundo opaco com efeito backdrop-blur e bordas temáticas no Dropdown de Busca Global (idêntico às notificações e modais)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit src/components/GlobalSearchDropdown.test.tsx`
+- Causa raiz: O container do dropdown utilizava a classe `bg-brand-dark/95`, não mapeada nas cores do tema Tailwind, resultando em fundo transparente no dropdown da busca ao lado do ícone de notificações (sino).
+- Reprodução original: Digitar um termo na barra de busca do header e observar a janela de resultados flutuando sem fundo opaco sobre os componentes subjacentes da página.
+- PR/Commit relacionado: Prompt 14 (`frontend/src/components/GlobalSearchDropdown.tsx`).
+- Pré-condições: Dropdown aberto com query digitada na barra de busca.
+- Passos:
+  - Dado o componente `GlobalSearchDropdown` montado no Header
+  - Quando a janela de resultados é exibida
+  - Então o container aplica `bg-[#0b0f19]/95 backdrop-blur-xl border border-brand-purple/40 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-2xl` com cabeçalho `bg-brand-surface/80` e rodapé `bg-brand-surface/60`
+- Resultado esperado: Identidade visual uniforme e fundo opaco contrastante idêntico ao Dropdown de Notificações (`NotificationsDropdown.tsx`).
+- Rastreabilidade: `frontend/src/components/GlobalSearchDropdown.tsx`, `frontend/src/components/NotificationsDropdown.tsx`
 
 ### Autenticação
 #### REG-AUTH-01 — Suporte a débito de R$ 0,00 para jogos gratuitos

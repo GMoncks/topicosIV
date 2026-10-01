@@ -4,16 +4,19 @@ import { Header } from './components/Header';
 import { DownloadBar } from './components/DownloadBar';
 import { AuthModal } from './components/AuthModal';
 import { CartDrawer } from './components/CartDrawer';
+import { SystemNoticeModal, SystemNoticeData } from './components/SystemNoticeModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Store } from './pages/Store';
 import { Market } from './pages/Market';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
+import { Groups } from './pages/Groups';
 import { News } from './pages/News';
 import { PointsShop } from './pages/PointsShop';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
+import { Workshop } from './pages/Workshop';
 import { NavigationTab, UserProfile } from './types';
 import { storeApi, libraryApi } from './api/client';
 
@@ -53,6 +56,7 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [systemNotice, setSystemNotice] = useState<SystemNoticeData | null>(null);
   const [achievementToast, setAchievementToast] = useState<{
     achievement_id: string;
     name: string;
@@ -63,6 +67,19 @@ function AppContent() {
   const lastAchievementCheckRef = useRef<string>(new Date().toISOString());
 
   const { user, logout, openAuthModal, updateUserBalance, isAuthenticated } = useAuth();
+
+  // Listener para abertura de comunicados oficiais do sistema via notificações (ex: jogos deixando catálogo)
+  useEffect(() => {
+    const handleOpenNotice = (e: CustomEvent<SystemNoticeData>) => {
+      if (e.detail) {
+        setSystemNotice(e.detail);
+      }
+    };
+    window.addEventListener('mist:open-system-notice' as any, handleOpenNotice);
+    return () => {
+      window.removeEventListener('mist:open-system-notice' as any, handleOpenNotice);
+    };
+  }, []);
 
   const fetchWishlistCount = useCallback(async () => {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -244,18 +261,20 @@ function AppContent() {
       {/* Área Principal Scrollável */}
       <div className="flex-1 overflow-y-auto relative flex flex-col justify-between">
         <div>
-          {/* Header Superior da Loja */}
-          {activeTab === 'store' && (
-            <Header
-              wishlistCount={wishlistCount}
-              walletBalance={currentUser.walletBalance}
-              onSearch={setSearchQuery}
-              activeSubTab={activeSubTab}
-              onSelectSubTab={setActiveSubTab}
-              isGuest={!isAuthenticated}
-              onOpenAuth={() => openAuthModal('login')}
-            />
-          )}
+          {/* Header Superior Global (Loja, Notificações, Carteira, Carrinho) */}
+          <Header
+            wishlistCount={wishlistCount}
+            walletBalance={currentUser.walletBalance}
+            onSearch={setSearchQuery}
+            activeSubTab={activeSubTab}
+            onSelectSubTab={(sub) => {
+              setActiveSubTab(sub);
+              if (activeTab !== 'store') setActiveTab('store');
+            }}
+            isGuest={!isAuthenticated}
+            onOpenAuth={() => openAuthModal('login')}
+            onNavigate={(tab) => setActiveTab(tab as NavigationTab)}
+          />
 
           {/* Renderização das Telas MIST */}
           {activeTab === 'store' && (
@@ -274,6 +293,8 @@ function AppContent() {
 
           {activeTab === 'social' && <Social />}
 
+          {activeTab === 'groups' && <Groups />}
+
           {activeTab === 'news' && <News />}
 
           {activeTab === 'points' && (
@@ -283,7 +304,14 @@ function AppContent() {
             />
           )}
 
-          {activeTab === 'profile' && <Profile user={currentUser} />}
+          {activeTab === 'profile' && (
+            <Profile
+              user={currentUser}
+              onNavigate={(tab) => setActiveTab(tab as NavigationTab)}
+            />
+          )}
+
+          {activeTab === 'workshop' && <Workshop />}
 
           {activeTab === 'login' && (
             <Login onLoginSuccess={() => setActiveTab('store')} />
@@ -295,6 +323,24 @@ function AppContent() {
 
         {/* Gaveta do Carrinho de Compras */}
         <CartDrawer onNavigateToLibrary={() => setActiveTab('library')} />
+
+        {/* Modal de Comunicados e Notícias do Sistema */}
+        <SystemNoticeModal
+          isOpen={!!systemNotice}
+          notice={systemNotice}
+          onClose={() => setSystemNotice(null)}
+          onNavigate={(route) => setActiveTab(route as NavigationTab)}
+          onOpenGame={(gameId, relevantInfo) => {
+            setActiveTab('store');
+            setTimeout(() => {
+              window.dispatchEvent(
+                new CustomEvent('mist:open-game-detail', {
+                  detail: { gameId, relevantInfo },
+                })
+              );
+            }, 60);
+          }}
+        />
       </div>
     </div>
   );

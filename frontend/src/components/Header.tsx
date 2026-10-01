@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { WalletHistoryModal } from './WalletHistoryModal';
+import { NotificationsDropdown } from './NotificationsDropdown';
+import { GlobalSearchDropdown } from './GlobalSearchDropdown';
 
 interface HeaderProps {
   wishlistCount?: number;
@@ -10,6 +12,7 @@ interface HeaderProps {
   onSelectSubTab?: (tab: string) => void;
   isGuest?: boolean;
   onOpenAuth?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,16 +22,40 @@ export const Header: React.FC<HeaderProps> = ({
   activeSubTab = 'destaques',
   onSelectSubTab,
   isGuest = false,
-  onOpenAuth
+  onOpenAuth,
+  onNavigate,
 }) => {
   const { openCart, totalCount } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [walletTopOffset, setWalletTopOffset] = useState<number>(16);
+  const walletButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleOpenWallet = () => {
+      if (!isGuest) {
+        if (walletButtonRef.current) {
+          const rect = walletButtonRef.current.getBoundingClientRect();
+          setWalletTopOffset(rect.top);
+        }
+        setIsWalletModalOpen(true);
+      } else {
+        onOpenAuth?.();
+      }
+    };
+    window.addEventListener('mist:open-wallet', handleOpenWallet);
+    return () => window.removeEventListener('mist:open-wallet', handleOpenWallet);
+  }, [isGuest, onOpenAuth]);
 
   const handleWalletClick = () => {
     if (isGuest) {
       onOpenAuth?.();
       return;
+    }
+    if (walletButtonRef.current) {
+      const rect = walletButtonRef.current.getBoundingClientRect();
+      setWalletTopOffset(rect.top);
     }
     setIsWalletModalOpen(true);
   };
@@ -36,6 +63,7 @@ export const Header: React.FC<HeaderProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
+    setIsSearchDropdownOpen(Boolean(query.trim()));
     if (onSearch) {
       onSearch(query);
     }
@@ -103,20 +131,53 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Barra de busca */}
-        <div className="bg-brand-surface rounded-lg flex items-center px-3 py-1.5 border border-gray-700 focus-within:border-brand-purple transition">
-          <i className="fa-solid fa-search text-gray-500 text-sm"></i>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="bg-transparent border-none outline-none text-sm text-white ml-2 w-32 focus:w-48 transition-all"
+        {/* Barra de busca com Busca Global Agregada (R-01 a R-05) */}
+        <div className="relative">
+          <div className="bg-white rounded-lg flex items-center px-3 py-1.5 border border-gray-300 focus-within:border-brand-purple shadow-sm transition">
+            <i className="fa-solid fa-search text-gray-500 text-sm"></i>
+            <input
+              type="text"
+              placeholder="Buscar jogos, pessoas, grupos..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => {
+                if (searchQuery.trim()) setIsSearchDropdownOpen(true);
+              }}
+              className="bg-transparent border-none outline-none text-sm text-black placeholder-gray-500 ml-2 w-44 focus:w-64 transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setIsSearchDropdownOpen(false);
+                  onSearch?.('');
+                }}
+                className="text-gray-400 hover:text-black ml-1 text-xs cursor-pointer"
+                aria-label="Limpar busca"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            )}
+          </div>
+
+          <GlobalSearchDropdown
+            query={searchQuery}
+            isOpen={isSearchDropdownOpen}
+            onClose={() => setIsSearchDropdownOpen(false)}
+            onNavigate={(tab) => {
+              setIsSearchDropdownOpen(false);
+              onNavigate?.(tab);
+            }}
           />
         </div>
 
+        {/* Notificações Push Globais (Q-05, Q-06) */}
+        <NotificationsDropdown onNavigate={onNavigate} />
+
         {/* Saldo da Carteira com a cor secundária #1F4D36 — abre o extrato (T-04) */}
         <button
+          ref={walletButtonRef}
           type="button"
           onClick={handleWalletClick}
           title="Ver extrato da carteira"
@@ -129,16 +190,21 @@ export const Header: React.FC<HeaderProps> = ({
 
         {isGuest && onOpenAuth && (
           <button
+            type="button"
             onClick={onOpenAuth}
-            className="bg-brand-purple hover:bg-brand-purpleDark text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-sm"
+            className="bg-brand-purple hover:bg-purple-600 text-white font-medium text-sm px-4 py-1.5 rounded-lg transition shadow-md"
           >
             Iniciar Sessão
           </button>
         )}
       </div>
 
-      <WalletHistoryModal isOpen={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
+      {/* Modal de Extrato da Carteira MIST (T-04) */}
+      <WalletHistoryModal
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+        topOffset={walletTopOffset}
+      />
     </header>
   );
 };
-
