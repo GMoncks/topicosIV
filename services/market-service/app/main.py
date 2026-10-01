@@ -3,7 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db.database import init_db
+from app.db.database import init_db, SessionLocal
+from app.db.seed_market import seed_market_data
 from app.models.transaction import WalletTransaction
 from app.models.listing import MarketListing
 from app.models.trade import TradeOffer
@@ -17,6 +18,11 @@ from app.api.trades import router as trades_router
 async def lifespan(app: FastAPI):
     # Inicializa tabelas no banco de dados SQLite dedicado (market.db)
     init_db()
+    db = SessionLocal()
+    try:
+        seed_market_data(db)
+    finally:
+        db.close()
     yield
 
 
