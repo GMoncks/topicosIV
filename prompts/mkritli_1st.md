@@ -66,3 +66,33 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
     - Backend: **262 testes unitários/integração aprovados** no Pytest (incluindo todos os testes de seeds e idempotência).
     - Frontend: **148 testes aprovados** no Vitest.
     - Total do ecossistema: **410 testes passando 100%**.
+
+---
+
+## 2026-10-01 — Prompt 2
+
+**Prompt do usuário:**
+
+> marque todos os itens q foram concluidos neste chat no arquivo @[development_schedule.md]
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Auditoria e Mapeamento de Entregas da Trilha 3:**
+   - Todos os 33 tickets atribuídos ao Desenvolvedor 3 (Social, Comunidade, UGC, Notificações e Gateway) foram implementados, testados (TDD) e integrados com sucesso no decorrer da sessão:
+     - **Bloco S (AI Curator Avançado):** Tickets S-01 a S-04 (`ai_trends.py`, `ai_curator.py`, `wishlist_ai.py`, `CuratorSection.tsx`).
+     - **Bloco Q (Sistema de Notificações Global):** Tickets Q-01 a Q-06 (`notification.py`, endpoints REST, WebSocket push em tempo real, `NotificationsDropdown.tsx` e redirecionamento contextual).
+     - **Bloco M (Grupos, Comunidade e Fórum):** Tickets M-01 a M-06 (`group.py`, `forum.py`, `group_chat.py` WebSocket, `Groups.tsx`).
+     - **Bloco R (Busca Global Agregada):** Tickets R-01 a R-05 (agregador assíncrono no Gateway com rotas internas nos microsserviços e `GlobalSearchDropdown.tsx`).
+     - **Bloco N (Showcase de Capturas de Tela):** Tickets N-01 a N-06 (`screenshots.py`, `mist_sdk.py`, `ScreenshotsGallery.tsx`, `ScreenshotUploadModal.tsx` e likes).
+     - **Bloco O (Workshop de Conteúdo: Mods e Skins):** Tickets O-01 a O-06 (`workshop.py`, `workshop_service.py`, `Workshop.tsx`, `WorkshopUploadModal.tsx`, inscrições, downloads e integração no `Profile.tsx`).
+2. **Atualização Formal de Governança em `development_schedule.md`:**
+   - Atualizado o cabeçalho do documento de progresso geral para indicar a conclusão dos Blocos M, N, O, Q, R e S (**100% da TRILHA 3 concluída**).
+   - Atualizada a Tabela Geral de Blocos (Seção 2) com status `**CONCLUÍDO**` para os 6 blocos sob responsabilidade do Dev 3.
+   - Adicionada a coluna explícita `Status` com o valor `**CONCLUÍDO**` em cada uma das tabelas individuais de tickets dos Blocos M, N, O, Q, R e S.
+
+**Resumo das saídas:**
+
+- Arquivos modificados:
+  - `development_schedule.md` (Status atualizado no cabeçalho, tabela geral e tabelas detalhadas de tickets da Trilha 3)
+  - `prompts/mkritli_1st.md` (Registro deste prompt)
+
