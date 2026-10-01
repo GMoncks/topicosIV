@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import init_db, SessionLocal
 from app.db.seed import seed_games
+from app.db.seed_purchases import seed_purchases_and_wishlist
 from app.models.wishlist import Wishlist
 from app.models.purchase import Purchase
 from app.models.review import Review, ReviewVote
@@ -15,10 +16,11 @@ from app.api.routes import router as store_router
 async def lifespan(app: FastAPI):
     # Inicializa tabelas no banco de dados SQLite
     init_db()
-    # Executa a seed do catálogo inicial se necessário
+    # Executa a seed do catálogo inicial e dados de compras/wishlist se necessário
     db = SessionLocal()
     try:
         seed_games(db)
+        seed_purchases_and_wishlist(db)
     finally:
         db.close()
     yield
