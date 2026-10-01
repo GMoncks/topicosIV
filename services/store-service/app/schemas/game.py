@@ -7,6 +7,8 @@ class GameBase(BaseModel):
     title: str = Field(..., max_length=150, description="Título do jogo")
     description: str = Field(..., description="Descrição detalhada ou sinopse do jogo")
     price: float = Field(..., ge=0.0, description="Preço do jogo em R$")
+    original_price: Optional[float] = Field(default=None, ge=0.0, description="Preço original sem desconto em R$")
+    discount_percentage: Optional[int] = Field(default=0, ge=0, le=100, description="Percentual de desconto promocional (0 a 100)")
     tags: List[str] = Field(default_factory=list, description="Lista de tags/gêneros do jogo")
     category: str = Field(..., max_length=50, description="Categoria principal")
     banner_url: str = Field(..., description="URL da imagem de banner/capa")
@@ -26,6 +28,8 @@ class GameUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
+    original_price: Optional[float] = None
+    discount_percentage: Optional[int] = None
     tags: Optional[List[str]] = None
     category: Optional[str] = None
     banner_url: Optional[str] = None
@@ -41,6 +45,8 @@ class GameListItemResponse(BaseModel):
     id: int
     title: str
     price: float
+    original_price: Optional[float] = None
+    discount_percentage: Optional[int] = 0
     tags: List[str]
     category: str
     banner_url: str
@@ -58,6 +64,8 @@ class GameDetailResponse(BaseModel):
     title: str
     description: str
     price: float
+    original_price: Optional[float] = None
+    discount_percentage: Optional[int] = 0
     tags: List[str]
     category: str
     banner_url: str

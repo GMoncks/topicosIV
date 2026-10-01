@@ -47,6 +47,7 @@ async def create_listing(
 def list_listings(
     item_type: Optional[str] = Query(None, description=f"Filtrar por tipo: {sorted(ITEM_TYPES)}"),
     game_id: Optional[int] = Query(None, gt=0, description="Filtrar por jogo"),
+    search: Optional[str] = Query(None, description="Filtrar por nome do item"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -58,7 +59,7 @@ def list_listings(
             detail=f"Tipo inválido. Use um de: {sorted(ITEM_TYPES)}",
         )
     items, total = ListingService.list_active_listings(
-        db=db, item_type=item_type, game_id=game_id, skip=skip, limit=limit
+        db=db, item_type=item_type, game_id=game_id, search=search, skip=skip, limit=limit
     )
     return MarketListingPage(items=items, total=total, skip=skip, limit=limit)
 

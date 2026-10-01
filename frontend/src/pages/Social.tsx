@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FriendItem, ActivityItem, socialApi, API_GATEWAY_URL } from '../api/client';
 import { ChatWindow } from '../components/ChatWindow';
+import { Groups } from './Groups';
+import { ScreenshotsGallery } from '../components/ScreenshotsGallery';
 
 export const Social: React.FC = () => {
+  const [activeSection, setActiveSection] = useState<'feed' | 'groups' | 'screenshots'>('feed');
   const [friends, setFriends] = useState<FriendItem[]>([]);
   const [feed, setFeed] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,15 +164,74 @@ export const Social: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowAddFriend(!showAddFriend)}
-            className="px-4 py-2 bg-brand-surface hover:bg-gray-800 border border-gray-700 hover:border-brand-purple text-sm font-semibold rounded-xl transition flex items-center gap-2"
-          >
-            <i className="fa-solid fa-user-plus text-brand-purple"></i>
-            Adicionar Amigo
-          </button>
+          {activeSection === 'feed' && (
+            <button
+              onClick={() => setShowAddFriend(!showAddFriend)}
+              className="px-4 py-2 bg-brand-surface hover:bg-gray-800 border border-gray-700 hover:border-brand-purple text-sm font-semibold rounded-xl transition flex items-center gap-2 cursor-pointer"
+            >
+              <i className="fa-solid fa-user-plus text-brand-purple"></i>
+              Adicionar Amigo
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Abas Superiores da Comunidade (Feed & Amigos vs Grupos & Fórum) */}
+      <div className="flex items-center gap-2 mb-8 border-b border-gray-800 pb-2" role="tablist" aria-label="Seções da Comunidade">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'feed'}
+          onClick={() => setActiveSection('feed')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSection === 'feed'
+              ? 'bg-brand-purple text-white shadow-md'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+          }`}
+        >
+          <i className="fa-solid fa-rss text-xs"></i>
+          Feed & Amigos
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'groups'}
+          onClick={() => setActiveSection('groups')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSection === 'groups'
+              ? 'bg-brand-purple text-white shadow-md'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+          }`}
+        >
+          <i className="fa-solid fa-users text-xs"></i>
+          Grupos & Fórum
+        </button>
+
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSection === 'screenshots'}
+          onClick={() => setActiveSection('screenshots')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition cursor-pointer flex items-center gap-2 ${
+            activeSection === 'screenshots'
+              ? 'bg-brand-purple text-white shadow-md'
+              : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+          }`}
+        >
+          <i className="fa-solid fa-camera text-xs"></i>
+          Capturas de Tela
+        </button>
+      </div>
+
+      {activeSection === 'groups' ? (
+        <Groups />
+      ) : activeSection === 'screenshots' ? (
+        <div className="bg-brand-card/50 border border-gray-800/80 rounded-2xl p-6">
+          <ScreenshotsGallery />
+        </div>
+      ) : (
+        <>
 
       {/* Modal / Card para Adicionar Amigo */}
       {showAddFriend && (
@@ -186,7 +248,7 @@ export const Social: React.FC = () => {
               placeholder="Ex: 2, 3 ou 4"
               value={addFriendId}
               onChange={(e) => setAddFriendId(e.target.value)}
-              className="flex-1 bg-brand-dark px-3.5 py-2 rounded-xl border border-gray-700 text-sm text-white focus:outline-none focus:border-brand-purple"
+              className="flex-1 bg-white px-3.5 py-2 rounded-xl border border-gray-300 text-sm text-black placeholder-gray-500 focus:outline-none focus:border-brand-purple shadow-sm"
             />
             <button
               type="submit"
@@ -566,6 +628,8 @@ export const Social: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* Janela de Chat Ativa (F-07) */}
       {activeChatFriend && (

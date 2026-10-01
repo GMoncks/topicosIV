@@ -62,6 +62,20 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
     };
   }, []);
 
+  // Listener para expandir jogo na biblioteca ao clicar em notificação de conquista
+  useEffect(() => {
+    const handleOpenGame = (e: CustomEvent<{ gameId: number }>) => {
+      if (e.detail && e.detail.gameId) {
+        setExpandedGameId(Number(e.detail.gameId));
+      }
+    };
+
+    window.addEventListener('mist:open-library-game' as any, handleOpenGame);
+    return () => {
+      window.removeEventListener('mist:open-library-game' as any, handleOpenGame);
+    };
+  }, []);
+
   const handleDownload = async (item: LibraryItemResponse) => {
     const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
     try {
@@ -246,7 +260,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
               placeholder="Buscar jogo por título, gênero ou estúdio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-brand-card border border-gray-700/80 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-purple transition"
+              className="w-full bg-white border border-gray-300 rounded-xl pl-10 pr-10 py-2.5 text-sm text-black placeholder-gray-500 focus:outline-none focus:border-brand-purple shadow-sm transition"
             />
             {searchQuery && (
               <button

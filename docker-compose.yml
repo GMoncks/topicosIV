@@ -106,6 +106,25 @@ services:
       - mist-network
     restart: unless-stopped
 
+  ugc-service:
+    build:
+      context: ./services/ugc-service
+      dockerfile: Dockerfile
+    container_name: mist-ugc-service
+    ports:
+      - "127.0.0.1:${UGC_SERVICE_PORT:-8006}:8006"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=8006
+      - UGC_DATABASE_URL=${UGC_DATABASE_URL:-sqlite:///app/data/ugc.db}
+      - UPLOADS_DIR=${UPLOADS_DIR:-data/uploads}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
+    volumes:
+      - ugc_data:/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
   gateway:
     build:
       context: ./gateway
@@ -121,6 +140,7 @@ services:
       - LIBRARY_SERVICE_URL=${LIBRARY_SERVICE_URL:-http://library-service:8003}
       - SOCIAL_SERVICE_URL=${SOCIAL_SERVICE_URL:-http://social-service:8004}
       - MARKET_SERVICE_URL=${MARKET_SERVICE_URL:-http://market-service:8005}
+      - UGC_SERVICE_URL=${UGC_SERVICE_URL:-http://ugc-service:8006}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-mist_super_secret_jwt_key_development_secret_32bytes}
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000}
@@ -130,6 +150,7 @@ services:
       - library-service
       - social-service
       - market-service
+      - ugc-service
     networks:
       - mist-network
     restart: unless-stopped
@@ -157,6 +178,8 @@ volumes:
   social_data:
     driver: local
   market_data:
+    driver: local
+  ugc_data:
     driver: local
 
 networks:

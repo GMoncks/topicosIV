@@ -5,6 +5,7 @@ STORE_SERVICE_URL = os.getenv("STORE_SERVICE_URL", "http://localhost:8002")
 LIBRARY_SERVICE_URL = os.getenv("LIBRARY_SERVICE_URL", "http://localhost:8003")
 SOCIAL_SERVICE_URL = os.getenv("SOCIAL_SERVICE_URL", "http://localhost:8004")
 MARKET_SERVICE_URL = os.getenv("MARKET_SERVICE_URL", "http://localhost:8005")
+UGC_SERVICE_URL = os.getenv("UGC_SERVICE_URL", "http://localhost:8006")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "mist_super_secret_jwt_key_development_secret_32bytes")

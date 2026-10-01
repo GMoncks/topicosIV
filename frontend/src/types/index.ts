@@ -94,7 +94,7 @@ export interface PointsShopItem {
   isOwned?: boolean;
 }
 
-export type NavigationTab = 'store' | 'library' | 'market' | 'social' | 'news' | 'points' | 'profile' | 'login';
+export type NavigationTab = 'store' | 'library' | 'market' | 'social' | 'groups' | 'news' | 'points' | 'profile' | 'login' | 'workshop';
 
 export interface LibraryGame {
   id: number;

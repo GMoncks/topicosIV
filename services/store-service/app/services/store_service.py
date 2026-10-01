@@ -450,4 +450,16 @@ class StoreService:
             limit=limit,
             user_favorite_tags=user_favorite_tags
         )
+
+        from app.services.ai_curator import generate_contextual_justification
+        for rec in recommendations:
+            if not rec.get("recommendation_reason") or "Destaque da comunidade" in rec.get("recommendation_reason", ""):
+                # Se o usuário possui biblioteca, enriquece com a justificativa contextual avançada
+                if user_library_games:
+                    rec["recommendation_reason"] = generate_contextual_justification(
+                        played_games=user_library_games,
+                        target_game=rec
+                    )
+
         return recommendations
+

@@ -330,3 +330,45 @@ async def get_curated_recommendations(
     )
     return recommendations
 
+
+@router.get("/trends/top-sellers", status_code=status.HTTP_200_OK)
+@router.get("/store/trends/top-sellers", status_code=status.HTTP_200_OK)
+def get_top_sellers(
+    limit: int = Query(10, ge=1, le=50, description="Limite de jogos mais vendidos"),
+    days: Optional[int] = Query(None, ge=1, description="Janela de dias para agregação"),
+    db: Session = Depends(get_db)
+):
+    """
+    Ticket S-01: Retorna o ranking de jogos mais vendidos a partir de compras finalizadas.
+    """
+    from app.services.ai_trends import calculate_top_sellers
+    return calculate_top_sellers(db=db, limit=limit, days=days)
+
+
+@router.get("/trends/trending", status_code=status.HTTP_200_OK)
+@router.get("/store/trends/trending", status_code=status.HTTP_200_OK)
+def get_trending_games(
+    limit: int = Query(10, ge=1, le=50, description="Limite de jogos em alta"),
+    days: int = Query(7, ge=1, le=90, description="Janela de dias para análise de tendência"),
+    db: Session = Depends(get_db)
+):
+    """
+    Ticket S-01: Retorna os jogos 'Em Alta' calculados pelo algoritmo de tendência ponderada.
+    """
+    from app.services.ai_trends import calculate_trending_games
+    return calculate_trending_games(db=db, limit=limit, days=days)
+
+
+@router.get("/wishlist/alerts", status_code=status.HTTP_200_OK)
+@router.get("/store/wishlist/alerts", status_code=status.HTTP_200_OK)
+def get_wishlist_alerts(
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    """
+    Ticket S-03: Notificador proativo de descontos em itens favoritados na Wishlist.
+    """
+    user_id = _require_user_id(x_user_id)
+    from app.services.wishlist_ai import get_wishlist_discount_alerts
+    return get_wishlist_discount_alerts(db=db, user_id=user_id)
+
