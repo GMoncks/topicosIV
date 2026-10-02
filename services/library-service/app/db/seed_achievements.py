@@ -112,17 +112,18 @@ FALLBACK_GAMES = [
     {"id": 2, "title": "Orbitals", "publisher": "Steam Imported"},
     {"id": 3, "title": "Onimusha: Way of the Sword", "publisher": "Steam Imported"},
     {"id": 4, "title": "Marvel's Wolverine", "publisher": "Steam Imported"},
-    {"id": 5, "title": "DOOM: The Dark Ages", "publisher": "Steam Imported"},
-    {"id": 6, "title": "Metal Gear Solid Delta: Snake Eater", "publisher": "Steam Imported"},
-    {"id": 7, "title": "Crimson Desert", "publisher": "Steam Imported"},
-    {"id": 8, "title": "Hollow Knight: Silksong", "publisher": "Steam Imported"},
-    {"id": 9, "title": "Borderlands 4", "publisher": "Steam Imported"},
-    {"id": 10, "title": "Clair Obscur: Expedition 33", "publisher": "Steam Imported"},
-    {"id": 11, "title": "Bioshock 4: Isolations", "publisher": "Steam Imported"},
-    {"id": 12, "title": "Deadlock", "publisher": "Steam Imported"},
-    {"id": 13, "title": "MIST Forca", "publisher": "MIST Studios"},
-    {"id": 14, "title": "MIST Labirinto", "publisher": "MIST Studios"},
-    {"id": 15, "title": "MIST Quiz", "publisher": "MIST Studios"},
+    {"id": 5, "title": "Fire Emblem: Fortune's Weave", "publisher": "Steam Imported"},
+    {"id": 6, "title": "Silent Hill: Townfall", "publisher": "Steam Imported"},
+    {"id": 7, "title": "Control Resonant", "publisher": "Steam Imported"},
+    {"id": 8, "title": "The Witcher 3: Wild Hunt – Remastered", "publisher": "Steam Imported"},
+    {"id": 9, "title": "Wardogs", "publisher": "Steam Imported"},
+    {"id": 10, "title": "Hollow Knight: Silksong", "publisher": "Steam Imported"},
+    {"id": 11, "title": "Elden Ring: Shadow of the Erdtree", "publisher": "Steam Imported"},
+    {"id": 12, "title": "Cyberpunk 2077: Phantom Liberty", "publisher": "Steam Imported"},
+    {"id": 13, "title": "Baldur's Gate 3", "publisher": "Steam Imported"},
+    {"id": 14, "title": "MIST Forca", "publisher": "MIST Studios"},
+    {"id": 15, "title": "MIST Labirinto", "publisher": "MIST Studios"},
+    {"id": 16, "title": "MIST Quiz", "publisher": "MIST Studios"},
 ]
 
 
@@ -142,12 +143,14 @@ def fetch_games_catalog(store_url: str) -> List[Dict[str, Any]]:
 
 def seed_achievements(db: Session, store_url: Optional[str] = None) -> int:
     """
-    Popula dinamicamente a tabela de conquistas no library-service.
+    Popula dinamicamente a tabela de conquistas no library-service e purga conquistas
+    órfãs ou incorretamente atribuídas entre jogos.
     Diferencia jogos 'MIST Studios' de jogos 'Steam Imported' com base no campo publisher.
     """
     url = store_url or STORE_SERVICE_URL
     games = fetch_games_catalog(url)
     created_count = 0
+    valid_game_ids = set()
 
     for g in games:
         game_id = g.get("id")
@@ -157,11 +160,21 @@ def seed_achievements(db: Session, store_url: Optional[str] = None) -> int:
         if not game_id:
             continue
 
-        # Seleciona as conquistas adequadas baseadas no Publisher
+        valid_game_ids.add(game_id)
+
+        # Seleciona as conquistas adequadas baseadas no Publisher e Título
         if publisher == "MIST Studios" and title in MIST_STUDIOS_ACHIEVEMENTS:
             ach_list = MIST_STUDIOS_ACHIEVEMENTS[title]
         else:
             ach_list = get_generic_achievements_for_game(title)
+
+        expected_ids = {ach_data["achievement_id"] for ach_data in ach_list}
+
+        # Purga conquistas intrusas ou de outros jogos associadas indevidamente a este game_id
+        db.query(Achievement).filter(
+            Achievement.game_id == game_id,
+            ~Achievement.achievement_id.in_(expected_ids)
+        ).delete(synchronize_session=False)
 
         for ach_data in ach_list:
             existing = (
@@ -187,9 +200,13 @@ def seed_achievements(db: Session, store_url: Optional[str] = None) -> int:
                 existing.icon_url = ach_data.get("icon_url")
                 existing.rarity = ach_data.get("rarity", "Comum")
 
-    if created_count > 0:
-        db.commit()
+    # Purga quaisquer conquistas com game_id inválido ou não pertencente ao catálogo
+    if valid_game_ids:
+        db.query(Achievement).filter(
+            (~Achievement.game_id.in_(valid_game_ids)) | (Achievement.game_id <= 0)
+        ).delete(synchronize_session=False)
 
+    db.commit()
     return created_count
 
 

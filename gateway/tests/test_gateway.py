@@ -166,3 +166,40 @@ def test_gateway_library_my_games_proxy(client):
         assert captured_headers.get("X-User-Id") == "42"
 
 
+@pytest.mark.integration
+def test_gateway_market_wallet_history_proxy(client):
+    """L-01/T-03: Valida injeção de X-User-Id no proxy do market-service (/api/market/*)."""
+    token = jwt.encode({"sub": "10", "username": "gamer10"}, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    mock_resp = httpx.Response(
+        status_code=200,
+        json={"items": [], "total": 0, "skip": 0, "limit": 20},
+        headers={"content-type": "application/json"}
+    )
+
+    captured_request = {}
+
+    async def mock_request(method, url, headers=None, **kwargs):
+        captured_request["url"] = str(url)
+        captured_request["headers"] = headers
+        return mock_resp
+
+    with patch.object(gateway_main.http_client, "request", new=AsyncMock(side_effect=mock_request)):
+        response = client.get("/api/market/wallet/history", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 200
+        assert response.json()["total"] == 0
+        assert "/wallet/history" in captured_request["url"]
+        assert captured_request["headers"].get("X-User-Id") == "10"
+
+
+@pytest.mark.integration
+def test_gateway_market_proxy_unavailable_returns_503(client):
+    """Valida fallback 503 quando o market-service está fora do ar."""
+    async def mock_request(method, url, **kwargs):
+        raise httpx.ConnectError("connection refused")
+
+    with patch.object(gateway_main.http_client, "request", new=AsyncMock(side_effect=mock_request)):
+        response = client.get("/api/market/health")
+        assert response.status_code == 503
+        assert "mercado" in response.json()["detail"].lower()
+
+

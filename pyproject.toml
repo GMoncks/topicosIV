@@ -17,6 +17,7 @@ testpaths = [
     "services/store-service/tests",
     "services/library-service/tests",
     "services/social-service/tests",
+    "services/market-service/tests",
     "services/common/tests"
 ]
 pythonpath = [
@@ -26,7 +27,8 @@ pythonpath = [
     "services/auth-service",
     "services/store-service",
     "services/library-service",
-    "services/social-service"
+    "services/social-service",
+    "services/market-service"
 ]
 asyncio_mode = "auto"
 markers = [

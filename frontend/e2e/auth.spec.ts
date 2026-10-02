@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Autenticação e Gestão de Sessão (E2E-AUTH-01)', () => {
   test('deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout', async ({ page }) => {
-    // Mock dos endpoints de autenticação no Gateway
+    // Mock dos endpoints de autenticação e rotas autenticadas do Gateway
     await page.route('**/api/auth/register', async (route) => {
       await route.fulfill({
         status: 201,
@@ -21,6 +21,39 @@ test.describe('Autenticação e Gestão de Sessão (E2E-AUTH-01)', () => {
             created_at: new Date().toISOString(),
           },
         }),
+      });
+    });
+
+    await page.route('**/api/auth/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 99,
+          username: 'gamer_e2e',
+          email: 'gamer@mist.com',
+          wallet_balance: 200.0,
+          points_balance: 500,
+          level: 1,
+          avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80',
+          created_at: new Date().toISOString(),
+        }),
+      });
+    });
+
+    await page.route('**/api/store/wishlist', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
+      });
+    });
+
+    await page.route('**/api/library/my-games', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
       });
     });
 

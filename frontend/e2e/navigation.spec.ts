@@ -11,7 +11,7 @@ test.describe('Navegação e Ciclo de Vida (E2E-NAV-01)', () => {
     // 2. Navega para a Biblioteca
     const libraryButton = page.locator('button[title="Biblioteca"]');
     await libraryButton.click();
-    await expect(page.locator('text=Minha Biblioteca')).toBeVisible();
+    await expect(page.locator('h1, h2').filter({ hasText: /biblioteca/i }).first()).toBeVisible();
 
     // 3. Navega para a Loja de Pontos
     const pointsButton = page.locator('button[title="Loja de Pontos"]');
