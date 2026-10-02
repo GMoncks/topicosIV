@@ -1,4 +1,4 @@
-export const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
+export const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || '';
 export const SESSION_EXPIRED_EVENT = 'mist:session-expired';
 
 import {

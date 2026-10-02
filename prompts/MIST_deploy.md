@@ -42,3 +42,57 @@ Arquivo dedicado ao rastreamento de prompts e decisões técnicas relacionadas a
 - Criado: Artefato de avaliação `avaliacao_deploy_raspi.md` com análise completa de viabilidade, tabelas de hardware, checklist de deploy e listagem de mudanças de código (~10 linhas).
 - Criado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
 - Nenhuma modificação de código realizada (prompt puramente investigativo/consultivo).
+
+---
+
+## 2026-10-02 — Prompt 2
+
+**Prompt do usuário:**
+
+> Sim, sou o gabriel-T800. No entanto, salve os registros dessa conversa em específico em um novo arquivo chamado MIST_deploy.md, apenas a título de separação desse item adicional que pensei
+
+**Decisões arquiteturais e técnicas:**
+
+1. Criação do arquivo dedicado `prompts/MIST_deploy.md` para rastreamento separado do tópico de deploy.
+2. Remoção da entrada correspondente (Prompt 7) de `prompts/gabriel-T800_1st.md`.
+
+**Resumo das saídas:**
+
+- Criado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+- Modificado: [`prompts/gabriel-T800_1st.md`](gabriel-T800_1st.md) (removido Prompt 7 migrado).
+
+---
+
+## 2026-10-02 — Prompt 3
+
+**Prompt do usuário:**
+
+> Finalizei os escopos do trabalho. Como estou realizando apenas ajustes de QA no sistema, o docker compose dificilmente será modificado novamente. Analise e faça as mudanças necessárias para que eu possa hospedar o docker completo do MIST em meu home-server usando um túnel cloudflared. Ao final, explique como esse processo de buildar na minha máquina e transferir as imagens para o home-server deve ser feita.
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Mudança de `API_GATEWAY_URL` para URL relativa (`''`):**
+   - Alterado o fallback em `frontend/src/api/client.ts` de `'http://localhost:8000'` para `''` (string vazia), tornando todas as chamadas `fetch` relativas ao domínio atual.
+   - O `nginx.conf` do frontend já possuía as regras de proxy reverso para `/api/` e `/ws/`, portanto nenhuma configuração adicional de Nginx foi necessária.
+
+2. **Correção do `wsBase` para WebSockets dinâmicos:**
+   - Alterados 3 componentes (`ChatWindow.tsx`, `Social.tsx`, `Groups.tsx`) para construir o `wsBase` via `window.location` quando `API_GATEWAY_URL` é vazio, garantindo detecção automática de `wss://` em HTTPS (Cloudflare Tunnel).
+   - Preservado o fallback para o comportamento original quando `VITE_API_GATEWAY_URL` é explicitamente configurada (ambiente de dev).
+   - `NotificationsDropdown.tsx` já usava `window.location` e não precisou de alteração.
+
+3. **Validação completa:**
+   - Build TypeScript + Vite: sucesso absoluto.
+   - Suíte Vitest: **189/189 testes aprovados em 36 arquivos** — zero regressões.
+
+4. **Guia de cross-build e transferência:**
+   - Documentação completa de 9 passos: criação de builder buildx, build ARM64 de 8 imagens, export `.tar.gz`, transferência via SCP, `docker load` no Pi, configuração de `.env` de produção, `docker compose up`, e configuração do Cloudflare Tunnel.
+
+**Resumo das saídas:**
+
+- Modificado: [`frontend/src/api/client.ts`](../frontend/src/api/client.ts) (L1: URL relativa).
+- Modificado: [`frontend/src/components/ChatWindow.tsx`](../frontend/src/components/ChatWindow.tsx) (L55-56: wsBase dinâmico).
+- Modificado: [`frontend/src/pages/Social.tsx`](../frontend/src/pages/Social.tsx) (L65-66: wsBase dinâmico).
+- Modificado: [`frontend/src/pages/Groups.tsx`](../frontend/src/pages/Groups.tsx) (L154-155: wsBase dinâmico).
+- Criado: Artefato `walkthrough.md` com guia de deploy passo a passo.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+

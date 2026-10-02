@@ -333,19 +333,6 @@ def seed_social_data(db: Session):
                 is_read=True,
                 created_at=now - timedelta(days=1),
             ),
-            Notification(
-                user_id=1,
-                type="wallet_deposit",
-                title="💳 Recarga Confirmada na Carteira",
-                message="Sua recarga de R$ 300,00 via PIX foi confirmada. Seu saldo atual é R$ 450,00.",
-                payload={
-                    "amount": 300.0,
-                    "new_balance": 450.0,
-                    "action": "open_wallet",
-                },
-                is_read=True,
-                created_at=now - timedelta(days=2),
-            ),
         ]
         notifications.extend(user_1_notifications)
 

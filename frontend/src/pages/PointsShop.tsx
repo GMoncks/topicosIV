@@ -79,6 +79,78 @@ const fallbackPointsItems: PointsShopItem[] = [
     pricePoints: 2500,
     image: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=600&q=80',
     isOwned: false
+  },
+  {
+    id: 'avatar_cyberpunk',
+    name: 'Avatar Cyberpunk Operative',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 800,
+    image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_arcane_mage',
+    name: 'Avatar Mago Arcano',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 800,
+    image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_valkyrie',
+    name: 'Avatar Valquíria Cósmica',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 1000,
+    image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_pixel_knight',
+    name: 'Avatar Cavaleiro Pixel',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 600,
+    image: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_mecha_bot',
+    name: 'Avatar MIST Mecha',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 700,
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_mestre_dourado',
+    name: 'Avatar Mestre Dourado',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 1000,
+    image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_neon_cyberpunk',
+    name: 'Avatar Neon Cyberpunk',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 900,
+    image: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
+  },
+  {
+    id: 'avatar_arcano_cosmico',
+    name: 'Avatar Arcano Cósmico',
+    category: 'Foto de perfil',
+    itemType: 'avatar',
+    pricePoints: 900,
+    image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=400&q=80',
+    isOwned: false
   }
 ];
 
@@ -168,6 +240,7 @@ export const PointsShop: React.FC<PointsShopProps> = ({
 
   const filteredItems = items.filter(item => {
     if (activeCategory === 'todos' || activeCategory === 'destaques') return true;
+    if (activeCategory === 'avatar') return item.itemType === 'avatar';
     if (activeCategory === 'avatar_frame') return item.itemType === 'avatar_frame';
     if (activeCategory === 'background') return item.itemType === 'background';
     if (activeCategory === 'emoticon') return item.itemType === 'emoticon';
@@ -218,6 +291,18 @@ export const PointsShop: React.FC<PointsShopProps> = ({
             >
               <span>Todos os Cosméticos</span>
               <i className="fa-solid fa-shapes text-[10px] text-brand-purple"></i>
+            </button>
+            <button
+              onClick={() => setActiveCategory('avatar')}
+              data-testid="category-avatars"
+              className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition ${
+                activeCategory === 'avatar'
+                  ? 'bg-brand-purple/20 text-white border-l-4 border-brand-purple'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              }`}
+            >
+              <span>Fotos de Perfil</span>
+              <i className="fa-solid fa-user-circle text-[10px] text-purple-400"></i>
             </button>
             <button
               onClick={() => setActiveCategory('avatar_frame')}
@@ -317,7 +402,7 @@ export const PointsShop: React.FC<PointsShopProps> = ({
                         <img
                           src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=200&q=80"
                           alt="Avatar Demo"
-                          className="w-16 h-16 rounded-full object-cover"
+                          className="w-16 h-16 rounded-xl object-cover"
                         />
                         {(() => {
                           const isGold = item.id === 'frame_gold' || 
@@ -325,19 +410,22 @@ export const PointsShop: React.FC<PointsShopProps> = ({
                             (item.name && item.name.toLowerCase().includes('dourad'));
                           return (
                             <div
-                              className={`absolute inset-0 rounded-full border-4 ${
+                              className={`absolute inset-0 rounded-2xl pointer-events-none border-4 transition-all duration-300 ${
                                 isGold
-                                  ? 'border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.85)] ring-2 ring-amber-300/60'
-                                  : 'border-cyan-400/80 shadow-[0_0_15px_rgba(6,182,212,0.6)]'
-                              } pointer-events-none`}
-                              style={{
-                                backgroundImage: `url(${item.image})`,
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }}
+                                  ? 'border-amber-400 ring-2 ring-amber-300/80 shadow-[0_0_25px_rgba(245,158,11,0.85)]'
+                                  : 'border-cyan-400 ring-2 ring-cyan-300/80 shadow-[0_0_20px_rgba(6,182,212,0.7)]'
+                              }`}
                             ></div>
                           );
                         })()}
+                      </div>
+                    ) : item.itemType === 'avatar' ? (
+                      <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-brand-purple/70 p-0.5 shadow-lg">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover rounded-full transition duration-500 group-hover:scale-105"
+                        />
                       </div>
                     ) : (
                       <img

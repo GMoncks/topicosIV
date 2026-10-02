@@ -139,10 +139,12 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
             <div className="flex items-center gap-6">
               <div className="relative group">
                 <div
-                  className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center p-1 border-4 ${
+                  className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center p-1.5 transition-all duration-300 ${
                     profile.avatar_frame_url
-                      ? 'border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.6)]'
-                      : 'border-amber-300/80 shadow-[0_0_15px_rgba(251,191,36,0.25)]'
+                      ? profile.avatar_frame_url.includes('1618005182384') || profile.avatar_frame_url.toLowerCase().includes('gold')
+                        ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.85)]'
+                        : 'ring-4 ring-cyan-400 border-2 border-cyan-300 shadow-[0_0_30px_rgba(6,182,212,0.7)]'
+                      : 'border-4 border-amber-300/80 shadow-[0_0_15px_rgba(251,191,36,0.25)]'
                   }`}
                 >
                   <img
@@ -152,12 +154,11 @@ export const PublicProfile: React.FC<PublicProfileProps> = ({
                   />
                   {profile.avatar_frame_url && (
                     <div
-                      className="absolute inset-0 rounded-2xl pointer-events-none"
-                      style={{
-                        backgroundImage: `url(${profile.avatar_frame_url})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }}
+                      className={`absolute inset-0 rounded-2xl pointer-events-none border-4 transition-all duration-300 ${
+                        profile.avatar_frame_url.includes('1618005182384') || profile.avatar_frame_url.toLowerCase().includes('gold')
+                          ? 'border-amber-400/90 ring-2 ring-amber-300/60 shadow-[inset_0_0_12px_rgba(245,158,11,0.4)]'
+                          : 'border-cyan-400/90 ring-2 ring-cyan-300/60 shadow-[inset_0_0_12px_rgba(6,182,212,0.4)]'
+                      }`}
                     />
                   )}
                 </div>

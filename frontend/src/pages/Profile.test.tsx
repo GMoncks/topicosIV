@@ -186,7 +186,7 @@ describe('Profile Component - Cosmetics and Inventory Section', () => {
 
     const frame = screen.getByTestId('profile-equipped-frame');
     expect(frame).toBeDefined();
-    expect(frame.style.backgroundImage).toContain('frame_neon.jpg');
+    expect(frame.getAttribute('data-frame-url') || frame.style.backgroundImage).toContain('frame_neon.jpg');
 
     // Confirma que não há seta de dropdown ao lado do username
     const angleDown = document.querySelector('.fa-angle-down');

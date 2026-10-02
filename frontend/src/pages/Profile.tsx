@@ -361,6 +361,7 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
 
   const filteredInventory = inventoryItems.filter(item => {
     if (inventoryCategory === 'todos') return true;
+    if (inventoryCategory === 'avatar') return item.item_type === 'avatar';
     if (inventoryCategory === 'avatar_frame') return item.item_type === 'avatar_frame';
     if (inventoryCategory === 'background') return item.item_type === 'background';
     if (inventoryCategory === 'emoticon') return item.item_type === 'emoticon';
@@ -427,11 +428,11 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
               <div className="relative group self-start">
                 <div
                   data-testid="profile-avatar-container"
-                  className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center transition-all duration-300 ${
+                  className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center transition-all duration-300 p-1.5 ${
                     currentUser.avatarFrameUrl
                       ? isGoldFrame
-                        ? 'p-2 ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.85)]'
-                        : 'p-2 ring-4 ring-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.7)]'
+                        ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.85)]'
+                        : 'ring-4 ring-cyan-400 border-2 border-cyan-300 shadow-[0_0_30px_rgba(6,182,212,0.7)]'
                       : 'border-4 border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-gradient-to-br from-cyan-600 to-brand-green p-0.5'
                   }`}
                 >
@@ -443,14 +444,12 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                   {currentUser.avatarFrameUrl && (
                     <div
                       data-testid="profile-equipped-frame"
-                      className={`absolute inset-0 rounded-2xl pointer-events-none border-2 shadow-inner ${
-                        isGoldFrame ? 'border-amber-300/90' : 'border-cyan-300/80'
+                      data-frame-url={currentUser.avatarFrameUrl}
+                      className={`absolute inset-0 rounded-2xl pointer-events-none border-4 transition-all duration-300 ${
+                        isGoldFrame
+                          ? 'border-amber-300 ring-2 ring-amber-400 shadow-[inset_0_0_12px_rgba(245,158,11,0.4)]'
+                          : 'border-cyan-300 ring-2 ring-cyan-400 shadow-[inset_0_0_12px_rgba(6,182,212,0.4)]'
                       }`}
-                      style={{
-                        backgroundImage: `url(${currentUser.avatarFrameUrl})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }}
                     />
                   )}
 
@@ -1086,6 +1085,16 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                     Todos ({inventoryItems.length})
                   </button>
                   <button
+                    onClick={() => setInventoryCategory('avatar')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'avatar'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Fotos de Perfil
+                  </button>
+                  <button
                     onClick={() => setInventoryCategory('avatar_frame')}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
                       inventoryCategory === 'avatar_frame'
@@ -1199,7 +1208,44 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                         </div>
 
                         <div className="p-4 pt-0">
-                          {item.item_type === 'avatar_frame' || item.item_type === 'background' ? (
+                          {item.item_type === 'avatar' ? (
+                            <button
+                              onClick={async () => {
+                                setEquippingId(item.id);
+                                try {
+                                  const updated = await profileApi.updateProfile({ avatar_url: item.asset_url });
+                                  updateUserProfile({ avatarUrl: updated.avatar_url });
+                                  setFeedbackMessage('Foto de perfil atualizada com sucesso!');
+                                  setTimeout(() => setFeedbackMessage(null), 3500);
+                                } catch (err: any) {
+                                  setFeedbackMessage(err.message || 'Erro ao definir foto de perfil.');
+                                  setTimeout(() => setFeedbackMessage(null), 3500);
+                                } finally {
+                                  setEquippingId(null);
+                                }
+                              }}
+                              disabled={equippingId === item.id || currentUser.avatarUrl === item.asset_url}
+                              className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                                currentUser.avatarUrl === item.asset_url
+                                  ? 'bg-gray-800 text-gray-400 border border-gray-700 cursor-default'
+                                  : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                              }`}
+                            >
+                              {equippingId === item.id ? (
+                                <>
+                                  <i className="fa-solid fa-spinner fa-spin"></i> Atualizando...
+                                </>
+                              ) : currentUser.avatarUrl === item.asset_url ? (
+                                <>
+                                  <i className="fa-solid fa-check text-xs"></i> Foto Atual
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fa-solid fa-camera text-xs"></i> Usar como Foto
+                                </>
+                              )}
+                            </button>
+                          ) : item.item_type === 'avatar_frame' || item.item_type === 'background' ? (
                             <button
                               onClick={() => handleEquipToggle(item)}
                               disabled={equippingId === item.id}

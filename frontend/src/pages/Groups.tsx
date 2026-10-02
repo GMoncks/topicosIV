@@ -151,7 +151,8 @@ export const Groups: React.FC<GroupsProps> = ({ initialGroupId }) => {
       return;
     }
 
-    const wsBase = API_GATEWAY_URL.replace(/^http/, 'ws');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_GATEWAY_URL ? API_GATEWAY_URL.replace(/^http/, 'ws') : `${wsProtocol}//${window.location.host}`;
     const wsUrl = `${wsBase}/ws/group/${selectedGroup.id}/chat?user_id=1`;
 
     let ws: WebSocket | null = null;

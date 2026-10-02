@@ -62,7 +62,8 @@ export const Social: React.FC = () => {
 
   // WebSocket de Presença em tempo real (F-04, F-08)
   useEffect(() => {
-    const wsBase = API_GATEWAY_URL.replace(/^http/, 'ws');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_GATEWAY_URL ? API_GATEWAY_URL.replace(/^http/, 'ws') : `${wsProtocol}//${window.location.host}`;
     const wsUrl = `${wsBase}/ws/presence?user_id=${currentUserId}`;
 
     let ws: WebSocket | null = null;
@@ -753,7 +754,7 @@ export const Social: React.FC = () => {
       {activeChatFriend && (
         <ChatWindow
           friend={activeChatFriend}
-          currentUserId={1}
+          currentUserId={currentUserId}
           onClose={() => setActiveChatFriend(null)}
         />
       )}

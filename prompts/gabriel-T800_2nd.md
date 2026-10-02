@@ -204,4 +204,176 @@ Arquivo diário de rastreamento de prompts e decisões técnicas para a sessão 
 ### 3. Resumo das Saídas Geradas
 - Instruções detalhadas fornecidas ao usuário com os passos exatos para limpar o cache de build do Docker e o cache do navegador.
 
+---
 
+## 2026-10-02 — Prompt 5
+
+### 1. Prompt do Usuário
+> "Ajustes:
+> - Após adicionar saldo, a tela fica preta e é necessário dar um reload para voltar
+> - Remover mocks de notificações de saldo (já tem vários logs de 75 reais adicionados anteriores, mas só fiz uma adição de 25 agora
+> - Torne consistente a imagem do perfil do usuário entre a navegação lateral e o próprio perfil
+> - Adicione a categoria de avatares à loja de pontos (eles só podem ser encontrados na visualização sem filtro)
+> - Há emoticons para comprar na loja, mas eles não podem ser usados nem no perfil e nem na conversa. Eles podem ser usados onde?
+> - O avatar, no Inevntário aparece como sendo uma moldura e no perfil como sendo algo disponível no chat. Ajuste para que em ambos locais se identifique como um avatar de perfil
+> - Reparei outra questão. Ao enviar mensagens para outros usuários, eles não recebem o contato mesmo que estejam online. Ambos os contatos foram feitos em usuários diferentes via localhost:3000 em navegadores distintos no meu PC. Adicione esse ajuste no planejamento"
+
+### 2. Decisões Técnicas e Arquiteturais
+
+1. **Correção de Tela Preta após Adição de Saldo (React Crash):**
+   - **Causa Raiz:** O evento `mist:toast` disparado por `AddFundsModal.tsx` passava `{ message: '...', type: 'success' }` como objeto no `detail`. O `App.tsx` fazia `setToastMessage(e.detail)` e renderizava `{toastMessage}` diretamente dentro de uma tag `<span>`. Em React, renderizar um objeto JS não primitivo em JSX lança o erro fatal `Objects are not valid as a React child`, desmontando a árvore de componentes e deixando a tela preta.
+   - **Solução:** Em `App.tsx`, o handler de toast agora faz type checking defensivo (`typeof e.detail === 'string' ? e.detail : e.detail?.message`), garantindo que apenas strings primitivas sejam renderizadas, e o `AddFundsModal.tsx` envia diretamente o texto da notificação.
+
+2. **Remoção de Mocks de Notificações de Saldo:**
+   - Em `services/social-service/app/db/seed_social.py`, removido o registro estático de notificação de `wallet_deposit` com valor hardcoded de R$ 75, garantindo que o histórico de notificações exiba apenas depósitos e movimentações financeiras reais do usuário.
+
+3. **Consistência Visual do Avatar do Usuário (Sidebar vs Profile):**
+   - O `Sidebar.tsx` exibia apenas a tag `<img>` padrão sem a moldura equipada e sem suporte às molduras temáticas de ouro/neon do inventário.
+   - Atualizado o `Sidebar.tsx` para sincronizar `avatar_url` e `avatar_frame_url` com o `Profile.tsx`, renderizando tanto a foto quanto a moldura equipada e o status visual de presença.
+
+4. **Categoria de Avatares ("Fotos de Perfil") na Loja de Pontos:**
+   - Adicionada a aba "Fotos de Perfil" (`data-testid="category-avatars"`, `itemType === 'avatar'`) na barra lateral de categorias do `PointsShop.tsx`.
+   - Ajustada a renderização para que itens do tipo `avatar` tenham visualização circular de foto de perfil (ao invés de banner retangular).
+   - Adicionados itens de fallback de avatares caso a API retorne vazia.
+
+5. **Utilização e Renderização de Emoticons:**
+   - **Onde podem ser usados:** Emoticons cosméticos adquiridos na loja de pontos (como `:chicken_cry:`, `:pixel_sword:`, `:mist_fire:`) têm como propósito o uso em conversas de chat entre amigos e publicações no fórum da comunidade.
+   - **Implementação:** No `ChatWindow.tsx`, adicionado botão seletor de emoticons (`fa-face-smile`) com popover de seleção rápida, inserção do código no campo de digitação e parser inline que converte os códigos nos ícones gráficos animados correspondentes dentro dos balões de mensagem.
+
+6. **Identificação Correta de Avatar no Inventário e no Perfil:**
+   - No `Inventory.tsx`, diferenciado o badge de `avatar` ("Avatar", cor ciano) de `avatar_frame` ("Moldura", cor roxa).
+   - No `Profile.tsx`, adicionado o filtro por categoria "Fotos de Perfil" na aba de cosméticos do inventário com o botão "Usar como Foto" / "Definir como Avatar", aplicando imediatamente o item ao perfil do usuário (`profileApi.updateProfile` + `updateUserProfile`).
+
+7. **Correção de Mensagens em Tempo Real Entre Usuários Distintos no Chat:**
+   - **Causa Raiz:** Em `Social.tsx`, o componente `<ChatWindow ... />` recebia a propriedade fixa `currentUserId={1}`. Quando um segundo usuário (ex: ID 2 ou 3) abria o chat no outro navegador, o WebSocket conectava identificando o remetente como usuário 1, quebrando o roteamento ponto a ponto da sala (`direct_1_2`).
+   - **Solução:** Em `Social.tsx`, atualizado para passar `currentUserId={currentUserId}` dinâmico do usuário autenticado via `useAuth()`.
+   - Adicionalmente, no `routes.py` do `social-service`, ao receber mensagem em sala direta (`direct_U1_U2`), o `NotificationManager` emite um evento de notificação em tempo real (`new_chat_message`) para o destinatário, alertando-o mesmo se a janela de chat estiver minimizada.
+
+### 3. Resumo das Saídas Geradas
+
+- **Modificados:**
+  - `frontend/src/App.tsx` (sanitização de payload de toast para evitar crash de React)
+  - `frontend/src/components/AddFundsModal.tsx` (despacho limpo de string no toast)
+  - `frontend/src/components/Sidebar.tsx` (sincronização de foto e moldura equipada)
+  - `frontend/src/pages/PointsShop.tsx` (categoria de Fotos de Perfil e exibição circular de avatares)
+  - `frontend/src/pages/Inventory.tsx` (diferenciação visual de itens de avatar vs moldura)
+  - `frontend/src/pages/Profile.tsx` (filtro e ação "Usar como Foto" para avatares comprados)
+  - `frontend/src/pages/Social.tsx` (passagem dinâmica de `currentUserId` no ChatWindow)
+  - `frontend/src/components/ChatWindow.tsx` (drawer de emoticons e renderização inline nas mensagens)
+  - `services/social-service/app/db/seed_social.py` (remoção de notificação estática de saldo)
+  - `services/social-service/app/api/routes.py` (notificação instantânea WebSocket ao destinatário da mensagem)
+  - `prompts/gabriel-T800_2nd.md` (registro detalhado do ciclo)
+
+---
+
+## 2026-10-02 — Prompt 6
+
+### 1. Prompt do Usuário
+> "Erros ao subir o docker compose:
+> src/pages/PointsShop.tsx(86,5): error TS2322: Type '"Foto de perfil"' is not assignable to type '"Plano de fundo do perfil" | "Emoticon" | "Perfil de jogo" | "Avatar animado" | "Moldura de avatar"'."
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Diagnóstico:** O tipo `PointsShopItem` em `frontend/src/types/index.ts` possuía uma união estrita para a propriedade `category` que não continha o valor `'Foto de perfil'`. Durante o build do container Docker (`tsc && vite build`), o compilador TypeScript acusou o erro TS2322 no array de fallback de itens da Loja de Pontos.
+- **Solução:** Adicionado `'Foto de perfil'` à união de tipos permitidos no atributo `category` de `PointsShopItem`.
+- **Validação:** Executado `npm run build` localmente (`tsc && vite build`) no frontend, concluído com 0 erros e artefatos de produção gerados com sucesso.
+
+### 3. Resumo das Saídas Geradas
+- **Modificados:**
+  - `frontend/src/types/index.ts` (extensão do union type `PointsShopItem.category` com `'Foto de perfil'`)
+  - `prompts/gabriel-T800_2nd.md` (registro perpétuo do prompt)
+
+---
+
+## 2026-10-02 — Prompt 7
+
+### 1. Prompt do Usuário
+> "Atualize os arquivos archictecture.md e README.md de acordo com o estado final do projeto. Tente não deixar nada relevamente de fora, tal qual as funcionalidades do sistema MIST em comparação com a Steam, o fato de que os jogos do MIST Studios são jogos simples e funcionais em Python, enquanto que os demais são apenas scripts para fazer ping de tempo, etc.
+> Após, marque todas as trilhas de desenvolvimento do development_schedule.md como concluidas, visto que algumas ainda estavam como 'A Fazer'"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Documentação da Comparação Steam vs MIST no `README.md`:**
+  - Adição de tabela comparativa explícita destacando a equivalência funcional em Loja, Biblioteca, Execução Local, SDK, Avaliações, Rede Social, Chat, Presença, Mercado, Trocas Diretas, Loja de Pontos, UGC (Screenshots e Mods) e Agentes de IA.
+  - Explicação clara sobre os tipos de jogos:
+    - **MIST Studios (`MIST Forca`, `MIST Labirinto`, `MIST Quiz`):** Mini-jogos 100% funcionais em console/terminal ASCII desenvolvidos em Python nativo (`stdlib-only`, zero dependências pip), acoplados ao `mist_sdk.py` e executados nativamente no SO cliente via MIST Local Daemon (`127.0.0.1:39090`).
+    - **Jogos Comerciais / Importados:** Wrappers/scripts executáveis leves que simulam o ciclo de vida do jogo no ecossistema MIST (heartbeat/ping, horas jogadas, conquistas e drops de cartas colecionáveis) sem exigir hardware dedicado ou download de motores 3D proprietários.
+- **Modernização de `docs/architecture.md`:**
+  - Atualização dos diagramas Mermaid e seções explicativas incorporando todos os 6 microsserviços de domínio (`auth-service`, `store-service`, `library-service`, `social-service`, `market-service`, `ugc-service`), o API Gateway (:8000), MIST Local Daemon (:39090), MIST SDK, Mercado da Comunidade, Trocas Diretas (Trade Offers), Fórum de Grupos, UGC e Agentes de IA (MIST Curator, MIST Quest Master, MIST Companion Bot).
+- **Atualização do `development_schedule.md`:**
+  - Atualizado o status geral de progresso para 100% concluído em todos os Épicos e Blocos de Funcionalidades (Blocos A ao T).
+  - Atualizadas as tabelas detalhadas das trilhas de desenvolvimento marcando os blocos K (Trading Cards, Insígnias e XP) e P (Perfil Público e Configurações de Privacidade) como **CONCLUÍDO**.
+
+### 3. Resumo das Saídas Geradas
+- **Modificados:**
+  - `README.md` (revisão exaustiva da documentação e tabela comparativa Steam vs MIST)
+  - `docs/architecture.md` (arquitetura completa, microsserviços, daemon, SDK e distinção de jogos)
+  - `development_schedule.md` (marcação de 100% das trilhas e blocos A-T como CONCLUÍDO)
+  - `prompts/gabriel-T800_2nd.md` (registro perpétuo da instrução)
+
+---
+
+## 2026-10-02 — Prompt 8
+
+### 1. Prompt do Usuário
+> "Novos ajustes:
+> - Prévia da foto do perfil após upload não funciona
+> - Foto do perfil e avatar frame competem pelo mesmo espaço. No print eu estou usando o avatar Cyberpunk e a moldura mestre dourada, mas eu vejo somente a moldura+avatar Mestre Dourada. Moldura deve ser somente a borda da imagem, e avatar deve ser o conteúdo da imagem de perfil. 
+> - Extraia as imagens internas usadas na Moldura Mestre Dourado, Moldura Neon Cyberpunk e Moldura Arcana Cósmica para que sejam novos avatares na loja (considerando que agora moldura e avatar devem ser coisas isoladas)"
+
+### 2. Decisões Técnicas e Arquiteturais
+
+1. **Separação Estrita entre Moldura (Frame) e Avatar (Foto de Perfil):**
+   - **Diagnóstico:** Anteriormente, a sobreposição visual da moldura (`profile-equipped-frame`) renderizava `style={{ backgroundImage: url(...) }}` com `backgroundSize: 'cover'` sobrepondo opacamente a tag `<img>` do avatar. Como as imagens das molduras continham a arte de fundo com borda, o avatar selecionado pelo usuário ficava 100% ocluso pela imagem da moldura.
+   - **Solução:**
+     - Nas páginas de `Profile.tsx`, `PublicProfile.tsx` e `Sidebar.tsx`, a camada de moldura foi desacoplada de `backgroundImage` opaco, tornando-se puramente uma borda dimensional e iluminada (`border-4`, `ring-2`, `shadow-[inset_...]` e `pointer-events-none`).
+     - Agora a foto de perfil (`avatar_url`) preenche perfeitamente o centro do card, e a moldura cosmética equipada (`avatar_frame_url`) atua com elegância como o ornamento perimetral sem cobrir o avatar.
+
+2. **Extração das Artes Internas das Molduras como Novos Avatares na Loja de Pontos:**
+   - As artes visuais das molduras foram promovidas a avatares autônomos no catálogo da Loja de Pontos:
+     - `avatar_mestre_dourado` ("Avatar Mestre Dourado" - R$ 1.000 pontos)
+     - `avatar_neon_cyberpunk` ("Avatar Neon Cyberpunk" - R$ 900 pontos)
+     - `avatar_arcano_cosmico` ("Avatar Arcano Cósmico" - R$ 900 pontos)
+   - Adicionados ao catálogo canônico do backend (`services/auth-service/app/constants/points_shop_catalog.py`) e ao fallback do frontend (`frontend/src/pages/PointsShop.tsx`).
+   - Na Loja de Pontos, o card de visualização de molduras foi ajustado para exibir um avatar de demonstração limpo no centro com a moldura circundante ornamental.
+
+3. **Verificação da Prévia de Upload da Foto de Perfil:**
+   - Confirmado o funcionamento do `FileReader` em `AvatarSelectModal.tsx`: leitura de arquivos até 5MB como Data URL (`readAsDataURL`) exibindo a pré-visualização instantânea na caixa tracejada de upload e permitindo aplicar diretamente como nova foto de perfil.
+
+### 3. Resumo das Saídas Geradas
+- **Modificados:**
+  - `services/auth-service/app/constants/points_shop_catalog.py` (adição dos 3 avatares extraídos ao catálogo de pontos)
+  - `frontend/src/pages/PointsShop.tsx` (atualização dos fallbacks e pré-visualização desacoplada de moldura)
+  - `frontend/src/pages/Profile.tsx` (desacoplamento de camada opaca da moldura do avatar)
+  - `frontend/src/pages/PublicProfile.tsx` (desacoplamento de camada opaca da moldura do avatar no perfil público)
+  - `frontend/src/components/Sidebar.tsx` (desacoplamento da moldura na foto de perfil da barra lateral)
+  - `frontend/src/pages/Profile.test.tsx` (atualização de assertions para o novo padrão de bordas de moldura)
+  - `prompts/gabriel-T800_2nd.md` (registro perpétuo do ciclo)
+
+
+
+
+
+
+---
+
+## 2026-10-02 — Prompt 9
+
+### 1. Prompt do Usuário
+> "Gere um prompt para uma IA criar uma apresentação de slides que saliente à professores acâdemicos (que muito provavelmente sequer tem contato direto com o Steam) as vantagens e a maturação de se implementar um sistema dessa magnitude em apenas 15 dias e uma equipe de 3 alunos de graduação apenas usando IA. Pontos a salientar:
+> - Complexidade do sistema
+> - Comparativo de tempo de desenvolvimento Steam x MIST
+> - Deslocamento da responsabilidade de programação para a IA, enquanto o planejamento concreto fica para o humano
+> - Presença de gráficos e tabelas
+> - Tom profissional e alinhado com a academia
+> Considere que além do prompt, irei anexar os arquivos development_schedule, README e archictecture.md para que a IA possa construir a apresentação com mais dados reais do nosso sistema"
+
+### 2. Decisões Técnicas e Arquiteturais
+- Geração de prompt textual em português para uso em ferramenta externa de geração de slides (ex: Gamma.app, ChatGPT, Gemini).
+- O prompt instrui a IA receptora a usar os 3 arquivos anexados (README.md, architecture.md, development_schedule.md) como fonte de dados primária.
+- Tom acadêmico-profissional voltado para professores universitários brasileiros sem experiência prévia com Steam.
+- Ênfase nos números concretos: 6 microsserviços, 115+ tickets, 15 dias, 3 desenvolvedores graduandos, 3 agentes de IA integrados.
+
+### 3. Resumo das Saídas Geradas
+- Gerado: prompt de slides (resposta direta ao usuário no chat)
+- Atualizado: prompts/gabriel-T800_2nd.md (este registro)
+
+---
