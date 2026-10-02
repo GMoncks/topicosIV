@@ -84,6 +84,9 @@ describe('Social Page Component (F-06 & F-08)', () => {
     MockWebSocket.instances = [];
 
     vi.spyOn(socialApi, 'getFriends').mockResolvedValue(mockFriends);
+    vi.spyOn(socialApi, 'getFriendRequests').mockResolvedValue([]);
+    vi.spyOn(socialApi, 'acceptFriend').mockResolvedValue({ success: true, message: 'Amizade aceita' });
+    vi.spyOn(socialApi, 'deleteFriend').mockResolvedValue({ success: true, message: 'Amizade recusada' });
     vi.spyOn(socialApi, 'getFeed').mockResolvedValue(mockFeed);
     vi.spyOn(socialApi, 'getChatHistory').mockResolvedValue([]);
     vi.spyOn(socialApi, 'markChatRead').mockResolvedValue({ success: true });
@@ -229,6 +232,37 @@ describe('Social Page Component (F-06 & F-08)', () => {
     await waitFor(() => {
       const matches = screen.getAllByText('Primeira Palavra');
       expect(matches.length).toBe(1);
+    });
+  });
+
+  it('exibe a seção de solicitações de amizade pendentes e permite aceitar uma solicitação', async () => {
+    vi.spyOn(socialApi, 'getFriendRequests').mockResolvedValueOnce([
+      {
+        friendship_id: 99,
+        requester_id: 42,
+        addressee_id: 1,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        username: 'AmigoNovo',
+        avatar_url: 'https://mist.gg/avatars/new.png',
+      },
+    ]);
+
+    render(<Social />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('section-pending-requests')).toBeInTheDocument();
+      expect(screen.getByText('AmigoNovo')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-accept-request-99')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-reject-request-99')).toBeInTheDocument();
+    });
+
+    const btnAccept = screen.getByTestId('btn-accept-request-99');
+    fireEvent.click(btnAccept);
+
+    await waitFor(() => {
+      expect(socialApi.acceptFriend).toHaveBeenCalledWith(99);
+      expect(screen.queryByTestId('btn-accept-request-99')).toBeNull();
     });
   });
 });

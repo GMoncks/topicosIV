@@ -35,9 +35,13 @@ class UserProfileResponse(BaseModel):
     id: int
     username: str
     email: str
+    real_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = "Brasil"
     wallet_balance: float
     points_balance: int
     level: int
+    total_xp: int = 100
     avatar_url: Optional[str] = None
     avatar_frame_url: Optional[str] = None
     profile_background_url: Optional[str] = None
@@ -69,3 +73,17 @@ class WalletOperationResponse(BaseModel):
     amount: float
     new_balance: float
     operation: str
+
+
+class UserProfileUpdateRequest(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=50)
+    display_name: Optional[str] = Field(None, max_length=100)
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+
+
+class WalletRechargeRequest(BaseModel):
+    amount: float = Field(..., gt=0.0, le=5000.0, description="Valor da recarga de saldo (em R$)")
+    payment_method: Optional[str] = Field("simulated", description="Método simulado de recarga")
+

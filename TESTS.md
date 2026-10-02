@@ -74,7 +74,203 @@
 - Resultado esperado: Retorno HTTP 200 e reconstituição do saldo anterior.
 - Rastreabilidade: `services/auth-service/app/services/auth_service.py`
 
+#### AUTH-UNIT-06 — Crédito atômico de Pontos MIST na conta do usuário (I-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_credit_points_success or test_credit_points_invalid_user_or_amount"`
+- Pré-condições: Usuário cadastrado no `auth-service` com saldo de pontos inicial.
+- Passos:
+  - Dado um usuário com 2.500 pontos MIST
+  - Quando o endpoint POST /users/{id}/points/credit for acionado com 1.000 pontos
+  - Então o saldo é incrementado atomicamente para 3.500 pontos, retornando status HTTP 200 e saldos anterior e atual
+- Resultado esperado: Concessão confiável e atômica de pontos sem perdas de concorrência.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-07 — Resgate de cosméticos na Loja de Pontos com validação de saldo e posse única (I-02 & I-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_purchase_points_shop_item_success or test_purchase_points_shop_duplicate_conflict or test_purchase_points_shop_insufficient_points"`
+- Pré-condições: Catálogo canônico da Loja de Pontos e usuário com saldo de pontos.
+- Passos:
+  - Dado um usuário com saldo suficiente e sem o cosmético desejado
+  - Quando envia POST /points-shop/purchase com o item_id
+  - Então os pontos são debitados atomicamente, um registro InventoryItem é criado e tentativas de compra duplicada resultam em HTTP 409 Conflict
+- Resultado esperado: Resgate de cosmético com persistência no inventário e bloqueio de compras duplicadas ou sem saldo.
+- Rastreabilidade: `services/auth-service/app/models/inventory.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-08 — Equipamento e desequipamento de moldura e plano de fundo no perfil (I-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_points_and_inventory.py -k "test_equip_and_unequip_cosmetics"`
+- Pré-condições: Usuário com itens cosméticos no inventário.
+- Passos:
+  - Dado um usuário com moldura e plano de fundo adquiridos no inventário
+  - Quando aciona POST /profile/equip com action='equip' ou 'unequip'
+  - Então os cosméticos anteriores do mesmo tipo são desativados, o item escolhido se torna ativo e o perfil do usuário (avatar_frame_url e profile_background_url) é atualizado
+- Resultado esperado: Retorno HTTP 200 com refletividade imediata no perfil do usuário.
+- Rastreabilidade: `services/auth-service/app/models/user.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-09 — Agrupamento de itens por tipo e filtros no inventário (J-01 & J-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_get_inventory_grouped_and_filtering"`
+- Pré-condições: Itens de múltiplos tipos (cartas, emoticons, planos de fundo, molduras e insígnias) e status (disponível, listado) persistidos no inventário do usuário.
+- Passos:
+  - Dado um usuário autenticado com itens de diversas categorias no inventário
+  - Quando requisita GET /inventory sem parâmetros ou com item_type e status_filter
+  - Então a resposta retorna a contagem total, lista de itens e dicionário agrupado por cada tipo de item
+- Resultado esperado: Retorno HTTP 200 com itens agrupados em chaves de categorias e filtros aplicados corretamente.
+- Rastreabilidade: `services/auth-service/app/models/inventory.py`, `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-10 — Equipamento e desequipamento granular de itens com bloqueio de itens no mercado (J-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_equip_and_unequip_item_endpoints or test_cannot_equip_listed_item_conflict or test_equip_other_user_item_forbidden"`
+- Pré-condições: Itens disponíveis e itens listados no mercado no inventário do usuário.
+- Passos:
+  - Dado itens no inventário com status 'disponivel' e outro com status 'listado'
+  - Quando aciona POST /inventory/items/{id}/equip ou POST /inventory/items/{id}/unequip
+  - Então o item disponível é equipado com sucesso atualizando o perfil, e a tentativa de equipar item listado resulta em HTTP 409 Conflict
+- Resultado esperado: Transição de status consistente entre 'disponivel' e 'equipado' e proteção contra equipar itens anunciados no mercado.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-11 — Custódia e transferência de itens do inventário para o Mercado da Comunidade (J-01 & L-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_market_custody_lock_unlock_and_transfer"`
+- Pré-condições: Usuário dono de itens no inventário e segundo usuário cadastrado.
+- Passos:
+  - Dado um item disponível no inventário de um usuário
+  - Quando os endpoints de custódia /lock, /unlock e /transfer são acionados
+  - Então o status transita para 'listado', 'disponivel' e a titularidade é transferida para o novo usuário
+- Resultado esperado: Confirmação de lock/unlock e transferência com HTTP 200 e integridade de posse.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-12 — Cálculo de XP progressivo e progressão de nível (K-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_xp_and_crafting.py -k "test_xp_engine_math"`
+- Pré-condições: Módulo xp_service disponível com função calculate_level e thresholds.
+- Passos:
+  - Dado valores de XP acumulado (100, 399, 400, 899, 900, 1600)
+  - Quando calculate_level e get_level_progress são chamados
+  - Então o nível é calculado por piso da raiz quadrada de total_xp/100 com percentual de progresso exato
+- Resultado esperado: Nível 1 para [100, 399], nível 2 para [400, 899], nível 3 para [900, 1599] e cálculos de XP restante consistentes.
+- Rastreabilidade: `services/auth-service/app/services/xp_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-13 — Forja de insígnias consumindo set completo de cartas colecionáveis (K-04 & K-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_xp_and_crafting.py -k "test_crafting_full_set_success_and_level_up"`
+- Pré-condições: Usuário autenticado com conjunto completo de cartas colecionáveis de um jogo.
+- Passos:
+  - Dado a posse de todas as cartas exigidas pelo catálogo de um jogo
+  - Quando a requisição POST /crafting/badge é enviada
+  - Então as cartas são consumidas do inventário, a Badge correspondente é criada, +100 XP é concedido e o nível progride
+- Resultado esperado: Retorno HTTP 200 com CraftBadgeResponse, badge criada e total_xp atualizado.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-14 — Visita ao perfil público com visibilidade de seções por privacidade (P-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_anonymous_visitor_privacy"`
+- Pré-condições: Usuário com seções configuradas como Privado/Todos no modelo User.
+- Passos:
+  - Dado um perfil de usuário existente com seções 'playtime' e 'inventory' como 'Privado'
+  - Quando um visitante anônimo ou terceiro consulta `GET /users/{username}/profile`
+  - Então as seções marcadas como privadas retornam `null`, enquanto badges e dados públicos permanecem visíveis
+- Resultado esperado: Retorno HTTP 200 com `PublicProfileResponse`, preservando o sigilo das seções restritas.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`, `services/auth-service/app/models/user.py`
+
+#### AUTH-UNIT-15 — Visualização do próprio perfil público com acesso integral e configurações (P-01 & P-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_self_view"`
+- Pré-condições: Usuário autenticado consultando o próprio perfil público.
+- Passos:
+  - Dado o cabeçalho `X-User-Id` correspondente ao dono do perfil
+  - Quando o endpoint `GET /users/{username}/profile` é requisitado
+  - Então o perfil retorna `relationship: 'self'`, exibe suas seções mesmo se configuradas como privadas e inclui o objeto `privacy_settings`
+- Resultado esperado: Acesso completo irrestrito ao próprio perfil e metadados de privacidade expostos apenas ao proprietário.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`
+
+#### AUTH-UNIT-16 — Atualização granular de preferências de privacidade via PATCH /me/privacy (P-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_update_privacy_settings"`
+- Pré-condições: Usuário autenticado com opções de privacidade padrão ('Todos').
+- Passos:
+  - Dado uma requisição PATCH contendo novos níveis de privacidade (`Todos`, `Amigos`, `Privado`)
+  - Quando o endpoint `/me/privacy` é executado
+  - Então os campos são persistidos no banco de dados e refletidos imediatamente nas consultas subsequentes
+- Resultado esperado: Retorno HTTP 200 com os valores atualizados confirmados.
+- Rastreabilidade: `services/auth-service/app/api/privacy.py`, `services/auth-service/app/models/user.py`
+
+#### AUTH-UNIT-17 — Erro 404 ao buscar perfil público inexistente (P-01)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_not_found"`
+- Pré-condições: Banco de usuários sem o username buscado.
+- Passos:
+  - Dado uma requisição GET para um nome de usuário que não existe
+  - Quando `GET /users/{username}/profile` é executado
+  - Então a API responde com status HTTP 404 Not Found e mensagem descritiva
+- Resultado esperado: Retorno HTTP 404 seguro.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`
+
+#### AUTH-UNIT-18 — Atualização cadastral de perfil com validação de unicidade de username
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_update_user_profile_success or test_update_user_profile_duplicate_username"`
+- Pré-condições: Usuário autenticado com token JWT no auth-service.
+- Passos:
+  - Dado dados cadastrais de perfil para atualização (username, avatar_url, real_name, bio, location)
+  - Quando `PATCH /me/profile` é acionado
+  - Então os dados são validados, impedindo nomes já utilizados e persistindo as alterações no banco de dados
+- Resultado esperado: Retorno HTTP 200 para alteração válida e HTTP 400 para username já existente.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-19 — Recarga instantânea simulada e adição de saldo à Carteira MIST
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_recharge_wallet_endpoint"`
+- Pré-condições: Usuário cadastrado no sistema auth-service.
+- Passos:
+  - Dado um valor positivo de crédito a adicionar (ex: R$ 50,00)
+  - Quando `POST /me/wallet/recharge` é executado
+  - Então o saldo da carteira é incrementado com precisão e um registro de transação do tipo recarga é emitido
+- Resultado esperado: Retorno HTTP 200 contendo o saldo anterior, valor creditado e novo saldo atualizado.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-20 — Catálogo de avatares cosméticos adicionados à Loja de Pontos
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_points_shop_catalog_has_avatars"`
+- Pré-condições: Catálogo de pontos inicializado em `points_shop_catalog.py`.
+- Passos:
+  - Dado o catálogo de itens cosméticos da Loja de Pontos
+  - Quando a lista de itens é consultada
+  - Então itens do tipo `avatar` (ex: Cyberpunk, Mage, Valkyrie, Pixel Knight, Mecha Bot) estão disponíveis com custo em pontos e URL de imagem válida
+- Resultado esperado: Existência comprovada de avatares no catálogo para compra e equipagem.
+- Rastreabilidade: `services/auth-service/app/constants/points_shop_catalog.py`
+
 ### Loja e Catálogo (Store Service)
+
 #### STORE-UNIT-01 — Criação e tipagem do modelo Game
 - Prioridade: P0
 - Status: aprovado
@@ -272,7 +468,21 @@
 - Resultado esperado: Catálogo com 25 jogos carregado no boot e modificações feitas em tempo de execução 100% persistidas.
 - Rastreabilidade: `services/store-service/app/db/seed.py`, `services/store-service/app/db/database.py`, `services/store-service/app/schemas/game.py`
 
+#### STORE-UNIT-16 — Conexão do acúmulo de Pontos MIST ao checkout de jogos (100 pts por R$ 1,00) (I-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_checkout.py -k "test_checkout_credits_points_to_auth_service"`
+- Pré-condições: Catálogo de jogos ativo e serviço financeiro/auth disponível.
+- Passos:
+  - Dado uma compra de jogo no valor de R$ 50,00 concluída com sucesso
+  - Quando a orquestração do checkout finaliza a concessão de licenças
+  - Então 5.000 Pontos MIST (100 pts/R$ 1,00) são creditados no auth-service e points_earned=5000 é retornado no payload
+- Resultado esperado: Retorno HTTP 201 Created com cálculo autoritativo e envio assíncrono dos pontos para o auth-service.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/schemas/checkout.py`
+
 ### Social e Amigos (Social Service)
+
 #### SOCIAL-UNIT-01 — Envio e aceitação de solicitações de amizade
 
 - Prioridade: P0
@@ -405,6 +615,58 @@
 - Resultado esperado: Entrega imediata de eventos via WebSocket com formato JSON padronizado.
 - Rastreabilidade: `services/social-service/app/services/notification_manager.py`, `services/social-service/app/api/notifications.py`
 
+#### SOC-UNIT-05 — Verificação de auto-relação retornando status 'self' (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_self"`
+- Pré-condições: Endpoints `/social/relationship/{a}/{b}` implementados no social-service.
+- Passos:
+  - Dado dois identificadores de usuário idênticos (ex: 1 e 1)
+  - Quando a rota `/social/relationship/1/1` é consultada
+  - Então a resposta retorna `{"relationship": "self"}` com código HTTP 200
+- Resultado esperado: Reconhecimento imediato do próprio usuário.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/api/routes.py`
+
+#### SOC-UNIT-06 — Detecção bidirecional de amizade confirmada (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_friend"`
+- Pré-condições: Relação de amizade com status 'accepted' no banco do social-service.
+- Passos:
+  - Dado uma amizade aceita entre usuário 1 e usuário 2
+  - Quando `GET /social/relationship/1/2` e `GET /social/relationship/2/1` são consultados
+  - Então ambas as rotas retornam `{"relationship": "friend"}`
+- Resultado esperado: Consistência bilateral na resolução da relação de amizade.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOC-UNIT-07 — Resolução de relação sem vínculo e membros do mesmo grupo (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_none_and_group"`
+- Pré-condições: Usuários sem amizade mútua, com e sem grupo compartilhado.
+- Passos:
+  - Dado usuários sem amizade e sem grupos comuns, a consulta retorna `relationship: 'none'`
+  - Dado que os mesmos usuários passam a compartilhar a participação em um mesmo grupo
+  - Quando a rota de relação é consultada novamente
+  - Então o status transiciona para `relationship: 'group_member'`
+- Resultado esperado: Resolução correta da hierarquia social entre usuários.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOC-UNIT-08 — Listagem e processamento de solicitações pendentes de amizade com notificações em tempo real
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_friend_requests.py -k "test_list_friend_requests_pending or test_accept_friend_request_flow or test_reject_friend_request_flow"`
+- Pré-condições: Usuário remetente enviando solicitação para destinatário no social-service.
+- Passos:
+  - Dado um pedido de amizade enviado de A para B
+  - Quando B consulta `GET /friends/requests`
+  - Então o pedido aparece na lista com perfil real do remetente e pode ser aceito ou rejeitado
+- Resultado esperado: Retorno HTTP 200 nas rotas de listagem, aceite e rejeição com notificações push emitidas.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/api/routes.py`
 
 ### Inteligência Artificial e Agentes (MIST AI)
 #### AI-UNIT-01 — Resolução multi-provedor e fallback determinístico do AIClient
@@ -510,6 +772,19 @@
   - Quando `GET /library/users/{id}/has-game/{game_id}` é chamado em cada estágio
   - Então o campo `playtime_minutes` retorna 0, 0 e o valor real, respectivamente, mantendo `owned` correto
 - Resultado esperado: Extensão aditiva e retrocompatível do endpoint, consumida pelo `store-service` no Bloco H.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+#### LIB-UNIT-07 — Drop de cartas colecionáveis no ping de sessão com probabilidade configurável (K-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_ping_card_drop_mechanic"`
+- Pré-condições: Sessão de jogo ativa iniciada na biblioteca.
+- Passos:
+  - Dado uma sessão de jogo com status ativo
+  - Quando o endpoint POST /session/ping é acionado periodicamente
+  - Então o sistema avalia a probabilidade de drop por minuto jogado e despacha a concessão de carta temática
+- Resultado esperado: Retorno HTTP 200 contendo `card_dropped` com os metadados da carta sorteada quando acionado.
 - Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
 
 ### Mercado e Carteira (Market Service)
@@ -1318,6 +1593,214 @@
 - Resultado esperado: Reconhecimento do criador de conteúdo e métricas consolidadas.
 - Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
 
+#### FRONT-UNIT-41 — Exibição dinâmica de moldura e plano de fundo e alternância para o inventário no Profile (I-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
+- Pré-condições: Componente Profile montado com usuário autenticado contendo cosméticos equipados.
+- Passos:
+  - Dado o perfil com moldura e background configurados
+  - Quando a página é renderizada e o usuário clica na aba de Inventário
+  - Então a moldura envolve o avatar com animação, o background é renderizado no topo e a seção de inventário lista os itens com botões de equipar e desequipar
+- Resultado esperado: Apresentação estilizada dos cosméticos ativos e interatividade completa no inventário do perfil.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-42 — Catálogo, resgate de cosméticos e atualização de saldo de pontos no PointsShop (I-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx`
+- Pré-condições: Catálogo de cosméticos disponível e usuário com saldo de pontos.
+- Passos:
+  - Dado o catálogo de itens da Loja de Pontos exibido com preços e status de posse
+  - Quando o usuário clica em "Resgatar" em um item disponível
+  - Então o endpoint da API é acionado, o saldo de pontos é atualizado e o item transita para "Adquirido"
+- Resultado esperado: Fluxo fluido de resgate com atualização de estado local e feedback visual imediato ao usuário.
+- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`, `frontend/src/pages/PointsShop.test.tsx`
+
+#### FRONT-UNIT-43 — Atividade recente inteligente e contador dinâmico de jogos no Profile (I-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
+- Pré-condições: Perfil do usuário renderizado com integração a feed de atividades e biblioteca de jogos.
+- Passos:
+  - Dado o usuário acessando o seu perfil com conquistas recentes e aquisições de jogos registradas
+  - Quando a aba "Atividade recente" é visualizada
+  - Então os eventos reais de desbloqueio de conquistas e aquisição de jogos são renderizados no feed de atividade, o contador de jogos exibe a quantidade real da biblioteca e a seta estética ao lado do nome de usuário é suprimida
+- Resultado esperado: Feed de atividades dinâmico, inteligente e fiel aos acontecimentos reais da conta do jogador no ecossistema MIST.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-44 — Listagem de jogos com barra de progresso de conquistas e tempo de jogo no Profile (I-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx`
+- Pré-condições: Usuário possuindo jogos na biblioteca com horas jogadas e conquistas desbloqueadas.
+- Passos:
+  - Dado a página de perfil com a aba ou atalho lateral de "Jogos"
+  - Quando o usuário clica em "Jogos"
+  - Então a seção "Meus Jogos" é exibida, listando cada jogo da biblioteca com seu tempo de jogo formatado, data da última sessão e barra de progresso percentual de conquistas
+- Resultado esperado: Visualização analítica dos títulos do usuário com foco no engajamento, horas jogadas e progressão de conquistas.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-45 — Renderização do Inventário Completo com abas de categorias e contadores (J-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "renderiza o cabeçalho, abas e grid com contadores corretos"`
+- Pré-condições: Endpoint de inventário mockado retornando itens distribuídos em cartas, emoticons, planos de fundo, molduras e insígnias.
+- Passos:
+  - Dado a montagem da página Inventory.tsx
+  - Quando a consulta à API de inventário é resolvida
+  - Então o cabeçalho, as abas de categorias com contadores dinâmicos e os cards de itens são renderizados na interface
+- Resultado esperado: Exibição completa da taxonomia do inventário com badges e contadores precisos.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`
+
+#### FRONT-UNIT-46 — Filtros por status, busca e ações de equipar/desequipar no Inventário (J-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "filtra itens ao selecionar uma aba de categoria|filtra itens por status|equipa um item disponível|desequipa um item previamente equipado|impede ação de equipar em itens com status listado"`
+- Pré-condições: Itens disponíveis, equipados e anunciados no mercado exibidos no inventário.
+- Passos:
+  - Dado a navegação pelas abas de filtro e cards de itens no grid
+  - Quando o usuário filtra por status, busca por texto ou clica em Equipar/Desequipar
+  - Então a listagem filtra instantaneamente, itens no mercado permanecem bloqueados e ações de equipar atualizam o estado visual
+- Resultado esperado: Interatividade responsiva de filtros e execução das ações de equipar/desequipar com feedback toast.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-47 — Exibição da barra de XP progressivo e nível no Profile (K-06 & K-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "exibe a barra de XP progressivo"`
+- Pré-condições: Usuário autenticado com resposta da API de nível e progresso de XP.
+- Passos:
+  - Dado o carregamento da página Profile.tsx com autenticação
+  - Quando a consulta a `cardsApi.getLevelProgress` é resolvida
+  - Então o header exibe o badge com o nível calculado e a barra de progresso com os percentuais e XP restante
+- Resultado esperado: Elemento `profile-xp-header` renderizado com os valores precisos de nível e XP.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/components/Sidebar.tsx`
+
+#### FRONT-UNIT-48 — Conjuntos de cartas colecionáveis e fluxo modal de forja de insígnias no Inventário (K-04 & K-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "exibe banner de crafting de insígnias|executa forja de insígnia"`
+- Pré-condições: Usuário no inventário na aba "Cartas" com conjunto de 3 cartas disponíveis.
+- Passos:
+  - Dado a seleção da aba de Cartas
+  - Quando o usuário visualiza o banner de Forja e clica em "Forjar Insígnia" confirmando no modal
+  - Então o sistema dispara a requisição `cardsApi.craftBadge`, atualiza a lista e exibe modal celebratório de sucesso
+- Resultado esperado: Forja bem-sucedida com feedback celebratório indicando novo nível e XP acumulado.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-49 — Exibição de badge de relação contextual no Perfil Público (P-03 & P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-49"`
+- Pré-condições: Página `PublicProfile.tsx` montada para usuários com relações `none`, `friend` e `self`.
+- Passos:
+  - Dado o carregamento do perfil de um usuário não-amigo, amigo ou o próprio usuário
+  - Quando a resposta da API define o atributo `relationship`
+  - Então o perfil exibe o chip correspondente ("Amigo", "Você mesmo") e botões de ação ("Adicionar Amigo", "Mensagem" ou "Privacidade")
+- Resultado esperado: Badges `profile-relation-badge-*` renderizados com cores e ações exclusivas.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`
+
+#### FRONT-UNIT-50 — Ocultação de seções privadas com cadeado no Perfil Público (P-01 & P-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-50"`
+- Pré-condições: Perfil retornado com campos de seções iguais a `null` por restrição de privacidade.
+- Passos:
+  - Dado um usuário que definiu jogos, conquistas ou inventário como privados
+  - Quando outro jogador visita seu perfil público
+  - Então as seções afetadas exibem o indicador com ícone de cadeado e mensagem "Privado" / "Oculto"
+- Resultado esperado: Elementos `section-hidden-*` presentes sem vazamento de dados confidenciais.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`
+
+#### FRONT-UNIT-51 — Exibição e cópia do ID de usuário para solicitação de amizade (P-03 & P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-51"`
+- Pré-condições: Perfil com ID numérico conhecido e botão de cópia de ID.
+- Passos:
+  - Dado a visualização do cabeçalho do perfil
+  - Quando o usuário clica no botão "Copiar" ao lado do ID
+  - Então o ID numérico é transferido para a área de transferência e o botão exibe o estado "Copiado!"
+- Resultado esperado: Elemento `profile-user-id` presente e botão interativo com feedback visual.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`, `frontend/src/pages/Profile.tsx`
+
+#### FRONT-UNIT-52 — Modal de configurações de privacidade de seções (P-02 & P-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/PrivacySettingsModal.test.tsx -t "FRONT-UNIT-52"`
+- Pré-condições: Modal `PrivacySettingsModal.tsx` aberta com 6 seções configuráveis.
+- Passos:
+  - Dado as 6 seções (Jogos, Conquistas, Horas de Jogo, Inventário, Screenshots, Grupos)
+  - Quando o usuário alterna opções entre Todos, Amigos e Privado e clica em Salvar
+  - Então a requisição PATCH para `publicProfileApi.updatePrivacySettings` é disparada com o payload exato
+- Resultado esperado: Seleção precisa das opções e salvamento assíncrono com feedback toast.
+- Rastreabilidade: `frontend/src/components/PrivacySettingsModal.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-53 — Modal de recarga de saldo da Carteira MIST com opções pré-definidas e valor customizado
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AddFundsModal.test.tsx`
+- Pré-condições: Componente `AddFundsModal.tsx` renderizado.
+- Passos:
+  - Dado a abertura da modal de recarga
+  - Quando o usuário seleciona um valor pré-definido (ex: R$ 50,00) ou insere um valor personalizado e confirma
+  - Então a chamada `walletApi.recharge` é disparada, o saldo no contexto global é atualizado e eventos `mist:wallet-updated` e `mist:toast` são emitidos
+- Resultado esperado: Modal interativa com cálculo de valor, chamada de API e feedback de sucesso.
+- Rastreabilidade: `frontend/src/components/AddFundsModal.tsx`, `frontend/src/components/AddFundsModal.test.tsx`
+
+#### FRONT-UNIT-54 — Modal de seleção de foto de perfil com avatares do inventário e upload de imagem própria
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AvatarSelectModal.test.tsx`
+- Pré-condições: Componente `AvatarSelectModal.tsx` renderizado.
+- Passos:
+  - Dado a abertura da modal de alteração de foto
+  - Quando o usuário navega entre a aba de avatares adquiridos e a aba de upload
+  - Então os avatares do inventário são listados para seleção direta ou a foto carregada/URL informada é aplicada
+- Resultado esperado: Callback `onSelectAvatar` acionado com a URL correta e fechamento da modal.
+- Rastreabilidade: `frontend/src/components/AvatarSelectModal.tsx`, `frontend/src/components/AvatarSelectModal.test.tsx`
+
+#### FRONT-UNIT-55 — Edição de nome de usuário e foto de perfil na página Profile
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "permite iniciar edição do perfil"`
+- Pré-condições: Perfil do usuário montado com botão de editar perfil.
+- Passos:
+  - Dado o clique em "Editar perfil"
+  - Quando o usuário altera o nome de usuário, seleciona uma foto e clica em "Salvar Perfil"
+  - Então a API `profileApi.updateProfile` é chamada com os dados atualizados e o contexto do usuário é sincronizado
+- Resultado esperado: Formulário de edição interativo com salvamento assíncrono e feedback positivo.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-56 — Gestão visual e ações de aceitar/rejeitar pedidos de amizade na página Social
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "exibe a seção de solicitações de amizade pendentes"`
+- Pré-condições: Usuário com solicitações de amizade pendentes recebidas.
+- Passos:
+  - Dado a renderização da página de comunidade Social
+  - Quando há pedidos pendentes listados no banner superior
+  - Então o usuário pode aceitar (`socialApi.acceptFriend`) ou rejeitar (`socialApi.deleteFriend`) o pedido com remoção instantânea da fila e feedback
+- Resultado esperado: Seção `section-pending-requests` visível com botões de ação e integração de rede.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
 ## Integração
 
 
@@ -1843,7 +2326,6 @@
 #### REG-FRONT-01 — Preservação da paleta de cor secundária (#1F4D36)
 - Prioridade: P2
 - Status: aprovado
-
 - Runner: vitest
 - Comando: `npm --prefix frontend run test:unit -- src/test/theme.test.ts`
 - Pré-condições: Variáveis de tema e estilos Tailwind carregados.
@@ -1887,6 +2369,118 @@
 - Resultado esperado: Identidade visual uniforme e fundo opaco contrastante idêntico ao Dropdown de Notificações (`NotificationsDropdown.tsx`).
 - Rastreabilidade: `frontend/src/components/GlobalSearchDropdown.tsx`, `frontend/src/components/NotificationsDropdown.tsx`
 
+#### REG-FRONT-04 — Crédito imediato de Pontos MIST no saldo do usuário após checkout
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/CheckoutModal.test.tsx -t "deve creditar pontos e atualizar saldo"`
+- Causa raiz: `CheckoutModal.tsx` e `CartDrawer.tsx` chamavam `updateUserBalance(res.new_wallet_balance)` omitindo o segundo parâmetro `newPoints` e não despachavam `mist:points-updated`. O saldo permanecia inalterado no frontend até navegações ou compras subsequentes.
+- Reprodução original: Comprar um jogo na loja com saldo MIST; o saldo de pontos permanecia 500 no header e na loja de pontos até resgatar outro cosmético.
+- PR/Commit relacionado: Prompt 59
+- Pré-condições: Usuário autenticado com saldo em carteira e saldo inicial de pontos.
+- Passos:
+  - Dado um usuário autenticado com 500 pontos MIST e R$ 200,00 na carteira
+  - Quando finaliza a compra de um jogo de R$ 47,49 (rendendo 4.749 pontos)
+  - Então `updateUserBalance` é acionado imediatamente com saldo R$ 152,51 e 5.249 pontos, e o evento `mist:points-updated` é emitido
+- Resultado esperado: Saldo de pontos sincronizado em tempo real no estado global sem necessidade de recarregamento.
+- Rastreabilidade: `frontend/src/components/CheckoutModal.tsx`, `frontend/src/components/CartDrawer.tsx`
+
+#### REG-FRONT-05 — Estilização dourada autêntica para a Moldura Mestre Dourada (frame_gold)
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "aplica estilização dourada"`
+- Causa raiz: O avatar no `Profile.tsx` possuía classes fixas em tons ciano/azul (`ring-cyan-400`, `border-cyan-300/80`, `shadow-[0_0_30px_rgba(6,182,212,0.7)]`) para qualquer moldura equipada, fazendo a moldura dourada parecer azul.
+- Reprodução original: Equipar a "Moldura Mestre Dourada" no inventário e inspecionar o avatar no perfil.
+- PR/Commit relacionado: Prompt 59
+- Pré-condições: Usuário com a moldura `frame_gold` equipada no perfil.
+- Passos:
+  - Dado um usuário com a moldura `frame_gold` ativa
+  - Quando a página de perfil é renderizada
+  - Então o container do avatar e a moldura recebem classes de tom âmbar/dourado (`ring-amber-400`, `border-amber-300`, `shadow-[0_0_35px_rgba(245,158,11,0.85)]`)
+- Resultado esperado: Avatar com anel, borda e brilho dourados condizentes com o cosmético lendário.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`
+
+#### REG-FRONT-06 — Título e descrição do Hero Banner da Loja de Pontos
+- Prioridade: P2
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx -t "exibe o banner atualizado"`
+- Causa raiz: O banner exibia texto estático "A LOJA DE PONTOS / Compre jogos, ganhe pontos" em vez da redação atualizada do layout.
+- Reprodução original: Acessar a Loja de Pontos e verificar o banner superior.
+- PR/Commit relacionado: Prompt 59
+- Pré-condições: Loja de Pontos renderizada.
+- Passos:
+  - Dado que o usuário navega para a aba da Loja de Pontos
+  - Quando a tela for carregada
+  - Então o banner exibe o título "Loja de MIST Points" e a descrição "Personalize a sua experiência no MIST com molduras de avatar, planos de fundo exclusivos, e muito mais."
+- Resultado esperado: Textos institucionais do banner alinhados com as especificações visuais do MIST.
+- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`
+
+#### REG-FRONT-07 — Exclusão e saneamento de registros corrompidos com game_id 0
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "filtra e não exibe jogo inexistente ou corrompido com game_id 0"`
+- Causa raiz: Registros com `game_id: 0` geravam cards de título com fallback "Jogo #0" e imagem genérica tanto na Biblioteca quanto na listagem de jogos do Perfil.
+- Reprodução original: Acessar Minha Biblioteca ou aba Jogos do Perfil e notar a presença de "Jogo #0".
+- PR/Commit relacionado: Prompt 59
+- Pré-condições: Itens de biblioteca retornados da API.
+- Passos:
+  - Dado a presença de registros com `game_id <= 0` ou sem metadados válidos
+  - Quando a Biblioteca e a aba Jogos do Perfil carregam a lista de jogos
+  - Então itens com `game_id <= 0` são estritamente filtrados antes de renderizar os cards e calcular estatísticas
+- Resultado esperado: Nenhum card de "Jogo #0" exibido na interface.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Profile.tsx`, `services/library-service/app/services/library_service.py`
+
+#### REG-FRONT-08 — Estilização dourada no card de preview da Moldura Mestre Dourada na Loja de Pontos
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PointsShop.test.tsx -t "aplica estilização com borda dourada"`
+- Causa raiz: No `PointsShop.tsx`, o card de item do tipo `avatar_frame` possuía classes fixas em tom ciano (`border-cyan-400/80`, `shadow-[0_0_15px_rgba(6,182,212,0.6)]`) no anel em torno do avatar de exemplo para qualquer moldura do catálogo.
+- Reprodução original: Acessar a Loja de Pontos e verificar o card da "Moldura Mestre Dourada". O anel do avatar aparecia em azul neon ciano.
+- PR/Commit relacionado: Prompt 44
+- Pré-condições: Catálogo da Loja de Pontos renderizado contendo a moldura dourada (`frame_gold`).
+- Passos:
+  - Dado o catálogo de cosméticos na Loja de Pontos com a moldura "Moldura Mestre Dourada"
+  - Quando os cards são renderizados na interface
+  - Então o anel em volta do avatar de preview recebe classes douradas (`border-amber-400`, `shadow-[0_0_20px_rgba(245,158,11,0.85)]`, `ring-2 ring-amber-300/60`) em vez de azul neon
+- Resultado esperado: Card de cosmético com preview de moldura com anel e brilho dourados condizentes.
+- Rastreabilidade: `frontend/src/pages/PointsShop.tsx`
+
+#### REG-FRONT-09 — Exibição exata do novo saldo da carteira na tela de sucesso pós-compra unitária (Comprar Agora)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/CheckoutModal.test.tsx -t "deve creditar pontos e atualizar saldo"`
+- Causa raiz: A tela de sucesso do `CheckoutModal.tsx` calculava `projectedBalance = walletBalance - gamePrice`. Como o callback `updateUserBalance` já atualizava o saldo do contexto global para o novo valor debitado, o re-render recalculava `walletBalance - gamePrice` sobre o saldo já abatido, provocando dupla subtração e exibindo valores errados ou negativos caso o saldo restante fosse menor que o valor do jogo.
+- Reprodução original: Ter um saldo e comprar um jogo via "Comprar agora" que consumisse grande parte do saldo. Na tela de sucesso, o saldo restante aparecia negativo.
+- PR/Commit relacionado: Prompt 44
+- Pré-condições: Modal de checkout aberto com saldo suficiente para compra direta.
+- Passos:
+  - Dado um usuário com R$ 200,00 comprando um jogo de R$ 47,49
+  - Quando a compra é confirmada com sucesso via API
+  - Então a tela de sucesso exibe o `new_wallet_balance` autoritativo devolvido pelo backend (R$ 152,51) sem recalcular e sem duplicar o abatimento do preço
+- Resultado esperado: Novo saldo disponível exibido condizente com a resposta real da transação.
+- Rastreabilidade: `frontend/src/components/CheckoutModal.tsx`
+
+#### REG-FRONT-10 — Contraste e visibilidade imediata do texto digitado no chat com MIST Bot
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/ChatWindow.test.tsx -t "garante contraste legível com bg-brand-card"`
+- Causa raiz: No `ChatWindow.tsx`, o `<input>` e os botões de sugestão rápida utilizavam a classe inexistente `bg-brand-dark/80` (não configurada no `tailwind.config.js`). O navegador aplicava fundo branco padrão enquanto a classe `text-white` renderizava o texto digitado na cor branca, resultando em texto invisível/em branco.
+- Reprodução original: Abrir o chat com o MIST Bot e digitar uma mensagem ou clicar numa sugestão rápida. O texto inserido parecia desaparecer/ficar em branco.
+- PR/Commit relacionado: Prompt 45
+- Pré-condições: Janela de chat aberta na aplicação.
+- Passos:
+  - Dado o componente ChatWindow renderizado para conversa direta ou bot
+  - Quando o usuário digita no input ou aciona uma sugestão
+  - Então o elemento possui a classe `bg-brand-card` (fundo escuro `#1a1a24`) e `text-white`, garantindo alto contraste e visibilidade imediata dos caracteres
+- Resultado esperado: Texto visível, com contraste e destaque sem desaparecer ao digitar.
+- Rastreabilidade: `frontend/src/components/ChatWindow.tsx`, `frontend/src/components/ChatWindow.test.tsx`
+
 ### Autenticação
 #### REG-AUTH-01 — Suporte a débito de R$ 0,00 para jogos gratuitos
 - Prioridade: P1
@@ -1903,6 +2497,56 @@
   - Então o endpoint aceita a requisição com HTTP 200 sem alterar o saldo e sem disparar exceção 422
 - Resultado esperado: HTTP 200 com new_balance idêntico ao previous_balance.
 - Rastreabilidade: `services/auth-service/app/schemas/user.py`, `services/auth-service/app/services/auth_service.py`
+
+### Biblioteca e Conquistas (Library Service)
+#### REG-LIB-01 — Isolamento e purga automática de conquistas intrusas e duplicadas entre jogos
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_achievements.py -k "test_seed_purges_corrupted_mixed_achievements"`
+- Causa raiz: Inconsistência histórica entre o fallback estático e o catálogo oficial provocou a atribuição de conquistas de jogos distintos aos mesmos IDs (ex: Baldur's Gate 3 com conquistas de MIST Forca no ID 13, e MIST Labirinto com conquistas de Quiz no ID 15). O seed não limpava conquistas órfãs ou pertencentes a outros títulos ao atualizar o banco.
+- Reprodução original: Acessar os cards de Baldur's Gate 3 ou MIST Labirinto no perfil ou biblioteca e constatar 6 conquistas misturadas em vez de 3.
+- PR/Commit relacionado: Prompt 44
+- Pré-condições: Execução da rotina de inicialização e seed do `library-service`.
+- Passos:
+  - Dado a presença de conquistas de títulos alheios associadas a um `game_id` no banco SQLite
+  - Quando a rotina `seed_achievements` executa no startup ou manutenção
+  - Então conquistas cujos IDs não pertencem à lista canônica do jogo são purgadas e deletadas do banco, garantindo exatamente as conquistas exclusivas daquele título
+- Resultado esperado: Cada jogo exibe estritamente 3 conquistas próprias (ex: Baldur's Gate 3 com Início, Jogador Dedicado e Conquistador Lendário; MIST Labirinto com Primeiros Passos, Escapista e Velocista da Masmorra).
+- Rastreabilidade: `services/library-service/app/db/seed_achievements.py`, `services/library-service/tests/test_achievements.py`
+
+### Social e Chat (Social Service)
+#### REG-SOC-01 — Deduplicação estrita de atividades repetidas e purga de títulos mock no feed
+- Prioridade: P1
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "deve deduplicar itens repetidos do feed de atividades"`
+- Causa raiz: Múltiplas sessões repetidas de jogo ou testes gravavam instâncias redundantes da mesma conquista/compra na tabela de atividades do `social.db` sem unicidade. Além disso, o seed e o feed carregavam atividades antigas contendo jogos inexistentes no catálogo (ex: Space Marine 2).
+- Reprodução original: Acessar a aba Social ou Perfil e observar 5 ou mais entradas repetidas da mesma conquista ("Primeira Palavra em Jogo #13"), além de conquistas de jogos mock inexistentes.
+- PR/Commit relacionado: Prompt 45
+- Pré-condições: Feed social consultado com atividades redundantes no histórico.
+- Passos:
+  - Dado uma lista de atividades contendo eventos repetidos com mesmo usuário, tipo, jogo e conquista
+  - Quando o feed é consultado via backend ou renderizado no frontend
+  - Então registros repetidos são deduplicados e jogos inexistentes são filtrados, exibindo apenas uma única ocorrência por conquista/jogo
+- Resultado esperado: Feed limpo, com atividades singulares e títulos resolvidos.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/db/seed_social.py`, `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
+
+#### REG-SOC-02 — Respostas inteligentes e contextuais sobre títulos do catálogo no MIST Companion Bot
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_companion_bot.py -k "test_bot_contextual_game_strategy_reply"`
+- Causa raiz: Na indisponibilidade de chave válida para LLM externa (ou retorno de fallback padrão), o bot retornava respostas genéricas estáticas repetidas de conquistas ao responder a perguntas específicas sobre títulos como Hollow Knight: Silksong ou Baldur's Gate 3.
+- Reprodução original: Enviar ao MIST Bot a mensagem "Sim, eu gostaria de ajuda para ganhar as conquistas do Silksong" e receber a resposta genérica repetida "Conquistas são a melhor parte! A cada nova conquista você ganha XP...".
+- PR/Commit relacionado: Prompt 45
+- Pré-condições: Chat direto com o MIST Bot ativo.
+- Passos:
+  - Dado uma mensagem do usuário solicitando estratégias ou ajuda de conquistas para um título específico (ex: Silksong)
+  - Quando o bot processa a requisição via WebSocket ou REST
+  - Então o bot reconhece o jogo e a intenção, retornando dicas detalhadas e específicas sobre mecânicas do título (Hornet, agulha em diagonal, seda, Pharloom) sem recorrer à resposta genérica
+- Resultado esperado: Resposta inteligente contextual e relevante para o jogo consultado.
+- Rastreabilidade: `services/social-service/app/services/ai_client.py`, `services/social-service/tests/test_companion_bot.py`
 
 ## Smoke
 

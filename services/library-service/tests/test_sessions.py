@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from datetime import datetime, timezone
 from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
@@ -141,7 +142,7 @@ def test_unlock_achievement_with_activity_dispatch(db_session, client):
             "/achievements/unlock",
             json={
                 "user_id": 1,
-                "game_id": 13,
+                "game_id": 14,
                 "achievement_id": "first_word"
             }
         )
@@ -173,7 +174,7 @@ def test_recent_achievements_polling(db_session, client):
     # 2. Desbloqueia conquista
     client.post(
         "/achievements/unlock",
-        json={"user_id": 1, "game_id": 13, "achievement_id": "first_word"}
+        json={"user_id": 1, "game_id": 14, "achievement_id": "first_word"}
     )
 
     # 3. Consulta recentes com X-User-Id
@@ -221,4 +222,54 @@ def test_session_dispatches_presence_events(db_session, client):
         assert kwargs.get("user_id") == 1
         assert kwargs.get("status") == "online"
         assert kwargs.get("game_id") is None
+
+
+def test_session_ping_card_drop_mechanic(db_session, client):
+    """
+    Testa a mecânica de drop de cartas colecionáveis durante o ping da sessão de jogo (K-02).
+    """
+    # Cria licença na biblioteca
+    item = LibraryItem(
+        user_id=1,
+        game_id=14,
+        acquired_at=datetime.now(timezone.utc),
+        playtime_minutes=0,
+        is_installed=True
+    )
+    db_session.add(item)
+    db_session.commit()
+
+    # Inicia sessão
+    start_res = client.post(
+        "/session/start",
+        json={"user_id": 1, "game_id": 14, "session_token": "token_card_drop"}
+    )
+    assert start_res.status_code == 200
+    session_id = start_res.json()["session_id"]
+
+    mock_card = {
+        "card_name": "Geralt Lendário",
+        "rarity": "Raro",
+        "is_foil": False,
+        "card_art_url": "https://img.test/card.jpg"
+    }
+
+    with patch("random.random", return_value=0.01):
+        with patch("app.services.library_service.LibraryService.dispatch_card_grant", return_value=mock_card) as mock_grant:
+            ping_res = client.post(
+                "/session/ping",
+                json={
+                    "user_id": 1,
+                    "game_id": 14,
+                    "session_id": session_id,
+                    "minutes_delta": 2
+                }
+            )
+            assert ping_res.status_code == 200
+            data = ping_res.json()
+            assert data["status"] == "active"
+            assert data["card_dropped"] is not None
+            assert data["card_dropped"]["card_name"] == "Geralt Lendário"
+            assert mock_grant.called
+
 

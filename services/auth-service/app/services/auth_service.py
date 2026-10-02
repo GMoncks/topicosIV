@@ -174,6 +174,281 @@ def credit_wallet(db: Session, user_id: int, amount: float) -> Dict[str, Any]:
     }
 
 
+from app.models.inventory import InventoryItem
+from app.constants.points_shop_catalog import POINTS_SHOP_CATALOG, get_catalog_item
+
+
+def credit_points(db: Session, user_id: int, amount: int) -> Dict[str, Any]:
+    """Credita Pontos MIST de forma atômica na conta do usuário."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+    if amount <= 0:
+        raise ValueError("O montante de pontos a creditar deve ser positivo")
+
+    previous_balance = int(user.points_balance)
+    db.query(User).filter(User.id == user_id).update(
+        {User.points_balance: User.points_balance + amount},
+        synchronize_session="fetch"
+    )
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "user_id": user_id,
+        "previous_balance": previous_balance,
+        "amount": amount,
+        "new_balance": int(user.points_balance),
+        "operation": "credit"
+    }
+
+
+def get_points_shop_items(db: Session, user_id: Optional[int] = None) -> list:
+    """Retorna itens do catálogo da Loja de Pontos marcando quais o usuário já possui."""
+    owned_ids = set()
+    if user_id:
+        items = db.query(InventoryItem.item_id).filter(InventoryItem.user_id == user_id).all()
+        owned_ids = {i[0] for i in items}
+
+    catalog = []
+    for item in POINTS_SHOP_CATALOG:
+        catalog.append({
+            **item,
+            "is_owned": item["id"] in owned_ids
+        })
+    return catalog
+
+
+def purchase_points_item(db: Session, user_id: int, item_id: str) -> Dict[str, Any]:
+    """Deduz pontos e adiciona cosmético ao inventário do usuário."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    catalog_item = get_catalog_item(item_id)
+    if not catalog_item:
+        raise LookupError(f"Item cosmético '{item_id}' não encontrado no catálogo da Loja de Pontos")
+
+    existing = db.query(InventoryItem).filter(
+        InventoryItem.user_id == user_id,
+        InventoryItem.item_id == item_id
+    ).first()
+    if existing:
+        raise KeyError("Você já possui este item cosmético em seu inventário")
+
+    price = catalog_item["price_points"]
+    if user.points_balance < price:
+        raise ValueError(f"Saldo insuficiente de Pontos MIST. Necessário: {price}, Atual: {user.points_balance}")
+
+    # Dedução atômica condicional
+    result = db.query(User).filter(
+        User.id == user_id,
+        User.points_balance >= price
+    ).update(
+        {User.points_balance: User.points_balance - price},
+        synchronize_session="fetch"
+    )
+    if result == 0:
+        raise ValueError("Saldo insuficiente de Pontos MIST")
+
+    new_item = InventoryItem(
+        user_id=user_id,
+        item_id=catalog_item["id"],
+        name=catalog_item["name"],
+        item_type=catalog_item["item_type"],
+        asset_url=catalog_item["asset_url"],
+        price_points=price,
+        is_equipped=False
+    )
+    db.add(new_item)
+    db.commit()
+    db.refresh(user)
+    db.refresh(new_item)
+
+    return {
+        "success": True,
+        "message": f"Cosmético '{catalog_item['name']}' resgatado com sucesso!",
+        "item": new_item,
+        "new_points_balance": int(user.points_balance)
+    }
+
+
+def equip_inventory_item(db: Session, user_id: int, inventory_item_id: int) -> Dict[str, Any]:
+    """Equipa um item do inventário do usuário e atualiza seu perfil visual."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    item = db.query(InventoryItem).filter(
+        InventoryItem.id == inventory_item_id,
+        InventoryItem.user_id == user_id
+    ).first()
+    if not item:
+        raise LookupError("Item não encontrado no seu inventário")
+
+    if item.status == "listado":
+        raise ValueError("Item listado no mercado não pode ser equipado.")
+
+    # Desequipa itens anteriores do mesmo tipo pertencentes ao usuário
+    db.query(InventoryItem).filter(
+        InventoryItem.user_id == user_id,
+        InventoryItem.item_type == item.item_type,
+        InventoryItem.id != item.id
+    ).update({"is_equipped": False, "status": "disponivel"}, synchronize_session="fetch")
+
+    item.is_equipped = True
+    item.status = "equipado"
+
+    if item.item_type in ("avatar_frame", "moldura"):
+        user.avatar_frame_url = item.asset_url
+    elif item.item_type in ("background", "plano_de_fundo"):
+        user.profile_background_url = item.asset_url
+    elif item.item_type in ("avatar",):
+        user.avatar_url = item.asset_url
+
+    db.commit()
+    db.refresh(user)
+    db.refresh(item)
+
+    return {
+        "success": True,
+        "message": f"'{item.name}' equipado com sucesso!",
+        "equipped_item": item,
+        "avatar_url": user.avatar_url,
+        "avatar_frame_url": user.avatar_frame_url,
+        "profile_background_url": user.profile_background_url
+    }
+
+
+def unequip_inventory_item(db: Session, user_id: int, inventory_item_id: int) -> Dict[str, Any]:
+    """Desequipa um item do inventário e limpa o cosmético correspondente no perfil."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    item = db.query(InventoryItem).filter(
+        InventoryItem.id == inventory_item_id,
+        InventoryItem.user_id == user_id
+    ).first()
+    if not item:
+        raise LookupError("Item não encontrado no seu inventário")
+
+    item.is_equipped = False
+    item.status = "disponivel"
+
+    if item.item_type in ("avatar_frame", "moldura") and user.avatar_frame_url == item.asset_url:
+        user.avatar_frame_url = None
+    elif item.item_type in ("background", "plano_de_fundo") and user.profile_background_url == item.asset_url:
+        user.profile_background_url = None
+    elif item.item_type in ("avatar",) and user.avatar_url == item.asset_url:
+        pass  # Mantém avatar atual ou volta ao padrão
+
+    db.commit()
+    db.refresh(user)
+    db.refresh(item)
+
+    return {
+        "success": True,
+        "message": f"'{item.name}' desequipado com sucesso",
+        "equipped_item": item,
+        "avatar_url": user.avatar_url,
+        "avatar_frame_url": user.avatar_frame_url,
+        "profile_background_url": user.profile_background_url
+    }
+
+
+def equip_cosmetic(db: Session, user_id: int, inventory_item_id: int, action: str = "equip") -> Dict[str, Any]:
+    """Retrocompatibilidade com a rota /profile/equip."""
+    if action == "unequip":
+        return unequip_inventory_item(db, user_id=user_id, inventory_item_id=inventory_item_id)
+    return equip_inventory_item(db, user_id=user_id, inventory_item_id=inventory_item_id)
+
+
+def lock_inventory_item(db: Session, user_id: int, item_id: int) -> InventoryItem:
+    """Bloqueia item para anúncio ou oferta de troca no Mercado da Comunidade."""
+    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
+    if not item:
+        raise LookupError("Item não encontrado no inventário.")
+    if item.user_id != user_id:
+        raise PermissionError("Você não é o dono deste item.")
+    if item.status != "disponivel" or item.is_equipped:
+        raise RuntimeError("Este item já está em uso ou anunciado.")
+
+    item.status = "listado"
+    item.is_equipped = False
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def unlock_inventory_item(db: Session, user_id: int, item_id: int) -> InventoryItem:
+    """Libera item da custódia do Mercado retornando ao estado disponível."""
+    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
+    if not item:
+        raise LookupError("Item não encontrado no inventário.")
+    if item.user_id != user_id:
+        raise PermissionError("Você não é o dono deste item.")
+
+    item.status = "disponivel"
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def transfer_inventory_item(db: Session, item_id: int, from_user_id: int, to_user_id: int) -> InventoryItem:
+    """Transfere a posse de um item entre dois usuários (após venda ou troca)."""
+    item = db.query(InventoryItem).filter(InventoryItem.id == item_id).first()
+    if not item:
+        raise LookupError("Item não encontrado no inventário.")
+    if item.user_id != from_user_id:
+        raise PermissionError("O item não pertence ao usuário de origem.")
+
+    item.user_id = to_user_id
+    item.status = "disponivel"
+    item.is_equipped = False
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+def get_user_inventory(
+    db: Session,
+    user_id: int,
+    item_type: Optional[str] = None,
+    status_filter: Optional[str] = None
+) -> Dict[str, Any]:
+    """Lista todos os itens do inventário do usuário, com suporte a filtros e agrupamento por tipo."""
+    query = db.query(InventoryItem).filter(InventoryItem.user_id == user_id)
+    if item_type:
+        query = query.filter(InventoryItem.item_type == item_type)
+    if status_filter:
+        query = query.filter(InventoryItem.status == status_filter)
+
+    items = query.order_by(InventoryItem.acquired_at.desc()).all()
+
+    # Todos os itens do usuário para compor o agrupamento por abas de categorias
+    all_user_items = db.query(InventoryItem).filter(InventoryItem.user_id == user_id).order_by(InventoryItem.acquired_at.desc()).all()
+    grouped: Dict[str, list] = {
+        "card": [],
+        "emoticon": [],
+        "background": [],
+        "avatar_frame": [],
+        "avatar": [],
+        "badge": []
+    }
+    for i in all_user_items:
+        t = i.item_type
+        if t not in grouped:
+            grouped[t] = []
+        grouped[t].append(i)
+
+    return {
+        "items": items,
+        "grouped": grouped,
+        "total": len(items)
+    }
+
+
 def search_users(db: Session, query: str, limit: int = 10):
     """Busca usuários por correspondência parcial de username ou email."""
     if not query or not query.strip():
@@ -190,4 +465,224 @@ def search_users(db: Session, query: str, limit: int = 10):
         .limit(limit)
         .all()
     )
+
+
+def get_user_level_progress(db: Session, user_id: int) -> Dict[str, Any]:
+    """Retorna o progresso de XP e nível do usuário."""
+    from app.services.xp_service import get_level_progress
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise LookupError("Usuário não encontrado.")
+    total_xp = getattr(user, "total_xp", 100) or 100
+    return get_level_progress(total_xp)
+
+
+def get_catalog_cards(db: Session, game_id: Optional[int] = None):
+    """Retorna as cartas colecionáveis cadastradas, garantindo integridade com jogos."""
+    from app.services.card_catalog_service import ensure_catalog_seeded, get_or_create_game_cards
+    ensure_catalog_seeded(db)
+    if game_id:
+        return get_or_create_game_cards(db, game_id)
+    from app.models.trading_card import TradingCard
+    return db.query(TradingCard).all()
+
+
+def grant_card_to_user(
+    db: Session,
+    user_id: int,
+    game_id: int,
+    card_id: Optional[int] = None,
+    is_foil: bool = False,
+    rarity: Optional[str] = None
+):
+    """Concede uma carta colecionável ao usuário, gerando cartas dinâmicas se necessário."""
+    import random
+    from app.services.card_catalog_service import ensure_catalog_seeded, get_or_create_game_cards
+    from app.models.trading_card import TradingCard
+
+    ensure_catalog_seeded(db)
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise LookupError("Usuário não encontrado.")
+
+    cards = get_or_create_game_cards(db, game_id)
+    selected_card = None
+
+    if card_id:
+        selected_card = next((c for c in cards if c.id == card_id), None)
+        if not selected_card:
+            selected_card = db.query(TradingCard).filter(TradingCard.id == card_id).first()
+
+    if not selected_card and rarity:
+        matching = [c for c in cards if c.rarity.lower() == rarity.lower()]
+        if matching:
+            selected_card = random.choice(matching)
+
+    if not selected_card:
+        selected_card = random.choice(cards)
+
+    now = datetime.now(timezone.utc)
+    card_name = f"{selected_card.card_name}{' (Foil)' if is_foil else ''}"
+    inv_item = InventoryItem(
+        user_id=user_id,
+        item_id=f"card_{game_id}_{selected_card.id}_{int(now.timestamp())}_{random.randint(100, 999)}",
+        name=card_name,
+        item_type="card",
+        asset_url=selected_card.card_art_url,
+        price_points=0,
+        is_equipped=False,
+        status="disponivel",
+        game_id=game_id,
+        rarity="Foil Especial" if is_foil else selected_card.rarity,
+        description=selected_card.description or f"Carta colecionável do jogo #{game_id}.",
+        acquired_at=now
+    )
+    db.add(inv_item)
+    db.commit()
+    db.refresh(inv_item)
+    return inv_item, selected_card
+
+
+def get_user_badges(db: Session, user_id: int):
+    """Retorna todas as insígnias obtidas pelo usuário em seu inventário."""
+    return (
+        db.query(InventoryItem)
+        .filter(InventoryItem.user_id == user_id, InventoryItem.item_type == "badge")
+        .order_by(InventoryItem.acquired_at.desc())
+        .all()
+    )
+
+
+def craft_badge(db: Session, user_id: int, game_id: int, is_foil: bool = False) -> Dict[str, Any]:
+    """Forja uma insígnia a partir do set completo de cartas do jogo."""
+    from app.services.card_catalog_service import ensure_catalog_seeded, get_or_create_game_cards, get_or_create_game_badge
+    from app.services.xp_service import add_xp
+
+    ensure_catalog_seeded(db)
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise LookupError("Usuário não encontrado.")
+
+    required_cards = get_or_create_game_cards(db, game_id)
+    if not required_cards:
+        raise ValueError(f"Não há cartas cadastradas para o jogo #{game_id}.")
+
+    # Busca as cartas disponíveis do usuário para este jogo
+    user_cards = (
+        db.query(InventoryItem)
+        .filter(
+            InventoryItem.user_id == user_id,
+            InventoryItem.item_type == "card",
+            InventoryItem.game_id == game_id,
+            InventoryItem.status == "disponivel"
+        )
+        .all()
+    )
+
+    # Identifica se todas as cartas requeridas do set estão presentes
+    consumed_items = []
+    used_item_ids = set()
+
+    for req in required_cards:
+        # Busca um item disponível que corresponda ao nome da carta
+        match = None
+        for uc in user_cards:
+            if uc.id not in used_item_ids and (req.card_name.lower() in uc.name.lower()):
+                match = uc
+                break
+        if not match:
+            # Caso os nomes tenham sido gerados com padrão levemente diferente, tenta correspondência por rarity/item_id
+            for uc in user_cards:
+                if uc.id not in used_item_ids and uc.rarity == req.rarity:
+                    match = uc
+                    break
+
+        if not match:
+            raise ValueError(
+                f"Set incompleto! Você precisa de todas as {len(required_cards)} cartas do jogo para forjar a insígnia. "
+                f"Carta ausente: '{req.card_name}'."
+            )
+        consumed_items.append(match)
+        used_item_ids.add(match.id)
+
+    # Remove/consome as cartas do inventário
+    for item in consumed_items:
+        db.delete(item)
+
+    # Obtém a Badge do jogo
+    badge = get_or_create_game_badge(db, game_id, is_foil=is_foil)
+
+    now = datetime.now(timezone.utc)
+    badge_item = InventoryItem(
+        user_id=user_id,
+        item_id=f"badge_{game_id}_{int(now.timestamp())}",
+        name=badge.name,
+        item_type="badge",
+        asset_url=badge.icon_url,
+        price_points=0,
+        is_equipped=False,
+        status="disponivel",
+        game_id=game_id,
+        rarity="Foil Especial" if is_foil else "Especial",
+        description=badge.description or f"Insígnia forjada por completar o set do jogo #{game_id}.",
+        acquired_at=now
+    )
+    db.add(badge_item)
+
+    # Concede XP ao usuário e recalcula o nível
+    user, leveled_up = add_xp(user, badge.xp_value)
+
+    db.commit()
+    db.refresh(badge_item)
+    db.refresh(user)
+
+    return {
+        "badge": badge,
+        "badge_item": badge_item,
+        "new_level": user.level,
+        "new_total_xp": user.total_xp,
+        "leveled_up": leveled_up,
+        "xp_gained": badge.xp_value,
+        "consumed_cards_count": len(consumed_items)
+    }
+
+
+def update_user_profile(
+    db: Session,
+    user_id: int,
+    username: Optional[str] = None,
+    display_name: Optional[str] = None,
+    avatar_url: Optional[str] = None,
+    bio: Optional[str] = None,
+    location: Optional[str] = None
+) -> User:
+    """Atualiza dados do perfil do usuário com validação de unicidade de username."""
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado")
+
+    if username and username.strip() and username.strip() != user.username:
+        new_username = username.strip()
+        existing = db.query(User).filter(User.username == new_username, User.id != user_id).first()
+        if existing:
+            raise ValueError(f"O nome de usuário '{new_username}' já está em uso.")
+        user.username = new_username
+
+    if display_name is not None:
+        user.real_name = display_name.strip() if display_name else None
+
+    if avatar_url is not None and avatar_url.strip():
+        user.avatar_url = avatar_url.strip()
+
+    if bio is not None:
+        user.bio = bio.strip()
+
+    if location is not None:
+        user.location = location.strip()
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 

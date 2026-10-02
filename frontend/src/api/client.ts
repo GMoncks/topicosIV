@@ -1,7 +1,18 @@
 export const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8000';
 export const SESSION_EXPIRED_EVENT = 'mist:session-expired';
 
-import { InventoryItem } from '../types';
+import {
+  InventoryItem,
+  InventoryGroupedResponse,
+  LevelProgress,
+  TradingCard,
+  Badge,
+  CraftBadgeResponse,
+  PrivacySettings,
+  PublicProfileResponse,
+  FriendPendingRequestItem,
+  WalletRechargeResponse,
+} from '../types';
 
 
 export interface AuthRegisterPayload {
@@ -22,9 +33,13 @@ export interface AuthUserResponse {
   wallet_balance: number;
   points_balance: number;
   level: number;
+  total_xp?: number;
   avatar_url?: string;
   avatar_frame_url?: string;
   profile_background_url?: string;
+  real_name?: string;
+  bio?: string;
+  location?: string;
   created_at: string;
 }
 
@@ -406,6 +421,13 @@ export const walletApi = {
       method: 'GET',
     });
   },
+
+  async recharge(amount: number): Promise<WalletRechargeResponse> {
+    return fetchApi<WalletRechargeResponse>('/api/me/wallet/recharge', {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    });
+  },
 };
 
 // ========================================
@@ -684,6 +706,10 @@ export const socialApi = {
 
   async getFriends(): Promise<FriendItem[]> {
     return fetchApi<FriendItem[]>('/api/social/friends', { method: 'GET' });
+  },
+
+  async getFriendRequests(): Promise<FriendPendingRequestItem[]> {
+    return fetchApi<FriendPendingRequestItem[]>('/api/social/friends/requests', { method: 'GET' });
   },
 
   async sendFriendRequest(addresseeId: number): Promise<any> {
@@ -1209,12 +1235,14 @@ export interface CosmeticEquipResponse {
   success: boolean;
   message: string;
   equipped_item: InventoryItem;
+  avatar_url?: string;
   avatar_frame_url?: string;
   profile_background_url?: string;
 }
 
 export interface InventoryListResponse {
   items: InventoryItem[];
+  grouped?: Record<string, InventoryItem[]>;
   total: number;
 }
 
@@ -1243,7 +1271,88 @@ export const profileApi = {
       body: JSON.stringify({ inventory_item_id: inventoryItemId, action }),
     });
   },
+
+  async updateProfile(data: {
+    username?: string;
+    real_name?: string;
+    display_name?: string;
+    avatar_url?: string;
+    bio?: string;
+    location?: string;
+  }): Promise<any> {
+    return fetchApi<any>('/api/me/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
 };
+
+export const inventoryApi = {
+  async getInventory(params?: { item_type?: string; status?: string }): Promise<InventoryGroupedResponse> {
+    const queryParts: string[] = [];
+    if (params?.item_type) queryParts.push(`item_type=${encodeURIComponent(params.item_type)}`);
+    if (params?.status) queryParts.push(`status_filter=${encodeURIComponent(params.status)}`);
+    const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+    return fetchApi<InventoryGroupedResponse>(`/api/inventory${query}`, { method: 'GET' });
+  },
+
+  async equipItem(itemId: number): Promise<CosmeticEquipResponse> {
+    return fetchApi<CosmeticEquipResponse>(`/api/inventory/items/${itemId}/equip`, {
+      method: 'POST',
+    });
+  },
+
+  async unequipItem(itemId: number): Promise<CosmeticEquipResponse> {
+    return fetchApi<CosmeticEquipResponse>(`/api/inventory/items/${itemId}/unequip`, {
+      method: 'POST',
+    });
+  },
+};
+
+export const cardsApi = {
+  async getLevelProgress(): Promise<LevelProgress> {
+    return fetchApi<LevelProgress>('/api/me/level-progress', { method: 'GET' });
+  },
+
+  async getCatalogCards(gameId?: number): Promise<TradingCard[]> {
+    const query = gameId ? `?game_id=${gameId}` : '';
+    return fetchApi<TradingCard[]>(`/api/cards/catalog${query}`, { method: 'GET' });
+  },
+
+  async craftBadge(gameId: number, isFoil: boolean = false): Promise<CraftBadgeResponse> {
+    return fetchApi<CraftBadgeResponse>('/api/crafting/badge', {
+      method: 'POST',
+      body: JSON.stringify({ game_id: gameId, is_foil: isFoil }),
+    });
+  },
+
+  async getUserBadges(userId: number): Promise<InventoryItem[]> {
+    return fetchApi<InventoryItem[]>(`/api/badges/user/${userId}`, { method: 'GET' });
+  },
+
+  async getGameBadge(gameId: number, isFoil: boolean = false): Promise<Badge> {
+    const query = isFoil ? '?is_foil=true' : '';
+    return fetchApi<Badge>(`/api/badges/game/${gameId}${query}`, { method: 'GET' });
+  },
+};
+
+export const publicProfileApi = {
+  async getPublicProfile(username: string): Promise<PublicProfileResponse> {
+    return fetchApi<PublicProfileResponse>(`/api/users/${encodeURIComponent(username)}/profile`, { method: 'GET' });
+  },
+
+  async getPrivacySettings(): Promise<PrivacySettings> {
+    return fetchApi<PrivacySettings>('/api/me/privacy', { method: 'GET' });
+  },
+
+  async updatePrivacySettings(settings: Partial<PrivacySettings>): Promise<PrivacySettings> {
+    return fetchApi<PrivacySettings>('/api/me/privacy', {
+      method: 'PATCH',
+      body: JSON.stringify(settings),
+    });
+  },
+};
+
 
 
 

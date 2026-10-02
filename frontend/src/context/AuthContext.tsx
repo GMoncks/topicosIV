@@ -19,6 +19,7 @@ interface AuthContextType {
   clearSessionNotice: () => void;
   updateUserBalance: (wallet?: number, points?: number) => void;
   updateUserCosmetics: (avatarFrameUrl?: string | null, profileBackgroundUrl?: string | null) => void;
+  updateUserProfile: (profileData: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,8 +28,9 @@ function mapAuthUserToProfile(authUser: AuthUserResponse): UserProfile {
   return {
     id: authUser.id,
     username: authUser.username,
-    realName: authUser.username,
-    location: 'Brasil',
+    realName: authUser.real_name || authUser.username,
+    bio: authUser.bio,
+    location: authUser.location || 'Brasil',
     level: authUser.level || 1,
     avatarText: authUser.username.slice(0, 2).toUpperCase(),
     avatarUrl: authUser.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authUser.username}`,
@@ -98,6 +100,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
         avatarFrameUrl: avatarFrameUrl !== undefined ? (avatarFrameUrl || undefined) : prev.avatarFrameUrl,
         profileBackgroundUrl: profileBackgroundUrl !== undefined ? (profileBackgroundUrl || undefined) : prev.profileBackgroundUrl,
+      };
+    });
+  }, []);
+
+  const updateUserProfile = useCallback((profileData: Partial<UserProfile>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        ...profileData,
+        avatarText: (profileData.username || prev.username).slice(0, 2).toUpperCase(),
       };
     });
   }, []);
@@ -199,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clearSessionNotice,
     updateUserBalance,
     updateUserCosmetics,
+    updateUserProfile,
   };
 
 
@@ -224,8 +238,9 @@ export const useAuth = (): AuthContextType => {
       refreshProfile: async () => {},
       clearSessionNotice: () => {},
       updateUserBalance: () => {},
+      updateUserCosmetics: () => {},
+      updateUserProfile: () => {},
     };
-
   }
   return context;
 };

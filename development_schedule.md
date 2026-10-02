@@ -53,11 +53,11 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 | **E** | Download Real e Mini SDK Python | Equipe | **CONCLUÍDO** |
 | **F** | Social: Amigos, Feed e Chat WebSocket | Equipe | **CONCLUÍDO** |
 | **G** | Agentes de IA Base (G-01 a G-06) | Equipe | **CONCLUÍDO** |
-| **H** | Reviews de Jogos | **DEV 1** | A Fazer |
-| **I** | Loja de Pontos e Cosméticos | **DEV 2** | A Fazer |
-| **J** | Inventário Completo de Itens | **DEV 2** | A Fazer |
+| **H** | Reviews de Jogos | **DEV 1** | **CONCLUÍDO** |
+| **I** | Loja de Pontos e Cosméticos | **DEV 2** | **CONCLUÍDO** |
+| **J** | Inventário Completo de Itens | **DEV 2** | **CONCLUÍDO** |
 | **K** | Trading Cards, Badges e XP | **DEV 2** | A Fazer |
-| **L** | Mercado da Comunidade e Trades | **DEV 1** | A Fazer |
+| **L** | Mercado da Comunidade e Trades | **DEV 1** | **CONCLUÍDO** |
 | **M** | Grupos, Fórum e Chat de Grupo | **DEV 3** | **CONCLUÍDO** |
 | **N** | Showcase de Capturas de Tela | **DEV 3** | **CONCLUÍDO** |
 | **O** | Workshop de Conteúdo (Mods e Skins) | **DEV 3** | **CONCLUÍDO** |
@@ -65,7 +65,7 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 | **Q** | Sistema de Notificações Global | **DEV 3** | **CONCLUÍDO** |
 | **R** | Busca Global | **DEV 3** | **CONCLUÍDO** |
 | **S** | AI Curator Avançado (S-01 a S-04) | **DEV 3** | **CONCLUÍDO** |
-| **T** | Histórico de Transações da Carteira | **DEV 1** | A Fazer |
+| **T** | Histórico de Transações da Carteira | **DEV 1** | **CONCLUÍDO** |
 
 ---
 
@@ -79,36 +79,36 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 > **Volume de Tickets:** 20 tickets (Blocos H, T, L).
 
 #### Bloco H — Reviews de Jogos (`store` `reviews`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| H-01 | `[B]` | `store-service/app/models/review.py` | Implementar modelo `Review`: `user_id`, `game_id`, `is_recommended`, `text`, `playtime_at_review`, `created_at`. |
-| H-02 | `[B]` | `store-service/app/api/reviews.py` | Endpoints `POST /games/{id}/reviews` (valida posse na biblioteca) e `GET /games/{id}/reviews`. |
-| H-03 | `[B]` | `store-service/app/services/review_service.py` | Cálculo automático de aprovação percentual (ex: "Muito Positivo - 92%") injetado no `GET /games/{id}`. |
-| H-04 | `[F]` | `frontend/src/components/ReviewFormModal.tsx` | Componente de formulário com recomendação (Sim/Não), texto e badge de horas jogadas. |
-| H-05 | `[F]` | `frontend/src/components/ReviewsList.tsx` | Lista de avaliações da comunidade com filtros de mais úteis e recentes dentro de `GameDetailModal.tsx`. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| H-01 | `[B]` | `store-service/app/models/review.py` | Implementar modelo `Review`: `user_id`, `game_id`, `is_recommended`, `text`, `playtime_at_review`, `created_at`. | **CONCLUÍDO** |
+| H-02 | `[B]` | `store-service/app/api/reviews.py` | Endpoints `POST /games/{id}/reviews` (valida posse na biblioteca) e `GET /games/{id}/reviews`. | **CONCLUÍDO** |
+| H-03 | `[B]` | `store-service/app/services/review_service.py` | Cálculo automático de aprovação percentual (ex: "Muito Positivo - 92%") injetado no `GET /games/{id}`. | **CONCLUÍDO** |
+| H-04 | `[F]` | `frontend/src/components/ReviewFormModal.tsx` | Componente de formulário com recomendação (Sim/Não), texto e badge de horas jogadas. | **CONCLUÍDO** |
+| H-05 | `[F]` | `frontend/src/components/ReviewsList.tsx` | Lista de avaliações da comunidade com filtros de mais úteis e recentes dentro de `GameDetailModal.tsx`. | **CONCLUÍDO** |
 
 #### Bloco T — Histórico de Transações da Carteira (`market` `wallet`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| T-01 | `[B]` | `market-service/app/models/transaction.py` | Modelo `WalletTransaction`: `user_id`, `type` (compra, venda, recarga, resgate), `amount`, `description`. |
-| T-02 | `[B]` | `market-service/app/services/wallet_ledger.py` | Serviço de registro contábil de transações (acionado em compras de jogos, mercado e resgates). |
-| T-03 | `[B]` | `market-service/app/api/wallet.py` | Endpoint `GET /wallet/history` com paginação e filtro por período/tipo. |
-| T-04 | `[F]` | `frontend/src/components/WalletHistoryModal.tsx` | Modal/aba de extrato detalhado da carteira do usuário no Perfil/Header. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| T-01 | `[B]` | `market-service/app/models/transaction.py` | Modelo `WalletTransaction`: `user_id`, `type` (compra, venda, recarga, resgate), `amount`, `description`. | **CONCLUÍDO** |
+| T-02 | `[B]` | `market-service/app/services/wallet_ledger.py` | Serviço de registro contábil de transações (acionado em compras de jogos, mercado e resgates). | **CONCLUÍDO** |
+| T-03 | `[B]` | `market-service/app/api/wallet.py` | Endpoint `GET /wallet/history` com paginação e filtro por período/tipo. | **CONCLUÍDO** |
+| T-04 | `[F]` | `frontend/src/components/WalletHistoryModal.tsx` | Modal/aba de extrato detalhado da carteira do usuário no Perfil/Header. | **CONCLUÍDO** |
 
 #### Bloco L — Mercado da Comunidade e Trade Offers (`market`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| L-01 | `[B]` | `services/market-service/` | Estruturar novo microsserviço com FastAPI, Dockerfile e SQLite dedicado `market.db`. |
-| L-02 | `[B]` | `market-service/app/models/listing.py` | Modelo `MarketListing`: `seller_id`, `item_id`, `item_type`, `price`, `status` (ativo, vendido, cancelado). |
-| L-03 | `[B]` | `market-service/app/api/listings.py` | Endpoint `POST /market/list` (valida se o item está disponível no inventário e bloqueia uso). |
-| L-04 | `[B]` | `market-service/app/api/listings.py` | Endpoint `GET /market/listings` com filtros por tipo, jogo e ordenação por menor preço. |
-| L-05 | `[B]` | `market-service/app/services/checkout.py` | Endpoint `POST /market/buy/{listing_id}` com transferência atômica de saldo e custódia do item. |
-| L-06 | `[B]` | `market-service/app/models/trade.py` | Modelo `TradeOffer`: `sender_id`, `receiver_id`, `offered_items[]`, `requested_items[]`, `status`. |
-| L-07 | `[B]` | `market-service/app/api/trades.py` | Endpoints `POST /trades/offer`, `POST /trades/{id}/accept`, `POST /trades/{id}/decline`. |
-| L-08 | `[B]` | `market-service/app/api/trades.py` | Histórico e listagem de ofertas pendentes recebidas e enviadas. |
-| L-09 | `[F]` | `frontend/src/pages/Market.tsx` | Página completa do Mercado da Comunidade: catálogo de anúncios, busca, filtros e compra. |
-| L-10 | `[F]` | `frontend/src/components/TradeOfferModal.tsx` | Modal interativa de troca: seleção de itens do inventário próprio vs seleção de itens do inventário do amigo. |
-| L-11 | `[F]` | `frontend/src/pages/Market.tsx` | Aba "Meus Anúncios" com opções de gerenciar e cancelar ofertas ativas. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| L-01 | `[B]` | `services/market-service/` | Estruturar novo microsserviço com FastAPI, Dockerfile e SQLite dedicado `market.db`. | **CONCLUÍDO** |
+| L-02 | `[B]` | `market-service/app/models/listing.py` | Modelo `MarketListing`: `seller_id`, `item_id`, `item_type`, `price`, `status` (ativo, vendido, cancelado). | **CONCLUÍDO** |
+| L-03 | `[B]` | `market-service/app/api/listings.py` | Endpoint `POST /market/list` (valida se o item está disponível no inventário e bloqueia uso). | **CONCLUÍDO** |
+| L-04 | `[B]` | `market-service/app/api/listings.py` | Endpoint `GET /market/listings` com filtros por tipo, jogo e ordenação por menor preço. | **CONCLUÍDO** |
+| L-05 | `[B]` | `market-service/app/services/checkout.py` | Endpoint `POST /market/buy/{listing_id}` com transferência atômica de saldo e custódia do item. | **CONCLUÍDO** |
+| L-06 | `[B]` | `market-service/app/models/trade.py` | Modelo `TradeOffer`: `sender_id`, `receiver_id`, `offered_items[]`, `requested_items[]`, `status`. | **CONCLUÍDO** |
+| L-07 | `[B]` | `market-service/app/api/trades.py` | Endpoints `POST /trades/offer`, `POST /trades/{id}/accept`, `POST /trades/{id}/decline`. | **CONCLUÍDO** |
+| L-08 | `[B]` | `market-service/app/api/trades.py` | Histórico e listagem de ofertas pendentes recebidas e enviadas. | **CONCLUÍDO** |
+| L-09 | `[F]` | `frontend/src/pages/Market.tsx` | Página completa do Mercado da Comunidade: catálogo de anúncios, busca, filtros e compra. | **CONCLUÍDO** |
+| L-10 | `[F]` | `frontend/src/components/TradeOfferModal.tsx` | Modal interativa de troca: seleção de itens do inventário próprio vs seleção de itens do inventário do amigo. | **CONCLUÍDO** |
+| L-11 | `[F]` | `frontend/src/pages/Market.tsx` | Aba "Meus Anúncios" com opções de gerenciar e cancelar ofertas ativas. | **CONCLUÍDO** |
 
 ---
 
@@ -118,43 +118,43 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 > **Volume de Tickets:** 23 tickets (Blocos I, J, K, P).
 
 #### Bloco I — Loja de Pontos e Cosméticos (`points`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| I-01 | `[B]` | `auth-service/app/services/points.py` | Crédito de 100 Pontos MIST por R$ 1,00 gasto no checkout de jogos ou mercado. |
-| I-02 | `[B]` | `auth-service/app/models/inventory.py` | Modelo `InventoryItem`: `id`, `user_id`, `item_type`, `name`, `asset_url`, `is_equipped`. |
-| I-03 | `[B]` | `auth-service/app/api/points_shop.py` | Endpoint `POST /points-shop/purchase` com validação de saldo e criação do item cosmético. |
-| I-04 | `[B]` | `auth-service/app/api/profile.py` | Endpoint `POST /profile/equip` para definir moldura de avatar e fundo de perfil ativos. |
-| I-05 | `[F]` | `frontend/src/pages/PointsShop.tsx` | Conexão do fluxo da Loja de Pontos à API real, atualizando cosméticos do usuário. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| I-01 | `[B]` | `auth-service/app/services/points.py` | Crédito de 100 Pontos MIST por R$ 1,00 gasto no checkout de jogos ou mercado. | **CONCLUÍDO** |
+| I-02 | `[B]` | `auth-service/app/models/inventory.py` | Modelo `InventoryItem`: `id`, `user_id`, `item_type`, `name`, `asset_url`, `is_equipped`. | **CONCLUÍDO** |
+| I-03 | `[B]` | `auth-service/app/api/points_shop.py` | Endpoint `POST /points-shop/purchase` com validação de saldo e criação do item cosmético. | **CONCLUÍDO** |
+| I-04 | `[B]` | `auth-service/app/api/profile.py` | Endpoint `POST /profile/equip` para definir moldura de avatar e fundo de perfil ativos. | **CONCLUÍDO** |
+| I-05 | `[F]` | `frontend/src/pages/PointsShop.tsx` | Conexão do fluxo da Loja de Pontos à API real, atualizando cosméticos do usuário. | **CONCLUÍDO** |
 
 #### Bloco J — Inventário Completo de Itens (`inventory`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| J-01 | `[B]` | `auth-service/app/models/inventory.py` | Suporte a tipos de itens: `card`, `emoticon`, `background`, `avatar_frame`, `badge` e status de mercado. |
-| J-02 | `[B]` | `auth-service/app/api/inventory.py` | Endpoint `GET /inventory` com paginação e agrupamento por abas de categorias. |
-| J-03 | `[B]` | `auth-service/app/api/inventory.py` | Endpoints `POST /inventory/items/{id}/equip` e `/unequip`. |
-| J-04 | `[F]` | `frontend/src/pages/Inventory.tsx` | Nova página de Inventário com visualizador em grid, abas por categoria, preview e botão de ação rápida. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| J-01 | `[B]` | `auth-service/app/models/inventory.py` | Suporte a tipos de itens: `card`, `emoticon`, `background`, `avatar_frame`, `badge` e status de mercado. | **CONCLUÍDO** |
+| J-02 | `[B]` | `auth-service/app/api/inventory.py` | Endpoint `GET /inventory` com paginação e agrupamento por abas de categorias. | **CONCLUÍDO** |
+| J-03 | `[B]` | `auth-service/app/api/inventory.py` | Endpoints `POST /inventory/items/{id}/equip` e `/unequip`. | **CONCLUÍDO** |
+| J-04 | `[F]` | `frontend/src/pages/Inventory.tsx` | Nova página de Inventário com visualizador em grid, abas por categoria, preview e botão de ação rápida. | **CONCLUÍDO** |
 
 #### Bloco K — Trading Cards, Insígnias e XP Progressivo (`inventory` `cards`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| K-01 | `[B]` | `auth-service/app/models/card.py` | Modelo `TradingCard`: `game_id`, `name`, `art_url`, `rarity`, `is_foil`. |
-| K-02 | `[B]` | `library-service/app/services/card_drop.py` | Algoritmo probabilístico de drop de cartas no endpoint de ping de tempo de jogo. |
-| K-03 | `[B]` | `library-service/app/services/quest_cards.py` | Integração com Quest Master para conceder cartas especiais ao obter conquistas raras. |
-| K-04 | `[B]` | `auth-service/app/api/crafting.py` | Endpoint `POST /crafting/badge` que valida o set completo de cartas, consome os itens e cria a Insígnia. |
-| K-05 | `[B]` | `auth-service/app/models/badge.py` | Modelo `Badge`: `name`, `description`, `xp_value`, `game_id`, `icon_url`. |
-| K-06 | `[B]` | `auth-service/app/services/xp_engine.py` | Cálculo de progressão: `level = floor(sqrt(total_xp / 100))` e endpoint `GET /me/level-progress`. |
-| K-07 | `[F]` | `frontend/src/components/Sidebar.tsx` | Barra de XP e indicador de nível em tempo real com tooltip de progresso até o próximo nível. |
-| K-08 | `[F]` | `frontend/src/components/BadgesSection.tsx` | Vitrine de insígnias craftadas no Perfil e na aba de detalhes de cada jogo na Biblioteca. |
-| K-09 | `[F]` | `frontend/src/pages/Inventory.tsx` | Visualização de progresso do set de cartas (ex: 3/5 coletadas) com botão "Fabricar Insígnia". |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| K-01 | `[B]` | `auth-service/app/models/trading_card.py` | Modelo `TradingCard`: `game_id`, `name`, `art_url`, `rarity`, `is_foil`. | **CONCLUÍDO** |
+| K-02 | `[B]` | `library-service/app/services/library_service.py` | Algoritmo probabilístico de drop de cartas no endpoint de ping de tempo de jogo. | **CONCLUÍDO** |
+| K-03 | `[B]` | `library-service/app/services/library_service.py` | Integração com Quest Master para conceder cartas especiais ao obter conquistas raras. | **CONCLUÍDO** |
+| K-04 | `[B]` | `auth-service/app/api/routes.py` | Endpoint `POST /crafting/badge` que valida o set completo de cartas, consome os itens e cria a Insígnia. | **CONCLUÍDO** |
+| K-05 | `[B]` | `auth-service/app/models/badge.py` | Modelo `Badge`: `name`, `description`, `xp_value`, `game_id`, `icon_url`. | **CONCLUÍDO** |
+| K-06 | `[B]` | `auth-service/app/services/xp_service.py` | Cálculo de progressão: `level = floor(sqrt(total_xp / 100))` e endpoint `GET /me/level-progress`. | **CONCLUÍDO** |
+| K-07 | `[F]` | `frontend/src/components/Sidebar.tsx` | Barra de XP e indicador de nível em tempo real com tooltip de progresso até o próximo nível. | **CONCLUÍDO** |
+| K-08 | `[F]` | `frontend/src/pages/Profile.tsx`, `AchievementsPanel.tsx` | Vitrine de insígnias craftadas no Perfil e na aba de detalhes de cada jogo na Biblioteca. | **CONCLUÍDO** |
+| K-09 | `[F]` | `frontend/src/pages/Inventory.tsx` | Visualização de progresso do set de cartas (ex: 3/5 coletadas) com botão "Fabricar Insígnia". | **CONCLUÍDO** |
 
 #### Bloco P — Perfil Público e Configurações de Privacidade (`profile`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| P-01 | `[B]` | `auth-service/app/api/public_profile.py` | Endpoint `GET /users/{username}/profile` filtrando dados conforme o nível de privacidade do usuário. |
-| P-02 | `[B]` | `auth-service/app/api/privacy.py` | Endpoint `PATCH /me/privacy` (visibilidade de jogos, conquistas, inventário, horas jogadas). |
-| P-03 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Visualização do perfil de terceiros visitável ao clicar no nome do usuário em qualquer feed/chat. |
-| P-04 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Badges de relacionamento dinâmicos (Amigo, Membro do Grupo, Bloqueado) e botão de adicionar amigo. |
-| P-05 | `[F]` | `frontend/src/components/PrivacySettingsModal.tsx` | Modal com toggles para controle granular de privacidade de cada seção do perfil. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| P-01 | `[B]` | `auth-service/app/api/public_profile.py` | Endpoint `GET /users/{username}/profile` filtrando dados conforme o nível de privacidade do usuário. | **CONCLUÍDO** |
+| P-02 | `[B]` | `auth-service/app/api/privacy.py` | Endpoint `PATCH /me/privacy` (visibilidade de jogos, conquistas, inventário, horas jogadas). | **CONCLUÍDO** |
+| P-03 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Visualização do perfil de terceiros visitável ao clicar no nome do usuário em qualquer feed/chat. | **CONCLUÍDO** |
+| P-04 | `[F]` | `frontend/src/pages/PublicProfile.tsx` | Badges de relacionamento dinâmicos (Amigo, Membro do Grupo, Bloqueado) e botão de adicionar amigo. | **CONCLUÍDO** |
+| P-05 | `[F]` | `frontend/src/components/PrivacySettingsModal.tsx` | Modal com toggles para controle granular de privacidade de cada seção do perfil. | **CONCLUÍDO** |
 
 ---
 

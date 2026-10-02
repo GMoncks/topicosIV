@@ -202,9 +202,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h4 className="font-bold text-white text-sm leading-tight">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBot && friend.username) {
+                    window.dispatchEvent(new CustomEvent('mist:visit-profile', { detail: friend.username }));
+                  }
+                }}
+                className={`font-bold text-white text-sm leading-tight text-left ${!isBot ? 'hover:underline cursor-pointer hover:text-brand-purple' : ''}`}
+                title={!isBot ? 'Ver Perfil Público' : undefined}
+              >
                 {friend.username || `Jogador #${friend.friend_user_id}`}
-              </h4>
+              </button>
               {isBot && (
                 <span className="text-[9px] font-extrabold bg-gradient-to-r from-brand-purple to-cyan-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
                   BOT IA
