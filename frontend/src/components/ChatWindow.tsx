@@ -52,7 +52,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
     // 2. Conecta ao WebSocket do chat via Gateway
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
-    const wsBase = API_GATEWAY_URL.replace(/^http/, 'ws');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_GATEWAY_URL ? API_GATEWAY_URL.replace(/^http/, 'ws') : `${wsProtocol}//${window.location.host}`;
     const wsUrl = `${wsBase}/ws/chat/${roomId}?user_id=${currentUserId}${token ? `&token=${token}` : ''}`;
 
     try {
@@ -173,6 +174,37 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const isBot = Boolean(friend.is_bot || friend.friend_user_id === 0);
+  const [showEmoticons, setShowEmoticons] = useState(false);
+
+  const availableEmoticons = [
+    { code: ':chicken_cry:', label: 'Frango Chorando', img: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=100&auto=format&fit=crop&q=60' },
+    { code: ':pixel_sword:', label: 'Espada Pixel', img: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=100&auto=format&fit=crop&q=60' },
+    { code: ':mist_fire:', label: 'Fogo MIST', img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=100&auto=format&fit=crop&q=60' },
+  ];
+
+  const handleSelectEmoticon = (code: string) => {
+    setInputText((prev) => (prev ? `${prev} ${code} ` : `${code} `));
+    setShowEmoticons(false);
+  };
+
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(:chicken_cry:|:pixel_sword:|:mist_fire:)/g);
+    return parts.map((part, idx) => {
+      const match = availableEmoticons.find((e) => e.code === part);
+      if (match) {
+        return (
+          <img
+            key={idx}
+            src={match.img}
+            alt={match.code}
+            title={match.label}
+            className="inline-block w-6 h-6 object-cover rounded-md mx-1 align-middle border border-brand-purple/40 shadow-sm"
+          />
+        );
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
 
   return (
     <div
@@ -202,9 +234,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h4 className="font-bold text-white text-sm leading-tight">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBot && friend.username) {
+                    window.dispatchEvent(new CustomEvent('mist:visit-profile', { detail: friend.username }));
+                  }
+                }}
+                className={`font-bold text-white text-sm leading-tight text-left ${!isBot ? 'hover:underline cursor-pointer hover:text-brand-purple' : ''}`}
+                title={!isBot ? 'Ver Perfil Público' : undefined}
+              >
                 {friend.username || `Jogador #${friend.friend_user_id}`}
-              </h4>
+              </button>
               {isBot && (
                 <span className="text-[9px] font-extrabold bg-gradient-to-r from-brand-purple to-cyan-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
                   BOT IA
@@ -265,7 +306,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       : 'bg-brand-surface text-gray-200 border border-gray-800 rounded-bl-none'
                   }`}
                 >
-                  <p className="break-words">{msg.content}</p>
+                  <div className="break-words">{renderMessageContent(msg.content)}</div>
                   <div
                     className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${
                       isMe ? 'text-purple-200' : 'text-gray-400'
@@ -323,7 +364,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               onClick={() => {
                 setInputText(promptText);
               }}
-              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-dark hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
+              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-card hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
             >
               {promptText}
             </button>
@@ -331,14 +372,48 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
 
+      {/* Popover de Emoticons */}
+      {showEmoticons && (
+        <div className="p-3 bg-brand-card border-t border-brand-purple/30 flex items-center gap-2">
+          <span className="text-xs text-gray-400 font-medium">Emoticons:</span>
+          {availableEmoticons.map((emoticon) => (
+            <button
+              key={emoticon.code}
+              type="button"
+              onClick={() => handleSelectEmoticon(emoticon.code)}
+              className="p-1 hover:bg-brand-purple/20 border border-transparent hover:border-brand-purple/50 rounded-lg transition group flex items-center gap-1"
+              title={`${emoticon.label} (${emoticon.code})`}
+            >
+              <img
+                src={emoticon.img}
+                alt={emoticon.label}
+                className="w-7 h-7 rounded object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Caixa de Entrada */}
-      <form onSubmit={handleSendMessage} className="p-3 bg-brand-surface border-t border-gray-800 flex gap-2">
+      <form onSubmit={handleSendMessage} className="p-3 bg-brand-surface border-t border-gray-800 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowEmoticons((prev) => !prev)}
+          className={`p-2.5 rounded-xl border transition ${
+            showEmoticons
+              ? 'bg-brand-purple text-white border-brand-purple'
+              : 'bg-brand-card text-gray-400 hover:text-white border-gray-700 hover:border-gray-600'
+          }`}
+          title="Inserir Emoticon"
+        >
+          <i className="fa-regular fa-face-smile text-base"></i>
+        </button>
         <input
           type="text"
           value={inputText}
           onChange={handleInputChange}
           placeholder="Escreva uma mensagem..."
-          className="flex-1 bg-white text-black placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:border-brand-purple shadow-sm transition"
+          className="flex-1 bg-brand-card text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition"
         />
         <button
           type="submit"

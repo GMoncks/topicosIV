@@ -9,12 +9,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Store } from './pages/Store';
 import { Market } from './pages/Market';
+import { Inventory } from './pages/Inventory';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
 import { Groups } from './pages/Groups';
 import { News } from './pages/News';
 import { PointsShop } from './pages/PointsShop';
 import { Profile } from './pages/Profile';
+import { PublicProfile } from './pages/PublicProfile';
 import { Login } from './pages/Login';
 import { Workshop } from './pages/Workshop';
 import { NavigationTab, UserProfile } from './types';
@@ -57,6 +59,7 @@ function AppContent() {
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [systemNotice, setSystemNotice] = useState<SystemNoticeData | null>(null);
+  const [viewedUsername, setViewedUsername] = useState<string | null>(null);
   const [achievementToast, setAchievementToast] = useState<{
     achievement_id: string;
     name: string;
@@ -67,6 +70,20 @@ function AppContent() {
   const lastAchievementCheckRef = useRef<string>(new Date().toISOString());
 
   const { user, logout, openAuthModal, updateUserBalance, isAuthenticated } = useAuth();
+
+  // Listener para navegação ao perfil público de usuários ao clicar em seus nomes
+  useEffect(() => {
+    const handleVisitProfile = (e: CustomEvent<string>) => {
+      if (e.detail) {
+        setViewedUsername(e.detail);
+        setActiveTab('public_profile');
+      }
+    };
+    window.addEventListener('mist:visit-profile' as any, handleVisitProfile);
+    return () => {
+      window.removeEventListener('mist:visit-profile' as any, handleVisitProfile);
+    };
+  }, []);
 
   // Listener para abertura de comunicados oficiais do sistema via notificações (ex: jogos deixando catálogo)
   useEffect(() => {
@@ -107,12 +124,15 @@ function AppContent() {
   // Listener para toasts globais (ex: 'Usuário não autenticado. Realize o login') com auto-dismiss em 5s
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    const handleToast = (e: CustomEvent<string>) => {
-      setToastMessage(e.detail);
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setToastMessage(null);
-      }, 5000);
+    const handleToast = (e: CustomEvent<any>) => {
+      const msg = typeof e.detail === 'string' ? e.detail : e.detail?.message || String(e.detail || '');
+      if (msg) {
+        setToastMessage(msg);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          setToastMessage(null);
+        }, 5000);
+      }
     };
 
     window.addEventListener('mist:toast' as any, handleToast);
@@ -291,6 +311,13 @@ function AppContent() {
 
           {activeTab === 'market' && <Market />}
 
+          {activeTab === 'inventory' && (
+            <Inventory
+              onNavigateToMarket={() => setActiveTab('market')}
+              onNavigateToPointsShop={() => setActiveTab('points')}
+            />
+          )}
+
           {activeTab === 'social' && <Social />}
 
           {activeTab === 'groups' && <Groups />}
@@ -308,6 +335,14 @@ function AppContent() {
             <Profile
               user={currentUser}
               onNavigate={(tab) => setActiveTab(tab as NavigationTab)}
+            />
+          )}
+
+          {activeTab === 'public_profile' && (
+            <PublicProfile
+              username={viewedUsername || currentUser.username}
+              onBack={() => setActiveTab('profile')}
+              onNavigateToSocial={() => setActiveTab('social')}
             />
           )}
 

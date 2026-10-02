@@ -264,7 +264,7 @@ def ping_game_session(
         except ValueError:
             pass
 
-    session, playtime_minutes = LibraryService.ping_session(
+    session, playtime_minutes, dropped_card = LibraryService.ping_session(
         db=db,
         user_id=user_id,
         game_id=payload.game_id,
@@ -278,7 +278,8 @@ def ping_game_session(
         user_id=session.user_id,
         game_id=session.game_id,
         playtime_minutes=playtime_minutes,
-        last_ping_at=session.last_ping_at
+        last_ping_at=session.last_ping_at,
+        card_dropped=dropped_card
     )
 
 

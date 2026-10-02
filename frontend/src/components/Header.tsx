@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext';
 import { WalletHistoryModal } from './WalletHistoryModal';
+import { AddFundsModal } from './AddFundsModal';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { GlobalSearchDropdown } from './GlobalSearchDropdown';
 
@@ -29,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
   const [walletTopOffset, setWalletTopOffset] = useState<number>(16);
   const walletButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -176,17 +178,32 @@ export const Header: React.FC<HeaderProps> = ({
         <NotificationsDropdown onNavigate={onNavigate} />
 
         {/* Saldo da Carteira com a cor secundária #1F4D36 — abre o extrato (T-04) */}
-        <button
-          ref={walletButtonRef}
-          type="button"
-          onClick={handleWalletClick}
-          title="Ver extrato da carteira"
-          aria-label="Ver extrato da carteira"
-          className="text-emerald-300 font-bold text-sm bg-brand-green/90 hover:bg-brand-green px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition cursor-pointer"
-        >
-          <i className="fa-solid fa-wallet text-xs text-emerald-400"></i>
-          <span>{formattedBalance}</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            ref={walletButtonRef}
+            type="button"
+            onClick={handleWalletClick}
+            title="Ver extrato da carteira"
+            aria-label="Ver extrato da carteira"
+            className="text-emerald-300 font-bold text-sm bg-brand-green/90 hover:bg-brand-green px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <i className="fa-solid fa-wallet text-xs text-emerald-400"></i>
+            <span>{formattedBalance}</span>
+          </button>
+          {!isGuest && (
+            <button
+              type="button"
+              onClick={() => setIsAddFundsOpen(true)}
+              data-testid="btn-header-add-funds"
+              title="Adicionar saldo à carteira"
+              aria-label="Adicionar saldo à carteira"
+              className="bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-emerald-500/40 shadow-sm flex items-center gap-1 transition cursor-pointer"
+            >
+              <i className="fa-solid fa-plus text-[10px]"></i>
+              <span className="hidden sm:inline">Adicionar</span>
+            </button>
+          )}
+        </div>
 
         {isGuest && onOpenAuth && (
           <button
@@ -204,6 +221,12 @@ export const Header: React.FC<HeaderProps> = ({
         isOpen={isWalletModalOpen}
         onClose={() => setIsWalletModalOpen(false)}
         topOffset={walletTopOffset}
+      />
+
+      {/* Modal de Adição de Fundos */}
+      <AddFundsModal
+        isOpen={isAddFundsOpen}
+        onClose={() => setIsAddFundsOpen(false)}
       />
     </header>
   );

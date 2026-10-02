@@ -601,9 +601,17 @@ export const Market: React.FC = () => {
                     >
                       {TRADE_STATUS_LABELS[offer.status]}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetId = tradesDirection === 'received' ? offer.sender_id : offer.receiver_id;
+                        window.dispatchEvent(new CustomEvent('mist:visit-profile', { detail: `user_${targetId}` }));
+                      }}
+                      className="text-xs text-gray-400 hover:text-brand-purple hover:underline cursor-pointer transition"
+                      title="Visitar Perfil do Usuário"
+                    >
                       {tradesDirection === 'received' ? `De: usuário #${offer.sender_id}` : `Para: usuário #${offer.receiver_id}`}
-                    </span>
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

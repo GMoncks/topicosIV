@@ -29,7 +29,8 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
       setLoading(true);
       setError(null);
       const data = await libraryApi.getMyGames();
-      setItems(Array.isArray(data) ? data : []);
+      const validItems = Array.isArray(data) ? data.filter(item => item && Number(item.game_id) > 0) : [];
+      setItems(validItems);
     } catch (err: unknown) {
       console.error('Erro ao carregar biblioteca:', err);
       setError('Não foi possível carregar os jogos da sua biblioteca. Verifique sua conexão.');

@@ -8,6 +8,7 @@ from app.schemas.friend import (
     FriendActionResponse,
     FriendshipResponse,
     FriendListItem,
+    FriendPendingRequestItem,
 )
 from app.services.social_service import SocialService
 
@@ -99,6 +100,32 @@ def list_friends(
     Lista todos os amigos confirmados (status accepted) do usuário autenticado.
     """
     return SocialService.list_friends(db=db, user_id=user_id)
+
+
+@router.get("/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+@router.get("/social/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+def list_friend_requests(
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todas as solicitações de amizade pendentes recebidas pelo usuário logado.
+    """
+    return SocialService.list_friend_requests(db=db, user_id=user_id)
+
+
+@router.get("/relationship/{user_id_a}/{user_id_b}")
+@router.get("/social/relationship/{user_id_a}/{user_id_b}")
+def get_relationship(
+    user_id_a: int,
+    user_id_b: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Verifica a relação social entre dois usuários (self, friend, group_member, none).
+    """
+    rel = SocialService.check_relationship(db=db, user_id_a=user_id_a, user_id_b=user_id_b)
+    return {"relationship": rel, "user_id_a": user_id_a, "user_id_b": user_id_b}
 
 
 from app.schemas.activity import ActivityCreate, ActivityResponse
@@ -206,6 +233,23 @@ async def websocket_chat_endpoint(
                         **saved_msg
                     }
                     await chat_manager.broadcast_message(room_id, broadcast_payload)
+
+                    # Notificação em tempo real para o destinatário via NotificationManager se for chat direto
+                    if room_id.startswith("direct_"):
+                        parts = room_id.split("_")
+                        if len(parts) >= 3:
+                            try:
+                                u1, u2 = int(parts[1]), int(parts[2])
+                                recipient_id = u2 if sender_id == u1 else u1
+                                if recipient_id != 0:
+                                    await notification_manager.notify_user(recipient_id, {
+                                        "type": "new_chat_message",
+                                        "room_id": room_id,
+                                        "sender_id": sender_id,
+                                        "content": content[:100],
+                                    })
+                            except Exception:
+                                pass
 
                     # MIST Companion Bot (G-04): Se a sala for do bot e a mensagem partiu do usuário
                     is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"

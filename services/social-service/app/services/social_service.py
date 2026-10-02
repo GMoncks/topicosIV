@@ -1,10 +1,52 @@
+import os
 from datetime import datetime, timezone
 from typing import List, Optional
+import httpx
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from fastapi import HTTPException, status
 
 from app.models.friend import Friend
+
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://auth-service:8001")
+
+
+def fetch_user_profile_sync(user_id: int) -> dict:
+    """
+    Recupera dados cadastrais reais do usuário diretamente do auth-service.
+    Possui fallback robusto para testes e ambientes desconectados.
+    """
+    endpoints = [
+        f"{AUTH_SERVICE_URL}/users/{user_id}",
+        f"http://localhost:8001/users/{user_id}"
+    ]
+    for url in endpoints:
+        try:
+            with httpx.Client(timeout=1.5) as client:
+                resp = client.get(url)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    return {
+                        "username": data.get("username") or f"Gamer_{user_id}",
+                        "avatar_url": data.get("avatar_url") or f"https://picsum.photos/seed/user{user_id}/100/100",
+                        "avatar_frame_url": data.get("avatar_frame_url"),
+                        "display_name": data.get("display_name") or data.get("username") or f"Gamer_{user_id}"
+                    }
+        except Exception:
+            continue
+
+    DEFAULT_PROFILES = {
+        1: {"username": "GGTorres2001", "avatar_url": "https://picsum.photos/seed/user1/100/100", "avatar_frame_url": None},
+        2: {"username": "CyberKnight", "avatar_url": "https://picsum.photos/seed/user2/100/100", "avatar_frame_url": None},
+        3: {"username": "Valkyrie", "avatar_url": "https://picsum.photos/seed/user3/100/100", "avatar_frame_url": None},
+        4: {"username": "PixelMage", "avatar_url": "https://picsum.photos/seed/user4/100/100", "avatar_frame_url": None},
+    }
+    return DEFAULT_PROFILES.get(user_id, {
+        "username": f"Gamer_{user_id}",
+        "avatar_url": f"https://picsum.photos/seed/user{user_id}/100/100",
+        "avatar_frame_url": None,
+        "display_name": f"Gamer_{user_id}"
+    })
 
 
 class SocialService:
@@ -61,6 +103,39 @@ class SocialService:
         db.add(friendship)
         db.commit()
         db.refresh(friendship)
+
+        # Dispara notificação push de solicitação de amizade para o destinatário
+        try:
+            from app.models.notification import Notification
+            from app.services.notification_manager import notification_manager
+            import asyncio
+
+            req_profile = fetch_user_profile_sync(requester_id)
+            notif = Notification(
+                user_id=addressee_id,
+                type="friend_request",
+                title="Novo Pedido de Amizade",
+                message=f"{req_profile.get('username')} enviou uma solicitação de amizade para você.",
+                payload={
+                    "friendship_id": friendship.id,
+                    "requester_id": requester_id,
+                    "requester_username": req_profile.get("username"),
+                    "action_route": "social"
+                },
+                is_read=False
+            )
+            db.add(notif)
+            db.commit()
+
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    loop.create_task(notification_manager.notify_user(addressee_id, notif.to_dict()))
+            except Exception:
+                pass
+        except Exception:
+            pass
+
         return friendship
 
     @staticmethod
@@ -115,22 +190,11 @@ class SocialService:
             or_(Friend.requester_id == user_id, Friend.addressee_id == user_id)
         ).all()
 
-        # Mapa de nomes/avatares para exibição amigável
-        DEFAULT_PROFILES = {
-            1: {"username": "GGTorres2001", "avatar_url": "https://picsum.photos/seed/user1/100/100"},
-            2: {"username": "CyberKnight", "avatar_url": "https://picsum.photos/seed/user2/100/100"},
-            3: {"username": "Valkyrie", "avatar_url": "https://picsum.photos/seed/user3/100/100"},
-            4: {"username": "PixelMage", "avatar_url": "https://picsum.photos/seed/user4/100/100"},
-        }
-
         result = []
         for f in friendships:
             friend_uid = f.addressee_id if f.requester_id == user_id else f.requester_id
             presence = presence_manager.get_user_status(friend_uid)
-            profile = DEFAULT_PROFILES.get(friend_uid, {
-                "username": f"Gamer_{friend_uid}",
-                "avatar_url": f"https://picsum.photos/seed/user{friend_uid}/100/100"
-            })
+            profile = fetch_user_profile_sync(friend_uid)
 
             result.append({
                 "friendship_id": f.id,
@@ -139,6 +203,7 @@ class SocialService:
                 "since": f.updated_at or f.created_at,
                 "username": profile.get("username"),
                 "avatar_url": profile.get("avatar_url"),
+                "avatar_frame_url": profile.get("avatar_frame_url"),
                 "presence_status": presence.get("status", "offline"),
                 "current_game": presence.get("game_title"),
                 "current_game_id": presence.get("game_id"),
@@ -153,6 +218,7 @@ class SocialService:
             "since": datetime(2026, 1, 1, tzinfo=timezone.utc),
             "username": "MIST Bot",
             "avatar_url": "https://api.dicebear.com/7.x/bottts/svg?seed=mistbot",
+            "avatar_frame_url": None,
             "presence_status": "online",
             "current_game": "MIST AI Companion",
             "current_game_id": 0,
@@ -160,6 +226,32 @@ class SocialService:
         }
         result.insert(0, bot_entry)
         return result
+
+    @staticmethod
+    def list_friend_requests(db: Session, user_id: int) -> List[dict]:
+        """
+        Lista todas as solicitações de amizade pendentes recebidas pelo usuário logado (addressee_id == user_id).
+        """
+        requests = db.query(Friend).filter(
+            Friend.addressee_id == user_id,
+            Friend.status == "pending"
+        ).order_by(Friend.created_at.desc()).all()
+
+        result = []
+        for r in requests:
+            requester_profile = fetch_user_profile_sync(r.requester_id)
+            result.append({
+                "friendship_id": r.id,
+                "requester_id": r.requester_id,
+                "addressee_id": r.addressee_id,
+                "status": r.status,
+                "created_at": r.created_at,
+                "username": requester_profile.get("username"),
+                "avatar_url": requester_profile.get("avatar_url"),
+                "avatar_frame_url": requester_profile.get("avatar_frame_url"),
+            })
+        return result
+
 
     @staticmethod
     def save_message(db: Session, room_id: str, sender_id: int, content: str) -> dict:
@@ -208,6 +300,32 @@ class SocialService:
     @staticmethod
     def record_activity(db: Session, user_id: int, activity_type: str, payload: dict) -> dict:
         from app.models.activity import Activity
+
+        # Deduplicação inteligente de conquistas e compras repetidas
+        if activity_type == "achievement_unlocked":
+            ach_id = payload.get("achievement_id") or payload.get("id") or payload.get("name")
+            gid = payload.get("game_id")
+            existing = db.query(Activity).filter(
+                Activity.user_id == user_id,
+                Activity.type == "achievement_unlocked"
+            ).all()
+            for act in existing:
+                p = act.payload if isinstance(act.payload, dict) else {}
+                existing_ach_id = p.get("achievement_id") or p.get("id") or p.get("name")
+                existing_gid = p.get("game_id")
+                if existing_ach_id == ach_id and (gid is None or existing_gid == gid):
+                    return act.to_dict()
+        elif activity_type == "game_purchased":
+            gid = payload.get("game_id")
+            existing = db.query(Activity).filter(
+                Activity.user_id == user_id,
+                Activity.type == "game_purchased"
+            ).all()
+            for act in existing:
+                p = act.payload if isinstance(act.payload, dict) else {}
+                if p.get("game_id") == gid:
+                    return act.to_dict()
+
         activity = Activity(
             user_id=user_id,
             type=activity_type,
@@ -225,6 +343,67 @@ class SocialService:
         query = db.query(Activity)
         if user_id:
             query = query.filter(Activity.user_id == user_id)
-        activities = query.order_by(Activity.created_at.desc()).limit(limit).all()
-        return [a.to_dict() for a in activities]
+        raw_activities = query.order_by(Activity.created_at.desc()).limit(limit * 3).all()
+
+        dedup_list = []
+        seen_keys = set()
+
+        for a in raw_activities:
+            p = a.payload if isinstance(a.payload, dict) else {}
+            # Ignora atividades mockadas com jogos inexistentes
+            game_title = str(p.get("game_title") or p.get("game") or "").lower()
+            if "space marine" in game_title:
+                continue
+
+            # Chave única de deduplicação por tipo de atividade
+            ach_key = str(p.get("achievement_id") or p.get("achievement_name") or p.get("name") or "").lower().strip()
+            game_key = str(p.get("game_id") or p.get("game_title") or "").lower().strip()
+            dedup_key = f"{a.user_id}:{a.type}:{game_key}:{ach_key}"
+
+            if dedup_key in seen_keys:
+                continue
+
+            seen_keys.add(dedup_key)
+            dedup_list.append(a.to_dict())
+
+            if len(dedup_list) >= limit:
+                break
+
+        return dedup_list
+
+    @staticmethod
+    def check_relationship(db: Session, user_id_a: int, user_id_b: int) -> str:
+        """
+        Determina a relação entre dois usuários:
+        'self', 'friend', 'group_member', ou 'none'.
+        """
+        if user_id_a == user_id_b:
+            return "self"
+
+        # Verifica se são amigos confirmados
+        friendship = db.query(Friend).filter(
+            or_(
+                and_(Friend.requester_id == user_id_a, Friend.addressee_id == user_id_b),
+                and_(Friend.requester_id == user_id_b, Friend.addressee_id == user_id_a),
+            ),
+            Friend.status == "accepted"
+        ).first()
+
+        if friendship:
+            return "friend"
+
+        # Verifica se compartilham algum grupo
+        try:
+            from app.models.group import GroupMember
+            member_a_groups = db.query(GroupMember.group_id).filter(GroupMember.user_id == user_id_a).subquery()
+            shared = db.query(GroupMember).filter(
+                GroupMember.user_id == user_id_b,
+                GroupMember.group_id.in_(member_a_groups)
+            ).first()
+            if shared:
+                return "group_member"
+        except Exception:
+            pass
+
+        return "none"
 

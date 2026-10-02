@@ -1,6 +1,6 @@
-﻿import React, { useEffect, useState } from 'react';
-import { libraryApi } from '../api/client';
-import { AchievementResponse } from '../types';
+import React, { useEffect, useState } from 'react';
+import { libraryApi, cardsApi } from '../api/client';
+import { AchievementResponse, Badge } from '../types';
 import { AchievementDetailModal } from './AchievementDetailModal';
 
 interface AchievementsPanelProps {
@@ -10,6 +10,7 @@ interface AchievementsPanelProps {
 
 export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameId, gameName }) => {
   const [achievements, setAchievements] = useState<AchievementResponse[]>([]);
+  const [gameBadge, setGameBadge] = useState<Badge | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAchievement, setSelectedAchievement] = useState<AchievementResponse | null>(null);
@@ -35,6 +36,12 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameId, ga
     return () => {
       isMounted = false;
     };
+  }, [gameId]);
+
+  useEffect(() => {
+    cardsApi.getGameBadge(gameId)
+      .then(b => setGameBadge(b))
+      .catch(() => setGameBadge(null));
   }, [gameId]);
 
   // Listener reativo em tempo real para conquistas desbloqueadas durante a sessão de jogo
@@ -129,6 +136,29 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ gameId, ga
           style={{ width: `${progressPercent}%` }}
         />
       </div>
+
+      {/* Insígnia Colecionável do Jogo (Bloco K) */}
+      {gameBadge && (
+        <div className="mb-6 p-3 bg-brand-card/90 border border-purple-500/30 rounded-2xl flex items-center justify-between gap-3 shadow-md" data-testid="game-badge-container">
+          <div className="flex items-center gap-3">
+            <img
+              src={gameBadge.icon_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=300&q=80'}
+              alt={gameBadge.name}
+              className="w-10 h-10 rounded-xl object-cover border border-amber-400/50 shadow"
+            />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white">{gameBadge.name}</span>
+                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">+{gameBadge.xp_value} XP</span>
+              </div>
+              <p className="text-[11px] text-gray-400">{gameBadge.description || 'Complete o set de cartas deste jogo para forjar a insígnia.'}</p>
+            </div>
+          </div>
+          <span className="text-[11px] font-bold text-brand-purple bg-brand-purple/10 border border-brand-purple/30 px-2.5 py-1 rounded-xl shrink-0">
+            Set de Cartas
+          </span>
+        </div>
+      )}
 
       {/* Grid de Mini Cards Otimizada e Sem Vazamento */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">

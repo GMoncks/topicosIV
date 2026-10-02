@@ -371,6 +371,20 @@ class StoreService:
                 except Exception:
                     pass
 
+            # Concessão de Pontos MIST: 100 pontos por R$ 1,00 creditados no auth-service
+            points_earned = int(total_amount * 100)
+            if points_earned > 0:
+                try:
+                    await client.post(
+                        f"{auth_url.rstrip('/')}/users/{user_id}/points/credit",
+                        json={
+                            "amount": points_earned,
+                            "reason": f"Checkout MIST: {[g.title for g in games]}"
+                        }
+                    )
+                except Exception:
+                    pass
+
             # Registra o lançamento no extrato da carteira (T-02) — best-effort,
             # não bloqueia o checkout se o market-service estiver indisponível.
             # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
@@ -395,8 +409,10 @@ class StoreService:
                 "items": items_response,
                 "total_paid": total_amount,
                 "new_wallet_balance": new_wallet_balance,
+                "points_earned": points_earned,
                 "purchased_at": now
             }
+
         finally:
             if owns_client:
                 await client.aclose()

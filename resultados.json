@@ -50,6 +50,13 @@
         "duracao_ms": 20815,
         "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/navigation.spec.ts\n\n\nRunning 3 tests using 3 workers\n\n  ok 3 [webkit] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (3.4s)\n  x  2 [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (8.3s)\n  x  1 [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto (6.1s)\n\n\n  1) [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=Minha Biblioteca')\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=Minha Biblioteca') with timeout 5000ms\n      - waiting for locator('text=Minha Biblioteca')\n\n\n      12 |     const libraryButton = page.locator('button[title=\"Biblioteca\"]');\n      13 |     await libraryButton.click();\n    > 14 |     await expect(page.locator('text=Minha Biblioteca')).toBeVisible();\n         |                                                         ^\n      15 |\n      16 |     // 3. Navega para a Loja de Pontos\n      17 |     const pointsButton = page.locator('button[title=\"Loja de Pontos\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\navigation.spec.ts:14:57\n\n    Error Context: test-results\\navigation-Navegação-e-Cic-f9d14-com-preservação-do-contexto-chromium\\error-context.md\n\n  2) [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=Minha Biblioteca')\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=Minha Biblioteca') with timeout 5000ms\n      - waiting for locator('text=Minha Biblioteca')\n\n\n      12 |     const libraryButton = page.locator('button[title=\"Biblioteca\"]');\n      13 |     await libraryButton.click();\n    > 14 |     await expect(page.locator('text=Minha Biblioteca')).toBeVisible();\n         |                                                         ^\n      15 |\n      16 |     // 3. Navega para a Loja de Pontos\n      17 |     const pointsButton = page.locator('button[title=\"Loja de Pontos\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\navigation.spec.ts:14:57\n\n    Error Context: test-results\\navigation-Navegação-e-Cic-f9d14-com-preservação-do-contexto-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n    [firefox] › e2e\\navigation.spec.ts:4:3 › Navegação e Ciclo de Vida (E2E-NAV-01) › deve alternar entre Loja, Biblioteca e Loja de Pontos com preservação do contexto \n  1 passed (19.5s)",
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T22:04:28.719200+00:00",
+        "status": "pass",
+        "duracao_ms": 17542,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -547,6 +554,13 @@
         "status": "fail",
         "duracao_ms": 39325,
         "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts\n\n\nRunning 3 tests using 3 workers\n\n  x  3 [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.4s)\n  x  2 [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.5s)\n  x  1 [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.2s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-firefox\\error-context.md\n\n  3) [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     // 7. Realiza logout\n      65 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 66 |     await logoutBtn.click();\n         |                     ^\n      67 |\n      68 |     // Valida que o botão de \"Entrar na Conta\" voltou a aparecer\n      69 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:66:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-2a165--00-na-UI-e-permitir-logout-webkit\\error-context.md\n\n  3 failed\n    [chromium] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n    [firefox] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n    [webkit] › e2e\\auth.spec.ts:4:3 › Autenticação e Gestão de Sessão (E2E-AUTH-01) › deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-09-26T22:04:51.762339+00:00",
+        "status": "pass",
+        "duracao_ms": 28074,
+        "erro": null,
         "origem": "execucao"
       }
     ]
@@ -1923,6 +1937,368 @@
         "run_id": "2026-09-26T21:47:18.152318+00:00",
         "status": "pass",
         "duracao_ms": 1529,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-09": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T01:31:46.191218+00:00",
+        "status": "pass",
+        "duracao_ms": 1593,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "AUTH-UNIT-10": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T01:31:56.243091+00:00",
+        "status": "pass",
+        "duracao_ms": 2454,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "AUTH-UNIT-11": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T01:32:06.737245+00:00",
+        "status": "pass",
+        "duracao_ms": 1563,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-45": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T01:32:14.503664+00:00",
+        "status": "pass",
+        "duracao_ms": 2411,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "FRONT-UNIT-46": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T01:32:23.954163+00:00",
+        "status": "pass",
+        "duracao_ms": 2464,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
+  },
+  "AUTH-UNIT-12": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:19:47.277465+00:00",
+        "status": "pass",
+        "duracao_ms": 1624,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-13": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:19:53.931521+00:00",
+        "status": "pass",
+        "duracao_ms": 1693,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "LIB-UNIT-07": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:20:01.238721+00:00",
+        "status": "pass",
+        "duracao_ms": 5663,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-47": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:20:12.461376+00:00",
+        "status": "pass",
+        "duracao_ms": 2767,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-48": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:20:20.631680+00:00",
+        "status": "pass",
+        "duracao_ms": 2976,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-14": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:02.261922+00:00",
+        "status": "pass",
+        "duracao_ms": 4264,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-02T03:03:27.279550+00:00",
+        "status": "pass",
+        "duracao_ms": 2159,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-15": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:13.546070+00:00",
+        "status": "pass",
+        "duracao_ms": 4197,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-16": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:23.452968+00:00",
+        "status": "pass",
+        "duracao_ms": 1896,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-17": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:32.367630+00:00",
+        "status": "pass",
+        "duracao_ms": 1840,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOC-UNIT-05": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:39.600263+00:00",
+        "status": "pass",
+        "duracao_ms": 1423,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-02T03:26:30.452780+00:00",
+        "status": "pass",
+        "duracao_ms": 1746,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOC-UNIT-06": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:47.329014+00:00",
+        "status": "pass",
+        "duracao_ms": 1513,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOC-UNIT-07": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:49:54.892492+00:00",
+        "status": "pass",
+        "duracao_ms": 1454,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-49": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:50:03.434340+00:00",
+        "status": "pass",
+        "duracao_ms": 2925,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-50": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:50:13.036272+00:00",
+        "status": "pass",
+        "duracao_ms": 2672,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-51": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:50:23.233448+00:00",
+        "status": "pass",
+        "duracao_ms": 2694,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-52": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T02:50:34.336608+00:00",
+        "status": "pass",
+        "duracao_ms": 2732,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-18": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:49:43.026003+00:00",
+        "status": "pass",
+        "duracao_ms": 1507,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-19": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:49:52.151423+00:00",
+        "status": "pass",
+        "duracao_ms": 2393,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "AUTH-UNIT-20": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:50:14.070199+00:00",
+        "status": "pass",
+        "duracao_ms": 1374,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "SOC-UNIT-08": {
+    "runner": "pytest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:50:30.671636+00:00",
+        "status": "pass",
+        "duracao_ms": 5837,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-53": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:50:44.567706+00:00",
+        "status": "pass",
+        "duracao_ms": 3060,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-54": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:50:53.528155+00:00",
+        "status": "pass",
+        "duracao_ms": 2267,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-55": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:51:02.938772+00:00",
+        "status": "pass",
+        "duracao_ms": 2519,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "FRONT-UNIT-56": {
+    "runner": "vitest",
+    "historico": [
+      {
+        "run_id": "2026-10-02T03:51:10.979092+00:00",
+        "status": "pass",
+        "duracao_ms": 2310,
         "erro": null,
         "origem": "execucao"
       }

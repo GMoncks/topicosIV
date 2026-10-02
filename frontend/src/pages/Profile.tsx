@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, GameActivity } from '../types';
-import { ugcApi, WorkshopItem, getUgcImageUrl } from '../api/client';
+import { UserProfile, GameActivity, InventoryItem, LevelProgress } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem, ugcApi, WorkshopItem, getUgcImageUrl, cardsApi } from '../api/client';
+import { PrivacySettingsModal } from '../components/PrivacySettingsModal';
+import { AvatarSelectModal } from '../components/AvatarSelectModal';
 
 interface ProfileProps {
   user?: UserProfile;
   onNavigate?: (tab: string) => void;
 }
 
-const defaultRecentGames: GameActivity[] = [
+interface GameProgressItem {
+  id: number;
+  gameId: number;
+  title: string;
+  bannerUrl: string;
+  playtimeMinutes: number;
+  lastPlayed: string | null;
+  achievementsUnlocked: number;
+  achievementsTotal: number;
+  unlockedList: { id: string; name: string; iconUrl?: string }[];
+}
+
+const defaultFallbackRecentGames: GameActivity[] = [
   {
     id: 'g1',
     title: 'Librarian: Tidy Up the Arcane Library!',
@@ -41,19 +56,82 @@ const defaultRecentGames: GameActivity[] = [
   }
 ];
 
-export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
+export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) => {
+  const { user: authUser, updateUserCosmetics, updateUserProfile, isAuthenticated } = useAuth();
+  const [activeSection, setActiveSection] = useState<'activity' | 'inventory' | 'games' | 'badges'>('activity');
+  const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
+  const [userBadges, setUserBadges] = useState<InventoryItem[]>([]);
+  const [inventoryCategory, setInventoryCategory] = useState<string>('todos');
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [isLoadingInventory, setIsLoadingInventory] = useState<boolean>(false);
+  const [equippingId, setEquippingId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  // Estados de Edição de Perfil
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editRealName, setEditRealName] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Estados da Oficina (Ticket O-06)
   const [userWorkshopItems, setUserWorkshopItems] = useState<WorkshopItem[]>([]);
-  const [workshopTotal, setWorkshopTotal] = useState<number>(user?.stats?.workshopCount ?? 0);
+  const [workshopTotal, setWorkshopTotal] = useState<number>(propUser?.stats?.workshopCount ?? 0);
   const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
   const [isLoadingWorkshop, setIsLoadingWorkshop] = useState(false);
 
+  // Estados de Privacidade e ID do Perfil
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+
+  // Estados Inteligentes de Jogos e Atividade Recente
+  const [libraryGames, setLibraryGames] = useState<LibraryItemResponse[]>([]);
+  const [gamesProgress, setGamesProgress] = useState<GameProgressItem[]>([]);
+  const [userActivities, setUserActivities] = useState<ActivityItem[]>([]);
+  const [isLoadingGames, setIsLoadingGames] = useState<boolean>(false);
+  const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
+
+  const currentUser = authUser || propUser || {
+    username: 'ggtorres2001',
+    realName: 'Gabriel Torres',
+    location: 'Rio Grande do Sul, Brazil',
+    level: 7,
+    avatarText: 'GG',
+    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80',
+    avatarFrameUrl: undefined,
+    profileBackgroundUrl: undefined,
+    status: 'Online' as const,
+    walletBalance: 200.0,
+    pointsBalance: 500,
+    featuredBadge: {
+      title: 'Acumulador Adepto',
+      xp: 190,
+      icon: 'fa-certificate'
+    },
+    recentPlaytimeWeeks: 8.7,
+    recentGames: defaultFallbackRecentGames,
+    badges: [],
+    stats: {
+      gamesCount: 0,
+      inventoryCount: 0,
+      screenshotsCount: 18,
+      videosCount: 3,
+      workshopCount: 1,
+      reviewsCount: 12
+    }
+  };
+
   useEffect(() => {
     async function loadUserWorkshop() {
-      if (user?.id) {
+      const targetId = currentUser.id || propUser?.id || authUser?.id;
+      if (targetId) {
         try {
           setIsLoadingWorkshop(true);
-          const data = await ugcApi.getWorkshopItems({ author_id: user.id, size: 20 });
+          const data = await ugcApi.getWorkshopItems({ author_id: targetId, size: 20 });
           setUserWorkshopItems(data.items);
           setWorkshopTotal(data.total);
         } catch (err) {
@@ -61,186 +139,1230 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
         } finally {
           setIsLoadingWorkshop(false);
         }
+      } else if (currentUser.stats?.workshopCount !== undefined) {
+        setWorkshopTotal(currentUser.stats.workshopCount);
       }
     }
     loadUserWorkshop();
-  }, [user?.id]);
+  }, [currentUser.id, propUser?.id, authUser?.id]);
+
+  const startEditing = () => {
+    setEditUsername(currentUser.username || '');
+    setEditRealName(currentUser.realName || '');
+    setEditLocation(currentUser.location || '');
+    setEditBio(currentUser.bio || '');
+    setEditAvatarUrl(currentUser.avatarUrl || '');
+    setProfileError(null);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setProfileError(null);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editUsername.trim()) {
+      setProfileError('O nome de usuário não pode ficar vazio.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileError(null);
+
+    try {
+      const updated = await profileApi.updateProfile({
+        username: editUsername.trim(),
+        real_name: editRealName.trim() || undefined,
+        location: editLocation.trim() || undefined,
+        bio: editBio.trim() || undefined,
+        avatar_url: editAvatarUrl || undefined,
+      });
+
+      updateUserProfile({
+        username: updated.username,
+        realName: updated.real_name || updated.username,
+        location: updated.location || 'Brasil',
+        bio: updated.bio,
+        avatarUrl: updated.avatar_url,
+      });
+
+      setIsEditing(false);
+      setFeedbackMessage('Perfil atualizado com sucesso!');
+      setTimeout(() => setFeedbackMessage(null), 3500);
+    } catch (err: any) {
+      setProfileError(err.message || 'Erro ao atualizar perfil.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const totalDownloads = userWorkshopItems.reduce((acc, curr) => acc + (curr.downloads_count || 0), 0);
   const totalSubscriptions = userWorkshopItems.reduce((acc, curr) => acc + (curr.subscriptions_count || 0), 0);
 
-  const profileData = {
-    username: user?.username || 'ggtorres2001',
-    realName: user?.realName || 'Gabriel Torres',
-    location: user?.location || 'Rio Grande do Sul, Brazil',
-    level: user?.level ?? 7,
-    status: user?.status || 'On-line',
-    featuredBadge: user?.featuredBadge || {
-      title: 'Acumulador Adepto',
-      xp: 190,
-      code: '10+'
+  const profileData = currentUser;
+
+  // Carrega inventário de cosméticos
+  const loadInventory = async () => {
+    setIsLoadingInventory(true);
+    try {
+      const data = await profileApi.getInventory();
+      if (data && Array.isArray(data.items)) {
+        setInventoryItems(data.items);
+      }
+    } catch {
+      // Degradação graciosa
+    } finally {
+      setIsLoadingInventory(false);
     }
   };
 
+  // Carrega biblioteca de jogos reais e suas conquistas
+  const loadLibraryAndGames = async () => {
+    setIsLoadingGames(true);
+    try {
+      const myGames = await libraryApi.getMyGames();
+      if (Array.isArray(myGames)) {
+        const validGames = myGames.filter(item => item && Number(item.game_id) > 0);
+        setLibraryGames(validGames);
+
+        // Busca conquistas de cada jogo para progresso e exibição inteligente
+        const progressList: GameProgressItem[] = await Promise.all(
+          validGames.map(async (item) => {
+            let achs: any[] = [];
+            try {
+              achs = await libraryApi.getGameAchievements(item.game_id);
+            } catch {
+              achs = [];
+            }
+            const unlockedList = (Array.isArray(achs) ? achs : [])
+              .filter((a: any) => a.is_unlocked)
+              .map((a: any) => ({
+                id: a.achievement_id || String(a.id),
+                name: a.name,
+                iconUrl: a.icon_url,
+              }));
+
+            return {
+              id: item.id,
+              gameId: item.game_id,
+              title: item.game?.title || `Jogo #${item.game_id}`,
+              bannerUrl: item.game?.banner_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
+              playtimeMinutes: item.playtime_minutes || 0,
+              lastPlayed: item.last_played,
+              achievementsUnlocked: unlockedList.length,
+              achievementsTotal: Array.isArray(achs) ? achs.length : 0,
+              unlockedList,
+            };
+          })
+        );
+        setGamesProgress(progressList);
+      }
+    } catch {
+      // Degradação graciosa caso offline
+    } finally {
+      setIsLoadingGames(false);
+    }
+  };
+
+  // Carrega atividades recentes reais (conquistas e aquisições)
+  const loadActivities = async () => {
+    setIsLoadingActivities(true);
+    try {
+      const feed = await socialApi.getFeed(30);
+      if (Array.isArray(feed)) {
+        // Deduplica eventos por (type + game_id/game_title + achievement_id/name)
+        const seenKeys = new Set<string>();
+        const dedupedFeed: ActivityItem[] = [];
+
+        for (const act of feed) {
+          const achKey = act.payload?.achievement_id || act.payload?.name || act.payload?.achievement_name;
+          const gameKey = act.payload?.game_id || act.payload?.game_title;
+          const dedupKey = act.type === 'achievement_unlocked'
+            ? `${act.type}_${gameKey}_${achKey}`
+            : `${act.type}_${act.id}`;
+
+          if (!seenKeys.has(dedupKey)) {
+            seenKeys.add(dedupKey);
+            dedupedFeed.push(act);
+          }
+        }
+
+        setUserActivities(dedupedFeed);
+      }
+    } catch {
+      // Degradação graciosa
+    } finally {
+      setIsLoadingActivities(false);
+    }
+  };
+
+  // Carrega insígnias forjadas e progresso de nível (Bloco K)
+  const loadBadgesAndLevel = async () => {
+    try {
+      const prog = await cardsApi.getLevelProgress();
+      if (prog) setLevelProgress(prog);
+    } catch {
+      // Fallback gracioso
+    }
+    try {
+      const inv = await profileApi.getInventory('badge');
+      if (inv && Array.isArray(inv.items)) {
+        setUserBadges(inv.items);
+      }
+    } catch {
+      // Fallback gracioso
+    }
+  };
+
+  useEffect(() => {
+    loadInventory();
+    loadLibraryAndGames();
+    loadActivities();
+    loadBadgesAndLevel();
+  }, [isAuthenticated]);
+
+  const handleEquipToggle = async (item: InventoryItem) => {
+    setEquippingId(item.id);
+    const action = item.is_equipped ? 'unequip' : 'equip';
+    try {
+      const res = await profileApi.equipCosmetic(item.id, action);
+      if (res && res.success) {
+        setInventoryItems(prev =>
+          prev.map(i => {
+            if (i.item_type === item.item_type) {
+              if (action === 'equip') {
+                return { ...i, is_equipped: i.id === item.id };
+              } else if (i.id === item.id) {
+                return { ...i, is_equipped: false };
+              }
+            }
+            return i;
+          })
+        );
+
+        if (updateUserCosmetics) {
+          updateUserCosmetics(
+            res.avatar_frame_url ?? (item.item_type === 'avatar_frame' && action === 'unequip' ? null : undefined),
+            res.profile_background_url ?? (item.item_type === 'background' && action === 'unequip' ? null : undefined)
+          );
+        }
+
+        setFeedbackMessage(res.message);
+        setTimeout(() => setFeedbackMessage(null), 3500);
+      }
+    } catch (err: any) {
+      setFeedbackMessage(err?.message || 'Falha ao alterar equipamento do cosmético.');
+      setTimeout(() => setFeedbackMessage(null), 3500);
+    } finally {
+      setEquippingId(null);
+    }
+  };
+
+  const filteredInventory = inventoryItems.filter(item => {
+    if (inventoryCategory === 'todos') return true;
+    if (inventoryCategory === 'avatar') return item.item_type === 'avatar';
+    if (inventoryCategory === 'avatar_frame') return item.item_type === 'avatar_frame';
+    if (inventoryCategory === 'background') return item.item_type === 'background';
+    if (inventoryCategory === 'emoticon') return item.item_type === 'emoticon';
+    return true;
+  });
+  const formatPlaytime = (minutes: number): string => {
+    if (!minutes || minutes <= 0) return '0 horas registradas';
+    if (minutes < 60) return `${minutes} min registrados`;
+    const hours = (minutes / 60).toFixed(1).replace('.0', '');
+    return `${hours} horas registradas`;
+  };
+
+  const formatRelativeDate = (isoString?: string | null): string => {
+    if (!isoString) return 'Nunca jogado';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    } catch {
+      return 'Recentemente';
+    }
+  };
+
+  // Contador inteligente de jogos (usa libraryGames se disponível, senão prop/stats)
+  const displayGamesCount = libraryGames.length > 0
+    ? libraryGames.length
+    : (currentUser.stats?.gamesCount || 0);
+
+  const isGoldFrame = Boolean(
+    currentUser.avatarFrameUrl && (
+      currentUser.avatarFrameUrl.includes('1618005182384') ||
+      currentUser.avatarFrameUrl.toLowerCase().includes('gold')
+    )
+  );
+
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#180927] via-brand-bg to-brand-bg min-h-screen text-gray-100 p-6 lg:p-10">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#180927] via-brand-bg to-brand-bg min-h-screen text-gray-100 p-6 lg:p-10 relative">
+      {/* Background Decorativo Customizado do Perfil */}
+      {currentUser.profileBackgroundUrl && (
+        <div
+          data-testid="profile-custom-background"
+          className="absolute top-0 left-0 right-0 h-96 bg-cover bg-center opacity-35 blur-[2px] pointer-events-none transition-all duration-700"
+          style={{ backgroundImage: `url(${currentUser.profileBackgroundUrl})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#180927]/80 to-brand-bg"></div>
+        </div>
+      )}
+
+      {/* Toast de Feedback */}
+      {feedbackMessage && (
+        <div className="fixed top-20 right-8 z-50 bg-brand-surface border-2 border-brand-purple p-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-in">
+          <i className="fa-solid fa-sparkles text-brand-purple text-lg"></i>
+          <p className="text-sm font-bold text-white">{feedbackMessage}</p>
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
         {/* Header do Perfil */}
         <div className="bg-brand-surface/90 border border-purple-900/40 rounded-3xl p-6 lg:p-8 backdrop-blur-md shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-brand-purple/10 rounded-full blur-3xl pointer-events-none"></div>
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-            {/* Avatar e Dados Básicos */}
-            <div className="flex items-center gap-6">
-              <div className="relative group">
-                <div className="w-28 h-28 lg:w-32 lg:h-32 rounded-2xl overflow-hidden border-4 border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-gradient-to-br from-cyan-600 to-brand-green p-0.5">
+            {/* Avatar e Moldura de Avatar Cosmética */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className="relative group self-start">
+                <div
+                  data-testid="profile-avatar-container"
+                  className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center transition-all duration-300 p-1.5 ${
+                    currentUser.avatarFrameUrl
+                      ? isGoldFrame
+                        ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.85)]'
+                        : 'ring-4 ring-cyan-400 border-2 border-cyan-300 shadow-[0_0_30px_rgba(6,182,212,0.7)]'
+                      : 'border-4 border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.3)] bg-gradient-to-br from-cyan-600 to-brand-green p-0.5'
+                  }`}
+                >
                   <img
-                    src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80"
+                    src={(isEditing ? editAvatarUrl : null) || currentUser.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80"}
                     alt="Avatar Perfil"
                     className="w-full h-full object-cover rounded-xl"
                   />
+                  {currentUser.avatarFrameUrl && (
+                    <div
+                      data-testid="profile-equipped-frame"
+                      data-frame-url={currentUser.avatarFrameUrl}
+                      className={`absolute inset-0 rounded-2xl pointer-events-none border-4 transition-all duration-300 ${
+                        isGoldFrame
+                          ? 'border-amber-300 ring-2 ring-amber-400 shadow-[inset_0_0_12px_rgba(245,158,11,0.4)]'
+                          : 'border-cyan-300 ring-2 ring-cyan-400 shadow-[inset_0_0_12px_rgba(6,182,212,0.4)]'
+                      }`}
+                    />
+                  )}
+
+                  {/* Botão de Alteração de Foto ao Editar Perfil */}
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      data-testid="btn-change-avatar"
+                      title="Alterar Foto de Perfil"
+                      className="absolute inset-0 bg-black/65 hover:bg-black/80 rounded-2xl flex flex-col items-center justify-center text-white transition z-20 cursor-pointer border border-brand-purple/50 group"
+                    >
+                      <i className="fa-solid fa-camera text-2xl text-purple-300 group-hover:scale-110 transition mb-1"></i>
+                      <span className="text-[11px] font-bold text-gray-200">Alterar Foto</span>
+                    </button>
+                  )}
                 </div>
                 <div className="absolute -bottom-2 -right-2 bg-brand-green border-2 border-brand-surface px-2 py-0.5 rounded-md text-[10px] font-black text-emerald-100 shadow">
                   Ω MIST
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl lg:text-3xl font-display font-black text-white">
-                    {profileData.username}
-                  </h1>
-                  <i className="fa-solid fa-angle-down text-gray-400 text-sm cursor-pointer hover:text-white"></i>
+              {/* Informações ou Formulário de Edição */}
+              {isEditing ? (
+                <div className="space-y-3 w-full max-w-md bg-black/40 p-4 rounded-2xl border border-brand-purple/40">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                      Nome de Usuário:
+                    </label>
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      data-testid="input-edit-username"
+                      placeholder="Nome de usuário"
+                      className="w-full bg-gray-950 border border-brand-purple/70 focus:border-brand-purple rounded-xl px-3 py-1.5 text-sm text-white font-bold outline-none shadow-inner"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Nome Real:
+                      </label>
+                      <input
+                        type="text"
+                        value={editRealName}
+                        onChange={(e) => setEditRealName(e.target.value)}
+                        data-testid="input-edit-realname"
+                        placeholder="Seu nome"
+                        className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Localização:
+                      </label>
+                      <input
+                        type="text"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        data-testid="input-edit-location"
+                        placeholder="Localização"
+                        className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                      Biografia:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      data-testid="input-edit-bio"
+                      placeholder="Conte um pouco sobre você..."
+                      className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none resize-none"
+                    />
+                  </div>
+
+                  {profileError && (
+                    <p className="text-xs text-rose-400 font-medium flex items-center gap-1.5">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                      <span>{profileError}</span>
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs lg:text-sm text-gray-300 mt-1 flex items-center gap-1.5">
-                  <span>{profileData.realName}</span>
-                  <span>🇧🇷</span>
-                  <span className="text-gray-400">{profileData.location}</span>
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {profileData.status}
-                  </span>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl lg:text-3xl font-display font-black text-white">
+                      {currentUser.username}
+                    </h1>
+                  </div>
+
+                  {/* ID de Usuário para Adicionar Amigo */}
+                  {currentUser.id !== undefined && (
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span
+                        data-testid="profile-user-id"
+                        className="text-xs bg-gray-900/90 text-gray-300 border border-gray-700/80 px-2.5 py-0.5 rounded-lg font-mono flex items-center gap-1.5"
+                      >
+                        <i className="fa-solid fa-hashtag text-[10px] text-brand-purple"></i>
+                        ID: {currentUser.id}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                            navigator.clipboard.writeText(String(currentUser.id));
+                          }
+                          setCopiedId(true);
+                          setTimeout(() => setCopiedId(false), 2000);
+                        }}
+                        data-testid="btn-copy-user-id"
+                        title="Copiar seu ID para envio a amigos"
+                        className="text-[11px] text-gray-400 hover:text-white transition px-2 py-0.5 rounded-md hover:bg-gray-800 flex items-center gap-1 border border-transparent hover:border-gray-700 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${copiedId ? 'fa-check text-emerald-400' : 'fa-copy'}`}></i>
+                        <span>{copiedId ? 'Copiado!' : 'Copiar'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <p className="text-xs lg:text-sm text-gray-300 mt-1 flex items-center gap-1.5">
+                    <span>{currentUser.realName || currentUser.username}</span>
+                    <span>🇧🇷</span>
+                    <span className="text-gray-400">{currentUser.location || 'Brasil'}</span>
+                  </p>
+
+                  {currentUser.bio && (
+                    <p className="text-xs text-gray-300 mt-2 italic bg-black/30 px-3 py-1.5 rounded-xl border border-gray-800/60 max-w-md">
+                      "{currentUser.bio}"
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      {currentUser.status || 'Online'}
+                    </span>
+                    <span className="text-xs bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
+                      <i className="fa-solid fa-coins text-[10px]"></i>
+                      {(currentUser.pointsBalance ?? 0).toLocaleString('pt-BR')} Pontos
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Nível e Destaque da Insígnia */}
             <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 bg-brand-card/80 border border-purple-800/40 px-4 py-2 rounded-2xl shadow-inner">
-                  <span className="text-sm font-bold text-gray-300">Nível</span>
-                  <span className="w-9 h-9 rounded-full border-2 border-brand-purple flex items-center justify-center font-display font-black text-lg text-white bg-brand-purple/20">
-                    {profileData.level}
-                  </span>
+                <div className="flex flex-col gap-1.5 bg-brand-card/90 border border-brand-purple/40 p-3 rounded-2xl shadow-inner min-w-[210px]" data-testid="profile-xp-header">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-300">Nível MIST</span>
+                    <span className="w-8 h-8 rounded-full border-2 border-brand-purple flex items-center justify-center font-display font-black text-sm text-white bg-brand-purple/20">
+                      {levelProgress?.level ?? currentUser.level ?? 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                    <span>{levelProgress ? `${levelProgress.current_xp_in_level} XP` : '0 XP'}</span>
+                    <span>{levelProgress ? `${levelProgress.xp_needed_in_level} XP próx.` : '100 XP'}</span>
+                  </div>
+                  <div className="w-full bg-gray-800/90 h-2 rounded-full overflow-hidden border border-gray-700/50" title={`${levelProgress?.progress_percent ?? 0}% para o próximo nível`}>
+                    <div
+                      className="bg-gradient-to-r from-brand-purple via-indigo-500 to-brand-green h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(160,32,240,0.5)]"
+                      style={{ width: `${Math.max(4, levelProgress?.progress_percent ?? 0)}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 bg-brand-card/70 border border-gray-800 p-2.5 rounded-2xl">
                 <div className="w-10 h-10 rounded-xl bg-purple-900/60 border border-purple-500/40 flex items-center justify-center font-display font-black text-purple-300 text-sm shadow">
-                  {(profileData.featuredBadge as any).code || <i className={`fa-solid ${(profileData.featuredBadge as any).icon || 'fa-certificate'}`}></i>}
+                  {(currentUser.featuredBadge as any)?.code || (
+                    <i className={`fa-solid ${(currentUser.featuredBadge as any)?.icon || 'fa-certificate'}`}></i>
+                  )}
                 </div>
                 <div className="text-left">
                   <p className="text-xs font-bold text-white leading-tight">
-                    {profileData.featuredBadge.title}
+                    {currentUser.featuredBadge?.title || 'Pioneiro MIST'}
                   </p>
                   <p className="text-[11px] text-gray-400">
-                    {profileData.featuredBadge.xp} XP
+                    {currentUser.featuredBadge?.xp || 100} XP
                   </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm"
-              >
-                {isEditing ? 'Salvar Perfil' : 'Editar perfil'}
-              </button>
+              {/* Botões de Ação do Header */}
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      data-testid="btn-cancel-edit"
+                      className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      data-testid="btn-save-profile"
+                      className="bg-brand-purple hover:bg-purple-600 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSavingProfile ? (
+                        <>
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>Salvando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-check"></i>
+                          <span>Salvar Perfil</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsPrivacyModalOpen(true)}
+                      data-testid="btn-open-privacy-modal"
+                      className="bg-brand-surface hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700 hover:border-brand-purple px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-user-shield text-brand-purple"></i>
+                      Privacidade
+                    </button>
+                    <button
+                      type="button"
+                      onClick={startEditing}
+                      data-testid="btn-edit-profile"
+                      className="bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-pen-to-square"></i>
+                      Editar perfil
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Layout de Duas Colunas: Atividade Recente (Esq) e Status/Links (Dir) */}
+        {/* Layout de Duas Colunas: Conteúdo Principal (Esq) e Menu Lateral (Dir) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Coluna Principal: Atividade Recente */}
+          {/* Coluna Principal */}
           <div className="lg:col-span-8 space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-              <h2 className="text-lg font-display font-bold text-white flex items-center gap-2">
-                <i className="fa-solid fa-clock-rotate-left text-brand-purple"></i> Atividade recente
-              </h2>
-              <span className="text-xs text-gray-400 font-medium">
-                8,7 hora(s) nas 2 últimas semanas
-              </span>
+            {/* Abas Superiores de Navegação no Perfil */}
+            <div className="flex items-center gap-3 border-b border-gray-800 pb-3">
+              <button
+                onClick={() => setActiveSection('activity')}
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+                  activeSection === 'activity'
+                    ? 'bg-brand-purple text-white shadow-[0_0_12px_rgba(160,32,240,0.4)]'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-clock-rotate-left"></i> Atividade recente
+              </button>
+              <button
+                onClick={() => setActiveSection('games')}
+                data-testid="profile-tab-games"
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+                  activeSection === 'games'
+                    ? 'bg-brand-purple text-white shadow-[0_0_12px_rgba(160,32,240,0.4)]'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-gamepad text-purple-400"></i> Meus Jogos
+                <span className="ml-1 bg-black/40 text-[11px] px-2 py-0.5 rounded-full border border-gray-700">
+                  {displayGamesCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveSection('inventory')}
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+                  activeSection === 'inventory'
+                    ? 'bg-brand-purple text-white shadow-[0_0_12px_rgba(160,32,240,0.4)]'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-box-open text-emerald-400"></i> Inventário de Cosméticos
+                <span className="ml-1 bg-black/40 text-[11px] px-2 py-0.5 rounded-full border border-gray-700">
+                  {inventoryItems.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveSection('badges')}
+                data-testid="profile-tab-badges"
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+                  activeSection === 'badges'
+                    ? 'bg-brand-purple text-white shadow-[0_0_12px_rgba(160,32,240,0.4)]'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-medal text-amber-400"></i> Insígnias
+                <span className="ml-1 bg-black/40 text-[11px] px-2 py-0.5 rounded-full border border-gray-700">
+                  {userBadges.length}
+                </span>
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {defaultRecentGames.map(game => (
-                <div
-                  key={game.id}
-                  className="bg-brand-surface/90 border border-gray-800/80 hover:border-purple-900/60 rounded-2xl p-5 transition-all duration-300 shadow-lg"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={game.banner}
-                        alt={game.title}
-                        className="w-28 h-16 object-cover rounded-xl border border-gray-700 shadow"
-                      />
-                      <div>
-                        <h3 className="font-bold text-white text-base hover:text-brand-purple transition cursor-pointer">
-                          {game.title}
-                        </h3>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {game.hoursPlayed} horas registradas
-                        </p>
-                        <p className="text-[11px] text-gray-500">
-                          jogado pela última vez em {game.lastPlayed}
-                        </p>
-                      </div>
-                    </div>
+            {/* SEÇÃO 1: Atividade Recente Inteligente */}
+            {activeSection === 'activity' && (
+              <div className="space-y-4" data-testid="profile-recent-activity-section">
+                {isLoadingActivities ? (
+                  <div className="p-8 text-center text-gray-400">
+                    <i className="fa-solid fa-spinner fa-spin text-xl text-brand-purple mb-2"></i>
+                    <p className="text-xs">Carregando atividades recentes...</p>
                   </div>
+                ) : userActivities.length > 0 ? (
+                  userActivities.map((act) => {
+                    const isAchievement = act.type === 'achievement_unlocked';
+                    const isPurchase = act.type === 'game_purchased';
 
-                  {/* Barra de Conquistas */}
-                  <div className="mt-4 pt-3 border-t border-gray-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-brand-card/60 p-3 rounded-xl">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <span className="text-xs font-semibold text-gray-300 whitespace-nowrap">
-                        Conquistas <span className="text-white">{game.achievementsEarned}</span> de {game.achievementsTotal}
-                      </span>
-                      <div className="w-32 bg-gray-800 h-2.5 rounded-full overflow-hidden border border-gray-700">
+                    const rawName = act.payload.name || act.payload.achievement_name;
+                    const achievementTitle = rawName || (act.payload.achievement_id ? `Conquista #${act.payload.achievement_id}` : 'Conquista Desbloqueada');
+                    const achievementRarity = act.payload.rarity && act.payload.rarity !== act.payload.game_title ? act.payload.rarity : undefined;
+
+                    return (
+                      <div
+                        key={act.id}
+                        data-testid={`profile-activity-card-${act.id}`}
+                        className="bg-brand-surface/90 border border-gray-800/80 hover:border-purple-900/60 rounded-2xl p-5 transition-all duration-300 shadow-lg flex items-start gap-4"
+                      >
                         <div
-                          className="h-full bg-gradient-to-r from-brand-purple to-purple-400 rounded-full"
-                          style={{
-                            width: `${(game.achievementsEarned / game.achievementsTotal) * 100}%`
-                          }}
-                        ></div>
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg shrink-0 border ${
+                            isAchievement
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                              : isPurchase
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : 'bg-brand-purple/10 border-brand-purple/30 text-brand-purple'
+                          }`}
+                        >
+                          {isAchievement ? (
+                            <i className="fa-solid fa-trophy"></i>
+                          ) : isPurchase ? (
+                            <i className="fa-solid fa-bag-shopping"></i>
+                          ) : (
+                            <i className="fa-solid fa-star"></i>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <h4 className="font-bold text-white text-sm">
+                              {isAchievement ? (
+                                <span>
+                                  Conquista Desbloqueada:{' '}
+                                  <span className="text-amber-300 font-extrabold">
+                                    {achievementTitle}
+                                  </span>
+                                </span>
+                              ) : isPurchase ? (
+                                <span>
+                                  Novo Jogo Adquirido:{' '}
+                                  <span className="text-emerald-400 font-extrabold">
+                                    {act.payload.game_title || 'Jogo MIST'}
+                                  </span>
+                                </span>
+                              ) : (
+                                <span>Atividade no Ecossistema MIST</span>
+                              )}
+                            </h4>
+                            <span className="text-xs text-gray-500">
+                              {new Date(act.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+
+                          {act.payload.description && (
+                            <p className="text-xs text-gray-300 mt-1 italic">
+                              "{act.payload.description}"
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-3 mt-2 text-xs text-gray-400">
+                            {act.payload.game_title && (
+                              <span className="flex items-center gap-1 text-purple-300 font-medium">
+                                <i className="fa-solid fa-gamepad text-[10px]"></i>
+                                {act.payload.game_title}
+                              </span>
+                            )}
+                            {achievementRarity && (
+                              <span className="bg-amber-950/60 text-amber-300 border border-amber-700/50 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                {achievementRarity}
+                              </span>
+                            )}
+                            {isPurchase && act.payload.price !== undefined && (
+                              <span className="text-emerald-300 font-bold">
+                                R$ {Number(act.payload.price).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : gamesProgress.length > 0 ? (
+                  /* Fallback enriquecido: quando não houver feed registrado, exibe os jogos reais jogados */
+                  gamesProgress.map(game => (
+                    <div
+                      key={game.id}
+                      className="bg-brand-surface/90 border border-gray-800/80 hover:border-purple-900/60 rounded-2xl p-5 transition-all duration-300 shadow-lg"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={game.bannerUrl}
+                            alt={game.title}
+                            className="w-28 h-16 object-cover rounded-xl border border-gray-700 shadow"
+                          />
+                          <div>
+                            <h3 className="font-bold text-white text-base hover:text-brand-purple transition cursor-pointer">
+                              {game.title}
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatPlaytime(game.playtimeMinutes)}
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              jogado pela última vez em {formatRelativeDate(game.lastPlayed)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Barra de Conquistas */}
+                      <div className="mt-4 pt-3 border-t border-gray-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-brand-card/60 p-3 rounded-xl">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                          <span className="text-xs font-semibold text-gray-300 whitespace-nowrap">
+                            Conquistas <span className="text-white">{game.achievementsUnlocked}</span> de {game.achievementsTotal}
+                          </span>
+                          <div className="w-32 bg-gray-800 h-2.5 rounded-full overflow-hidden border border-gray-700">
+                            <div
+                              className="h-full bg-gradient-to-r from-brand-purple to-purple-400 rounded-full transition-all duration-500"
+                              style={{
+                                width: game.achievementsTotal > 0
+                                  ? `${(game.achievementsUnlocked / game.achievementsTotal) * 100}%`
+                                  : '0%'
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        {/* Ícones de Conquistas */}
+                        <div className="flex items-center gap-2">
+                          {game.unlockedList.slice(0, 4).map((ach, idx) => (
+                            <div
+                              key={idx}
+                              className="w-7 h-7 rounded-lg bg-gray-800 border border-purple-700/50 flex items-center justify-center text-purple-300 text-xs shadow-inner"
+                              title={ach.name}
+                            >
+                              <i className="fa-solid fa-trophy"></i>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  /* Fallback padrão estático caso nenhuma atividade ou jogo ainda tenha sido registrado */
+                  defaultFallbackRecentGames.map(game => (
+                    <div
+                      key={game.id}
+                      className="bg-brand-surface/90 border border-gray-800/80 hover:border-purple-900/60 rounded-2xl p-5 transition-all duration-300 shadow-lg"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={game.banner}
+                            alt={game.title}
+                            className="w-28 h-16 object-cover rounded-xl border border-gray-700 shadow"
+                          />
+                          <div>
+                            <h3 className="font-bold text-white text-base hover:text-brand-purple transition cursor-pointer">
+                              {game.title}
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {game.hoursPlayed} horas registradas
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              jogado pela última vez em {game.lastPlayed}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                    {/* Ícones de Conquistas */}
-                    <div className="flex items-center gap-2">
-                      {game.achievementIcons.map((icon, idx) => (
-                        <div
-                          key={idx}
-                          className="w-7 h-7 rounded-lg bg-gray-800 border border-purple-700/50 flex items-center justify-center text-purple-300 text-xs shadow-inner"
-                          title="Conquista desbloqueada"
-                        >
-                          <i className={`fa-solid ${icon}`}></i>
+                      {/* Barra de Conquistas */}
+                      <div className="mt-4 pt-3 border-t border-gray-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-brand-card/60 p-3 rounded-xl">
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                          <span className="text-xs font-semibold text-gray-300 whitespace-nowrap">
+                            Conquistas <span className="text-white">{game.achievementsEarned}</span> de {game.achievementsTotal}
+                          </span>
+                          <div className="w-32 bg-gray-800 h-2.5 rounded-full overflow-hidden border border-gray-700">
+                            <div
+                              className="h-full bg-gradient-to-r from-brand-purple to-purple-400 rounded-full"
+                              style={{
+                                width: `${(game.achievementsEarned / game.achievementsTotal) * 100}%`
+                              }}
+                            ></div>
+                          </div>
                         </div>
-                      ))}
-                      {game.extraAchievementsCount && (
-                        <div className="w-7 h-7 rounded-lg bg-brand-purple/30 border border-brand-purple flex items-center justify-center font-bold text-white text-[10px]">
-                          +{game.extraAchievementsCount}
+
+                        {/* Ícones de Conquistas */}
+                        <div className="flex items-center gap-2">
+                          {game.achievementIcons.map((icon, idx) => (
+                            <div
+                              key={idx}
+                              className="w-7 h-7 rounded-lg bg-gray-800 border border-purple-700/50 flex items-center justify-center text-purple-300 text-xs shadow-inner"
+                              title="Conquista desbloqueada"
+                            >
+                              <i className={`fa-solid ${icon}`}></i>
+                            </div>
+                          ))}
                         </div>
-                      )}
+                      </div>
                     </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* SEÇÃO 2: Listagem de Jogos, Tempo de Jogo e Barra de Conquistas */}
+            {activeSection === 'games' && (
+              <div className="space-y-4" data-testid="profile-games-section">
+                {isLoadingGames ? (
+                  <div className="p-12 text-center text-gray-400">
+                    <i className="fa-solid fa-spinner fa-spin text-2xl text-brand-purple mb-2"></i>
+                    <p className="text-sm">Carregando seus jogos...</p>
+                  </div>
+                ) : gamesProgress.length === 0 ? (
+                  <div className="bg-brand-surface/70 border border-gray-800/80 rounded-3xl p-10 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-brand-card border border-gray-700 flex items-center justify-center text-gray-500 text-2xl mx-auto">
+                      <i className="fa-solid fa-gamepad"></i>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Nenhum jogo na biblioteca</h3>
+                    <p className="text-xs text-gray-400 max-w-md mx-auto">
+                      Você ainda não possui títulos adquiridos na MIST Store. Visite a Loja para adicionar jogos e iniciar suas conquistas!
+                    </p>
+                  </div>
+                ) : (
+                  gamesProgress.map(game => {
+                    const percentage = game.achievementsTotal > 0
+                      ? Math.round((game.achievementsUnlocked / game.achievementsTotal) * 100)
+                      : 0;
+
+                    return (
+                      <div
+                        key={game.id}
+                        data-testid={`profile-game-card-${game.gameId}`}
+                        className="bg-brand-surface/90 border border-gray-800 hover:border-purple-800/60 rounded-2xl p-5 transition-all duration-300 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5"
+                      >
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={game.bannerUrl}
+                            alt={game.title}
+                            className="w-32 h-20 object-cover rounded-xl border border-gray-700 shadow shrink-0"
+                          />
+                          <div>
+                            <h3 className="font-bold text-white text-base hover:text-brand-purple transition">
+                              {game.title}
+                            </h3>
+                            <p className="text-xs text-purple-300 font-semibold mt-1 flex items-center gap-1.5">
+                              <i className="fa-regular fa-clock"></i>
+                              {formatPlaytime(game.playtimeMinutes)}
+                            </p>
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              Última sessão: {formatRelativeDate(game.lastPlayed)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Barra de Progresso de Conquistas */}
+                        <div className="w-full md:w-64 bg-brand-card/80 border border-gray-800 p-3.5 rounded-xl">
+                          <div className="flex items-center justify-between text-xs mb-2">
+                            <span className="font-bold text-gray-300 flex items-center gap-1.5">
+                              <i className="fa-solid fa-trophy text-amber-400 text-xs"></i>
+                              Conquistas
+                            </span>
+                            <span className="font-black text-white">
+                              {game.achievementsUnlocked}/{game.achievementsTotal}{' '}
+                              <span className="text-purple-400 text-[11px]">({percentage}%)</span>
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden border border-gray-700/80">
+                            <div
+                              className="h-full bg-gradient-to-r from-brand-purple to-cyan-400 rounded-full transition-all duration-500"
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* SEÇÃO 3: Inventário de Cosméticos */}
+            {activeSection === 'inventory' && (
+              <div className="space-y-6" data-testid="profile-inventory-section">
+                {/* Filtros de Categoria do Inventário */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  {onNavigate && (
+                    <button
+                      onClick={() => onNavigate('inventory')}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-brand-purple/20 text-brand-purple hover:bg-brand-purple hover:text-white border border-brand-purple/40 transition flex items-center gap-2 shrink-0"
+                      title="Abrir página completa do inventário"
+                    >
+                      <i className="fa-solid fa-boxes-stacked"></i>
+                      Inventário Completo
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setInventoryCategory('todos')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'todos'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Todos ({inventoryItems.length})
+                  </button>
+                  <button
+                    onClick={() => setInventoryCategory('avatar')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'avatar'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Fotos de Perfil
+                  </button>
+                  <button
+                    onClick={() => setInventoryCategory('avatar_frame')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'avatar_frame'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Molduras de Avatar
+                  </button>
+                  <button
+                    onClick={() => setInventoryCategory('background')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'background'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Planos de Fundo
+                  </button>
+                  <button
+                    onClick={() => setInventoryCategory('emoticon')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      inventoryCategory === 'emoticon'
+                        ? 'bg-brand-purple/30 text-white border border-brand-purple'
+                        : 'bg-brand-card/60 text-gray-400 hover:text-white border border-gray-800'
+                    }`}
+                  >
+                    Emoticons
+                  </button>
+                </div>
+
+                {isLoadingInventory ? (
+                  <div className="p-12 text-center text-gray-400">
+                    <i className="fa-solid fa-spinner fa-spin text-2xl text-brand-purple mb-2"></i>
+                    <p className="text-sm">Carregando seu inventário...</p>
+                  </div>
+                ) : filteredInventory.length === 0 ? (
+                  <div className="bg-brand-surface/70 border border-gray-800/80 rounded-3xl p-10 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-brand-card border border-gray-700 flex items-center justify-center text-gray-500 text-2xl mx-auto">
+                      <i className="fa-solid fa-box-open"></i>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Nenhum cosmético nesta categoria</h3>
+                    <p className="text-xs text-gray-400 max-w-md mx-auto">
+                      Você pode resgatar molduras exclusivas, planos de fundo dinâmicos e emoticons na Loja de Pontos utilizando pontos acumulados nas compras de jogos!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                    {filteredInventory.map(item => (
+                      <div
+                        key={item.id}
+                        data-testid={`inventory-item-${item.id}`}
+                        className={`bg-brand-card/90 rounded-2xl border transition-all duration-300 overflow-hidden flex flex-col justify-between group shadow-xl ${
+                          item.is_equipped
+                            ? 'border-brand-green/80 shadow-[0_0_15px_rgba(160,32,240,0.25)]'
+                            : 'border-gray-800 hover:border-brand-purple/60'
+                        }`}
+                      >
+                        <div>
+                          <div className="relative h-40 bg-brand-surface/80 flex items-center justify-center p-3 overflow-hidden">
+                            {item.item_type === 'avatar_frame' ? (
+                              <div className="relative w-24 h-24 flex items-center justify-center">
+                                <img
+                                  src={currentUser.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=200&q=80"}
+                                  alt="Preview"
+                                  className="w-16 h-16 rounded-full object-cover"
+                                />
+                                {(() => {
+                                  const isItemGold = item.item_id === 'frame_gold' || 
+                                    (item.asset_url && (item.asset_url.includes('1618005182384') || item.asset_url.includes('gold'))) || 
+                                    (item.name && item.name.toLowerCase().includes('dourad'));
+                                  return (
+                                    <div
+                                      className={`absolute inset-0 rounded-full border-4 ${
+                                        isItemGold
+                                          ? 'border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.85)] ring-2 ring-amber-300/60'
+                                          : 'border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.6)]'
+                                      }`}
+                                      style={{
+                                        backgroundImage: `url(${item.asset_url})`,
+                                        backgroundSize: 'cover',
+                                        backgroundPosition: 'center',
+                                      }}
+                                    />
+                                  );
+                                })()}
+                              </div>
+                            ) : (
+                              <img
+                                src={item.asset_url}
+                                alt={item.name}
+                                className="w-full h-full object-cover rounded-xl transition duration-500 group-hover:scale-105"
+                              />
+                            )}
+
+                            {item.is_equipped && (
+                              <div className="absolute top-2 right-2 bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 shadow">
+                                <i className="fa-solid fa-check text-[10px]"></i> Equipado
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="p-4">
+                            <h4 className="font-bold text-sm text-white truncate mb-1">
+                              {item.name}
+                            </h4>
+                            <p className="text-[11px] text-gray-400 capitalize">
+                              {item.item_type.replace('_', ' ')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="p-4 pt-0">
+                          {item.item_type === 'avatar' ? (
+                            <button
+                              onClick={async () => {
+                                setEquippingId(item.id);
+                                try {
+                                  const updated = await profileApi.updateProfile({ avatar_url: item.asset_url });
+                                  updateUserProfile({ avatarUrl: updated.avatar_url });
+                                  setFeedbackMessage('Foto de perfil atualizada com sucesso!');
+                                  setTimeout(() => setFeedbackMessage(null), 3500);
+                                } catch (err: any) {
+                                  setFeedbackMessage(err.message || 'Erro ao definir foto de perfil.');
+                                  setTimeout(() => setFeedbackMessage(null), 3500);
+                                } finally {
+                                  setEquippingId(null);
+                                }
+                              }}
+                              disabled={equippingId === item.id || currentUser.avatarUrl === item.asset_url}
+                              className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                                currentUser.avatarUrl === item.asset_url
+                                  ? 'bg-gray-800 text-gray-400 border border-gray-700 cursor-default'
+                                  : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)]'
+                              }`}
+                            >
+                              {equippingId === item.id ? (
+                                <>
+                                  <i className="fa-solid fa-spinner fa-spin"></i> Atualizando...
+                                </>
+                              ) : currentUser.avatarUrl === item.asset_url ? (
+                                <>
+                                  <i className="fa-solid fa-check text-xs"></i> Foto Atual
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fa-solid fa-camera text-xs"></i> Usar como Foto
+                                </>
+                              )}
+                            </button>
+                          ) : item.item_type === 'avatar_frame' || item.item_type === 'background' ? (
+                            <button
+                              onClick={() => handleEquipToggle(item)}
+                              disabled={equippingId === item.id}
+                              className={`w-full py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
+                                item.is_equipped
+                                  ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700'
+                                  : 'bg-brand-purple hover:bg-brand-purpleDark text-white shadow-[0_0_10px_rgba(160,32,240,0.3)]'
+                              }`}
+                            >
+                              {equippingId === item.id ? (
+                                <>
+                                  <i className="fa-solid fa-spinner fa-spin"></i> Atualizando...
+                                </>
+                              ) : item.is_equipped ? (
+                                <>
+                                  <i className="fa-solid fa-xmark text-xs"></i> Desequipar
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fa-solid fa-wand-magic-sparkles text-xs"></i> Equipar no Perfil
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-gray-500 text-center block py-1">
+                              Disponível no bate-papo
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SEÇÃO 4: Insígnias Craftadas e Progressão (Bloco K) */}
+            {activeSection === 'badges' && (
+              <div className="bg-brand-surface/90 border border-gray-800 rounded-3xl p-6 shadow-2xl space-y-6" data-testid="profile-badges-section">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                  <div>
+                    <h3 className="font-display font-black text-xl text-white flex items-center gap-2">
+                      <i className="fa-solid fa-medal text-amber-400"></i> Insígnias Conquistadas
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Insígnias forjadas a partir de coleções completas de cartas colecionáveis na MIST.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-xl">
+                      {userBadges.length} {userBadges.length === 1 ? 'Insígnia' : 'Insígnias'}
+                    </span>
+                    <button
+                      onClick={() => onNavigate?.('inventory')}
+                      className="text-xs font-bold bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-boxes-stacked"></i> Forjar no Inventário
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {userBadges.length === 0 ? (
+                  <div className="text-center py-12 bg-brand-card/40 rounded-2xl border border-gray-800/80">
+                    <i className="fa-solid fa-award text-4xl text-gray-600 mb-3 block"></i>
+                    <h4 className="text-base font-bold text-gray-300">Nenhuma insígnia forjada ainda</h4>
+                    <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
+                      Jogue seus títulos favoritos para receber cartas colecionáveis ou visite o Inventário para forjar sua primeira insígnia e subir de nível!
+                    </p>
+                    <button
+                      onClick={() => onNavigate?.('inventory')}
+                      className="mt-4 bg-brand-purple hover:bg-brand-purpleDark text-white text-xs font-bold py-2 px-5 rounded-xl transition shadow"
+                    >
+                      Ir ao Inventário de Cartas
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="bg-brand-card/90 border border-gray-700/60 hover:border-brand-purple p-4 rounded-2xl flex items-center gap-4 transition group shadow-md"
+                      >
+                        <div className="relative shrink-0">
+                          <img
+                            src={badge.asset_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=300&q=80'}
+                            alt={badge.name}
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500/50 group-hover:scale-105 transition"
+                          />
+                          <div className="absolute -bottom-1 -right-1 bg-amber-500 text-black font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-black">
+                            ★
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-bold text-sm text-white truncate group-hover:text-brand-purple transition">
+                            {badge.name}
+                          </h5>
+                          <p className="text-[11px] text-gray-400 line-clamp-2 mt-0.5">
+                            {badge.description || 'Insígnia de mestre forjada na plataforma.'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              +100 XP
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              {badge.rarity || 'Especial'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Coluna Lateral Direita: Insígnias e Navegação do Perfil */}
+          {/* Coluna Lateral Direita: Insígnias e Menu */}
           <div className="lg:col-span-4 space-y-6">
             {/* Seção de Insígnias */}
             <div className="bg-brand-surface/90 border border-gray-800 rounded-2xl p-5 shadow-xl">
@@ -264,9 +1386,9 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
                 </div>
                 <div className="p-3 bg-brand-card rounded-xl border border-gray-700/60 flex flex-col items-center text-center group cursor-pointer hover:border-brand-purple transition">
                   <div className="w-6 h-6 rounded-md bg-blue-900 border border-blue-400 flex items-center justify-center font-bold text-blue-200 text-xs group-hover:scale-110 transition">
-                    7
+                    {currentUser.level || 1}
                   </div>
-                  <span className="text-[10px] text-gray-400 mt-1 truncate w-full">Nível 7</span>
+                  <span className="text-[10px] text-gray-400 mt-1 truncate w-full">Nível {currentUser.level || 1}</span>
                 </div>
                 <div className="p-3 bg-brand-card rounded-xl border border-gray-700/60 flex flex-col items-center text-center group cursor-pointer hover:border-brand-purple transition">
                   <i className="fa-solid fa-gem text-2xl text-emerald-400 group-hover:scale-110 transition"></i>
@@ -278,17 +1400,37 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
             {/* Menu de Estatísticas e Itens do Perfil */}
             <div className="bg-brand-surface/90 border border-gray-800 rounded-2xl p-5 shadow-xl">
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white">
+                <li
+                  onClick={() => setActiveSection('games')}
+                  data-testid="sidebar-games-link"
+                  className={`flex items-center justify-between p-2.5 rounded-xl transition cursor-pointer ${
+                    activeSection === 'games'
+                      ? 'bg-brand-purple/20 text-white border border-brand-purple/40'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800/60'
+                  }`}
+                >
                   <span className="flex items-center gap-2">
                     <i className="fa-solid fa-gamepad text-brand-purple"></i> Jogos
                   </span>
-                  <span className="font-bold text-white text-base">22</span>
+                  <span className="font-bold text-white text-base">
+                    {displayGamesCount}
+                  </span>
                 </li>
-                <li className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white">
+                <li
+                  onClick={() => setActiveSection('inventory')}
+                  data-testid="sidebar-inventory-link"
+                  className={`flex items-center justify-between p-2.5 rounded-xl transition cursor-pointer ${
+                    activeSection === 'inventory'
+                      ? 'bg-brand-purple/20 text-white border border-brand-purple/40'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800/60'
+                  }`}
+                >
                   <span className="flex items-center gap-2">
                     <i className="fa-solid fa-box-open text-emerald-400"></i> Inventário
                   </span>
-                  <i className="fa-solid fa-chevron-right text-xs text-gray-600"></i>
+                  <span className="font-bold text-white text-sm bg-brand-card px-2 py-0.5 rounded-md border border-gray-700">
+                    {inventoryItems.length}
+                  </span>
                 </li>
                 <li className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white">
                   <span className="flex items-center gap-2">
@@ -483,6 +1625,27 @@ export const Profile: React.FC<ProfileProps> = ({ user, onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Modal de Configurações de Privacidade (P-05) */}
+      <PrivacySettingsModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        onSaved={() => {
+          setFeedbackMessage('Preferências de privacidade salvas!');
+          setTimeout(() => setFeedbackMessage(null), 3500);
+        }}
+      />
+
+      {/* Modal de Seleção de Foto de Perfil (Avatar) */}
+      <AvatarSelectModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        onSelectAvatar={(avatarUrl) => {
+          setEditAvatarUrl(avatarUrl);
+        }}
+        currentAvatarUrl={editAvatarUrl || currentUser.avatarUrl}
+        onNavigateToShop={() => onNavigate?.('points_shop')}
+      />
     </div>
   );
 };

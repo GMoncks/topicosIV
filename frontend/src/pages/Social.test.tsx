@@ -84,6 +84,9 @@ describe('Social Page Component (F-06 & F-08)', () => {
     MockWebSocket.instances = [];
 
     vi.spyOn(socialApi, 'getFriends').mockResolvedValue(mockFriends);
+    vi.spyOn(socialApi, 'getFriendRequests').mockResolvedValue([]);
+    vi.spyOn(socialApi, 'acceptFriend').mockResolvedValue({ success: true, message: 'Amizade aceita' });
+    vi.spyOn(socialApi, 'deleteFriend').mockResolvedValue({ success: true, message: 'Amizade recusada' });
     vi.spyOn(socialApi, 'getFeed').mockResolvedValue(mockFeed);
     vi.spyOn(socialApi, 'getChatHistory').mockResolvedValue([]);
     vi.spyOn(socialApi, 'markChatRead').mockResolvedValue({ success: true });
@@ -177,6 +180,89 @@ describe('Social Page Component (F-06 & F-08)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('chat-window')).toBeInTheDocument();
       expect(screen.getByText('BOT IA')).toBeInTheDocument();
+    });
+  });
+
+  it('deve deduplicar itens repetidos do feed de atividades (REG-SOC-01)', async () => {
+    const duplicatedFeed: ActivityItem[] = [
+      {
+        id: 10,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 11,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 12,
+        user_id: 1,
+        type: 'achievement_unlocked',
+        payload: {
+          username: 'GGTorres2001',
+          game_id: 14,
+          game_title: 'MIST Forca',
+          achievement_id: 'first_word',
+          achievement_name: 'Primeira Palavra',
+        },
+        created_at: new Date().toISOString(),
+      },
+    ];
+
+    vi.spyOn(socialApi, 'getFeed').mockResolvedValue(duplicatedFeed);
+    render(<Social />);
+
+    await waitFor(() => {
+      const matches = screen.getAllByText('Primeira Palavra');
+      expect(matches.length).toBe(1);
+    });
+  });
+
+  it('exibe a seção de solicitações de amizade pendentes e permite aceitar uma solicitação', async () => {
+    vi.spyOn(socialApi, 'getFriendRequests').mockResolvedValueOnce([
+      {
+        friendship_id: 99,
+        requester_id: 42,
+        addressee_id: 1,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        username: 'AmigoNovo',
+        avatar_url: 'https://mist.gg/avatars/new.png',
+      },
+    ]);
+
+    render(<Social />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('section-pending-requests')).toBeInTheDocument();
+      expect(screen.getByText('AmigoNovo')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-accept-request-99')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-reject-request-99')).toBeInTheDocument();
+    });
+
+    const btnAccept = screen.getByTestId('btn-accept-request-99');
+    fireEvent.click(btnAccept);
+
+    await waitFor(() => {
+      expect(socialApi.acceptFriend).toHaveBeenCalledWith(99);
+      expect(screen.queryByTestId('btn-accept-request-99')).toBeNull();
     });
   });
 });

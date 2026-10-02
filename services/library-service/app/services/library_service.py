@@ -21,6 +21,9 @@ class LibraryService:
         Concede a licença de um jogo a um usuário (idempotente).
         Retorna uma tupla: (item, created).
         """
+        if game_id <= 0:
+            raise HTTPException(status_code=400, detail="ID de jogo inválido (deve ser maior que zero).")
+
         existing = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
         if existing:
             return existing, False
@@ -41,9 +44,12 @@ class LibraryService:
     @staticmethod
     def get_user_games(db: Session, user_id: int) -> List[LibraryItem]:
         """
-        Retorna todos os registros da biblioteca pertencentes ao usuário informado.
+        Retorna todos os registros da biblioteca pertencentes ao usuário informado (apenas jogos válidos com game_id > 0).
         """
-        return db.query(LibraryItem).filter_by(user_id=user_id).order_by(LibraryItem.acquired_at.desc()).all()
+        return db.query(LibraryItem).filter(
+            LibraryItem.user_id == user_id,
+            LibraryItem.game_id > 0
+        ).order_by(LibraryItem.acquired_at.desc()).all()
 
     @staticmethod
     def has_game(db: Session, user_id: int, game_id: int) -> bool:
@@ -200,14 +206,20 @@ class LibraryService:
         icon_url = ach_meta.icon_url if ach_meta else None
         description = ach_meta.description if ach_meta else ""
 
+        # Resolve o título do jogo para a atividade social não ficar genérica ("Jogo #X")
+        from app.db.seed_achievements import FALLBACK_GAMES
+        game_title = next((g["title"] for g in FALLBACK_GAMES if g["id"] == game_id), f"Jogo #{game_id}")
+
         # 1. Dispara evento de atividade assíncrono para o social-service
         activity_payload = {
             "user_id": user_id,
             "type": "achievement_unlocked",
             "payload": {
                 "game_id": game_id,
+                "game_title": game_title,
                 "achievement_id": achievement_id,
                 "name": ach_name,
+                "achievement_name": ach_name,
                 "description": description,
                 "rarity": rarity,
                 "icon_url": icon_url,
@@ -227,7 +239,47 @@ class LibraryService:
             "unlocked_at": new_unlock.unlocked_at.isoformat() if new_unlock.unlocked_at else None,
         })
 
+        # 3. Concessão de carta temática de conquista (Quest Master / Bloco K)
+        try:
+            is_foil = str(rarity).lower() in ("raro", "raríssimo", "lendário", "mítico")
+            LibraryService.dispatch_card_grant(
+                user_id=user_id,
+                game_id=game_id,
+                is_foil=is_foil,
+                rarity=rarity if rarity in ("Comum", "Incomum", "Raro", "Lendario") else None
+            )
+        except Exception:
+            pass
+
         return new_unlock, True
+
+    @staticmethod
+    def dispatch_card_grant(
+        user_id: int,
+        game_id: int,
+        is_foil: bool = False,
+        rarity: Optional[str] = None,
+        auth_service_url: Optional[str] = None
+    ) -> Optional[dict]:
+        """
+        Solicita ao auth-service a concessão de uma carta colecionável ao usuário.
+        Resiliente: não quebra a requisição do usuário em caso de indisponibilidade de rede.
+        """
+        target_url = (auth_service_url or os.getenv("AUTH_SERVICE_URL", "http://localhost:8001")).rstrip("/") + "/cards/grant"
+        payload = {
+            "user_id": user_id,
+            "game_id": game_id,
+            "is_foil": is_foil,
+            "rarity": rarity
+        }
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                res = client.post(target_url, json=payload)
+                if res.status_code == 201:
+                    return res.json().get("inventory_item")
+        except Exception:
+            pass
+        return None
 
     @staticmethod
     def dispatch_activity_event(payload: dict, social_service_url: Optional[str] = None):
@@ -430,7 +482,15 @@ class LibraryService:
         db.commit()
         db.refresh(session)
         db.refresh(item)
-        return session, item.playtime_minutes
+
+        # Avalia drop de cartas colecionáveis (Bloco K)
+        import random
+        dropped_card = None
+        drop_chance = float(os.getenv("CARD_DROP_CHANCE_PER_MINUTE", "0.08"))
+        if random.random() < drop_chance:
+            dropped_card = LibraryService.dispatch_card_grant(user_id=user_id, game_id=game_id)
+
+        return session, item.playtime_minutes, dropped_card
 
     @staticmethod
     def end_session(

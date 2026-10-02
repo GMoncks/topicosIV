@@ -31,10 +31,25 @@ class FriendListItem(BaseModel):
     since: datetime
     username: Optional[str] = None
     avatar_url: Optional[str] = None
+    avatar_frame_url: Optional[str] = None
     presence_status: Optional[str] = "offline"
     current_game: Optional[str] = None
     current_game_id: Optional[int] = None
     is_bot: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FriendPendingRequestItem(BaseModel):
+    friendship_id: int
+    requester_id: int
+    addressee_id: int
+    status: str
+    created_at: datetime
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    avatar_frame_url: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 

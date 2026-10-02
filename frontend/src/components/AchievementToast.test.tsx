@@ -23,10 +23,31 @@ vi.mock('../api/client', () => ({
     getGames: vi.fn().mockResolvedValue([]),
     listGames: vi.fn().mockResolvedValue([]),
     getRecommendations: vi.fn().mockResolvedValue([]),
+    getTopSellers: vi.fn().mockResolvedValue([]),
+    getNewReleases: vi.fn().mockResolvedValue([]),
+    getTrending: vi.fn().mockResolvedValue([]),
   },
   libraryApi: {
     getMyGames: vi.fn().mockResolvedValue([]),
     getRecentAchievements: vi.fn().mockResolvedValue([]),
+  },
+  socialApi: {
+    getNotifications: vi.fn().mockResolvedValue([]),
+    getUnreadCount: vi.fn().mockResolvedValue(0),
+  },
+  cardsApi: {
+    getLevelProgress: vi.fn().mockResolvedValue({
+      current_level: 1,
+      total_xp: 100,
+      xp_for_current_level: 100,
+      xp_for_next_level: 400,
+      progress_percent: 0.0,
+      xp_remaining: 300,
+    }),
+    getCatalogCards: vi.fn().mockResolvedValue([]),
+    craftBadge: vi.fn().mockResolvedValue({}),
+    getUserBadges: vi.fn().mockResolvedValue([]),
+    getGameBadge: vi.fn().mockResolvedValue(null),
   },
 }));
 

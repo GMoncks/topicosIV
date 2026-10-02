@@ -165,5 +165,29 @@ describe('ChatWindow Component (F-07)', () => {
       expect(screen.getByText(/MIST Bot está formulando resposta.../i)).toBeInTheDocument();
     });
   });
+
+  it('garante contraste legível com bg-brand-card e text-white no input e nas sugestões (REG-FRONT-08)', () => {
+    const botFriend: FriendItem = {
+      friendship_id: 0,
+      friend_user_id: 0,
+      status: 'accepted',
+      since: '2026-01-01T00:00:00Z',
+      username: 'MIST Bot',
+      presence_status: 'online',
+      current_game: 'MIST AI Companion',
+      is_bot: true,
+    };
+
+    render(<ChatWindow friend={botFriend} currentUserId={1} onClose={vi.fn()} />);
+
+    const input = screen.getByPlaceholderText('Escreva uma mensagem...') as HTMLInputElement;
+    expect(input.className).toContain('bg-brand-card');
+    expect(input.className).toContain('text-white');
+    expect(input.className).not.toContain('bg-brand-dark');
+
+    const promptBtn = screen.getByText('Recomende um jogo do catálogo');
+    expect(promptBtn.className).toContain('bg-brand-card');
+    expect(promptBtn.className).not.toContain('bg-brand-dark');
+  });
 });
 
