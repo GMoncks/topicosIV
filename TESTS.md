@@ -457,7 +457,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `.venv/bin/pytest services/store-service/tests/test_promotional_games_and_persistence.py`
+- Comando: `pytest services/store-service/tests/test_promotional_games_and_persistence.py`
 - Pré-condições: Módulo `seed.py` e `database.py` com esquema de persistência idempotente e jogos promocionais configurados.
 - Passos:
   - Dado o catálogo de 25 jogos com múltiplos títulos em promoção ativa (descontos de 15% a 75%)
@@ -579,7 +579,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_notification_model_creation or test_create_and_list_notifications"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_notification_model_creation or test_create_and_list_notifications"`
 - Pré-condições: Modelo `Notification` e rotas `/notifications` implementadas no `social-service`.
 - Passos:
   - Dado notificações criadas para um usuário (pedidos de amizade, ofertas de desconto na wishlist, etc.)
@@ -592,7 +592,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_mark_notification_as_read or test_mark_all_notifications_as_read or test_notification_user_isolation"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_mark_notification_as_read or test_mark_all_notifications_as_read or test_notification_user_isolation"`
 - Pré-condições: Endpoints `/notifications/{id}/read` e `/notifications/read-all` implementados.
 - Passos:
   - Dado notificações não lidas associadas a um usuário
@@ -606,7 +606,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_websocket_notifications_broadcast"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_websocket_notifications_broadcast"`
 - Pré-condições: `NotificationManager` e endpoint `WS /ws/notifications` ativos no `social-service`.
 - Passos:
   - Dado um usuário conectado ao WebSocket de notificações com seu ID
@@ -923,7 +923,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_list_screenshots_default or test_list_screenshots_filter_by_game_and_user or test_list_screenshots_sort_popular"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_list_and_filter_screenshots"`
 - Pré-condições: Capturas de múltiplos jogos e autores cadastradas.
 - Passos:
   - Dado capturas salvas com diferentes contagens de likes e datas
@@ -936,7 +936,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_like_and_unlike_screenshot_lifecycle"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_like_and_unlike_screenshot"`
 - Pré-condições: Captura cadastrada e usuário autenticado.
 - Passos:
   - Dado uma captura com likes_count inicial 0
@@ -949,7 +949,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_delete_screenshot_owner_only"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_delete_screenshot_authorization"`
 - Pré-condições: Captura cadastrada pelo usuário A.
 - Passos:
   - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo usuário A (autor)
@@ -962,7 +962,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_sdk_take_screenshot_offline_fallback"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_mist_sdk_take_screenshot_resilience"`
 - Pré-condições: SDK MIST em ambiente isolado sem conexão com o servidor UGC.
 - Passos:
   - Dado a chamada `mist_sdk.take_screenshot("Minha jogada")` durante a execução de um jogo
@@ -988,7 +988,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_upload_workshop_item_success or test_upload_workshop_item_requires_auth or test_upload_workshop_item_invalid_extension"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_upload_workshop_item_success or test_upload_workshop_item_requires_auth or test_upload_workshop_item_invalid_extension"`
 - Pré-condições: Microsserviço UGC inicializado e diretório de uploads montado.
 - Passos:
   - Dado um arquivo de mod compactado (.zip, .pak, .rar) com metadados (jogo, título, categoria, versão, tags)
@@ -1001,7 +1001,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_list_workshop_items_filters_and_search"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_list_workshop_items_and_search"`
 - Pré-condições: Itens do Workshop de múltiplos jogos e categorias cadastrados.
 - Passos:
   - Dado múltiplos itens de mods e skins
@@ -1014,7 +1014,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_subscribe_and_unsubscribe_workshop_item"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_subscribe_and_unsubscribe_workshop_item"`
 - Pré-condições: Mod publicado e usuário autenticado.
 - Passos:
   - Dado um mod existente
@@ -1027,7 +1027,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_download_workshop_item_increments_count"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_increment_mod_download"`
 - Pré-condições: Item de mod registrado com arquivo físico no disco.
 - Passos:
   - Dado um mod publicado na Oficina
@@ -1040,7 +1040,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_delete_workshop_item_authorization"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_delete_workshop_item_author_only"`
 - Pré-condições: Mod criado pelo autor A.
 - Passos:
   - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo autor A
@@ -1053,7 +1053,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=gateway pytest gateway/tests/test_ugc_proxy.py -k "test_proxy_workshop_items_public_list or test_proxy_workshop_upload_injects_auth"`
+- Comando: `pytest gateway/tests/test_ugc_proxy.py -k "test_ugc_proxy_allows_public_workshop_items_list or test_ugc_proxy_blocks_workshop_upload_without_token"`
 - Pré-condições: Gateway MIST ativo.
 - Passos:
   - Dado requisições GET públicas e POST/DELETE autenticadas para `/api/ugc/workshop/*`
@@ -2222,7 +2222,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_forum_topic_and_replies or test_forum_pin_and_lock_topic"`
+- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_forum_posts_lifecycle or test_forum_replies_and_lock"`
 - Pré-condições: Grupo existente e membro autenticado.
 - Passos:
   - Dado a criação de um tópico de discussão via `POST /groups/{id}/posts`
@@ -2295,7 +2295,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: playwright
-- Comando: `npm --prefix frontend run test:e2e -- e2e/navigation.spec.ts`
+- Comando: `npm --prefix frontend run test:e2e -- navigation.spec.ts`
 - Pré-condições: Frontend MIST em execução com usuário autenticado e saldo inicial carregado.
 - Passos:
   - Dado que o usuário está com contexto ativo na tela da Loja (com termo de busca digitado) ou na Biblioteca
@@ -2310,7 +2310,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: playwright
-- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts`
+- Comando: `npm --prefix frontend run test:e2e -- auth.spec.ts`
 - Pré-condições: Frontend MIST em execução com servidor de desenvolvimento Playwright.
 - Passos:
   - Dado que o visitante acessa a página inicial do MIST
@@ -2421,7 +2421,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "filtra e não exibe jogo inexistente ou corrompido com game_id 0"`
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "game_id 0"`
 - Causa raiz: Registros com `game_id: 0` geravam cards de título com fallback "Jogo #0" e imagem genérica tanto na Biblioteca quanto na listagem de jogos do Perfil.
 - Reprodução original: Acessar Minha Biblioteca ou aba Jogos do Perfil e notar a presença de "Jogo #0".
 - PR/Commit relacionado: Prompt 59

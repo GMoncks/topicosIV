@@ -321,6 +321,26 @@ describe('Library Page Component (D-04 & D-05)', () => {
   });
 
   it('filtra e não exibe jogo inexistente ou corrompido com game_id 0', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      isAuthenticated: true,
+      openAuthModal: openAuthModalMock,
+      user: { username: 'testuser' } as any,
+      token: 'fake-token',
+      isLoading: false,
+      sessionNotice: null,
+      isAuthModalOpen: false,
+      authModalMode: 'login',
+      closeAuthModal: vi.fn(),
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      refreshProfile: vi.fn(),
+      clearSessionNotice: vi.fn(),
+      updateUserBalance: vi.fn(),
+      updateUserCosmetics: vi.fn(),
+      updateUserProfile: vi.fn(),
+    });
+
     vi.mocked(libraryApi.getMyGames).mockResolvedValueOnce([
       ...mockGamesData,
       {

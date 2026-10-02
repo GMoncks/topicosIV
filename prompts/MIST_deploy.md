@@ -96,3 +96,23 @@ Arquivo dedicado ao rastreamento de prompts e decisões técnicas relacionadas a
 - Criado: Artefato `walkthrough.md` com guia de deploy passo a passo.
 - Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
 
+---
+
+## 2026-10-02 — Prompt 4
+
+**Prompt do usuário:**
+
+> Acabei de rodar todos os builds (Passo 1), mas infelizmente não terei o tempo necessário para seguir com o restante da implementação para hospedagem via home-server. Considerando que não farei agora os próximos passos, esses buildx produziram algum lixo que eu devo excluir para liberar armazenamento/memoria do meu PC ou do meu Docker Desktop?
+
+**Decisões arquiteturais e técnicas:**
+
+1. Orientação de limpeza das 8 imagens ARM64 carregadas via `--load` (~1.5-2 GB) com `docker rmi`.
+2. Orientação de remoção do builder buildx e seu cache (~1-3 GB) com `docker buildx rm` ou `docker builder prune`.
+3. Esclarecimento de que imagens paradas não consomem RAM, apenas disco.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código. Orientação consultiva de limpeza de artefatos Docker.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+
