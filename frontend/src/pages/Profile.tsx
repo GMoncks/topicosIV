@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, GameActivity, InventoryItem } from '../types';
+import { UserProfile, GameActivity, InventoryItem, LevelProgress } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem, ugcApi, WorkshopItem, getUgcImageUrl } from '../api/client';
+import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem, ugcApi, WorkshopItem, getUgcImageUrl, cardsApi } from '../api/client';
+import { PrivacySettingsModal } from '../components/PrivacySettingsModal';
+import { AvatarSelectModal } from '../components/AvatarSelectModal';
 
 interface ProfileProps {
   user?: UserProfile;
@@ -55,8 +57,10 @@ const defaultFallbackRecentGames: GameActivity[] = [
 ];
 
 export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) => {
-  const { user: authUser, updateUserCosmetics, isAuthenticated } = useAuth();
-  const [activeSection, setActiveSection] = useState<'activity' | 'inventory' | 'games'>('activity');
+  const { user: authUser, updateUserCosmetics, updateUserProfile, isAuthenticated } = useAuth();
+  const [activeSection, setActiveSection] = useState<'activity' | 'inventory' | 'games' | 'badges'>('activity');
+  const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
+  const [userBadges, setUserBadges] = useState<InventoryItem[]>([]);
   const [inventoryCategory, setInventoryCategory] = useState<string>('todos');
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState<boolean>(false);
@@ -64,11 +68,25 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
   const [isEditing, setIsEditing] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+  // Estados de Edição de Perfil
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [editRealName, setEditRealName] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editBio, setEditBio] = useState('');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
   // Estados da Oficina (Ticket O-06)
   const [userWorkshopItems, setUserWorkshopItems] = useState<WorkshopItem[]>([]);
   const [workshopTotal, setWorkshopTotal] = useState<number>(propUser?.stats?.workshopCount ?? 0);
   const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
   const [isLoadingWorkshop, setIsLoadingWorkshop] = useState(false);
+
+  // Estados de Privacidade e ID do Perfil
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
 
   // Estados Inteligentes de Jogos e Atividade Recente
   const [libraryGames, setLibraryGames] = useState<LibraryItemResponse[]>([]);
@@ -127,6 +145,57 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
     }
     loadUserWorkshop();
   }, [currentUser.id, propUser?.id, authUser?.id]);
+
+  const startEditing = () => {
+    setEditUsername(currentUser.username || '');
+    setEditRealName(currentUser.realName || '');
+    setEditLocation(currentUser.location || '');
+    setEditBio(currentUser.bio || '');
+    setEditAvatarUrl(currentUser.avatarUrl || '');
+    setProfileError(null);
+    setIsEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setProfileError(null);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editUsername.trim()) {
+      setProfileError('O nome de usuário não pode ficar vazio.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileError(null);
+
+    try {
+      const updated = await profileApi.updateProfile({
+        username: editUsername.trim(),
+        real_name: editRealName.trim() || undefined,
+        location: editLocation.trim() || undefined,
+        bio: editBio.trim() || undefined,
+        avatar_url: editAvatarUrl || undefined,
+      });
+
+      updateUserProfile({
+        username: updated.username,
+        realName: updated.real_name || updated.username,
+        location: updated.location || 'Brasil',
+        bio: updated.bio,
+        avatarUrl: updated.avatar_url,
+      });
+
+      setIsEditing(false);
+      setFeedbackMessage('Perfil atualizado com sucesso!');
+      setTimeout(() => setFeedbackMessage(null), 3500);
+    } catch (err: any) {
+      setProfileError(err.message || 'Erro ao atualizar perfil.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const totalDownloads = userWorkshopItems.reduce((acc, curr) => acc + (curr.downloads_count || 0), 0);
   const totalSubscriptions = userWorkshopItems.reduce((acc, curr) => acc + (curr.subscriptions_count || 0), 0);
@@ -228,10 +297,29 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
     }
   };
 
+  // Carrega insígnias forjadas e progresso de nível (Bloco K)
+  const loadBadgesAndLevel = async () => {
+    try {
+      const prog = await cardsApi.getLevelProgress();
+      if (prog) setLevelProgress(prog);
+    } catch {
+      // Fallback gracioso
+    }
+    try {
+      const inv = await profileApi.getInventory('badge');
+      if (inv && Array.isArray(inv.items)) {
+        setUserBadges(inv.items);
+      }
+    } catch {
+      // Fallback gracioso
+    }
+  };
+
   useEffect(() => {
     loadInventory();
     loadLibraryAndGames();
     loadActivities();
+    loadBadgesAndLevel();
   }, [isAuthenticated]);
 
   const handleEquipToggle = async (item: InventoryItem) => {
@@ -335,8 +423,8 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
 
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
             {/* Avatar e Moldura de Avatar Cosmética */}
-            <div className="flex items-center gap-6">
-              <div className="relative group">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className="relative group self-start">
                 <div
                   data-testid="profile-avatar-container"
                   className={`w-28 h-28 lg:w-32 lg:h-32 rounded-2xl relative flex items-center justify-center transition-all duration-300 ${
@@ -348,7 +436,7 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                   }`}
                 >
                   <img
-                    src={currentUser.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80"}
+                    src={(isEditing ? editAvatarUrl : null) || currentUser.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80"}
                     alt="Avatar Perfil"
                     className="w-full h-full object-cover rounded-xl"
                   />
@@ -365,44 +453,176 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                       }}
                     />
                   )}
+
+                  {/* Botão de Alteração de Foto ao Editar Perfil */}
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarModalOpen(true)}
+                      data-testid="btn-change-avatar"
+                      title="Alterar Foto de Perfil"
+                      className="absolute inset-0 bg-black/65 hover:bg-black/80 rounded-2xl flex flex-col items-center justify-center text-white transition z-20 cursor-pointer border border-brand-purple/50 group"
+                    >
+                      <i className="fa-solid fa-camera text-2xl text-purple-300 group-hover:scale-110 transition mb-1"></i>
+                      <span className="text-[11px] font-bold text-gray-200">Alterar Foto</span>
+                    </button>
+                  )}
                 </div>
                 <div className="absolute -bottom-2 -right-2 bg-brand-green border-2 border-brand-surface px-2 py-0.5 rounded-md text-[10px] font-black text-emerald-100 shadow">
                   Ω MIST
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl lg:text-3xl font-display font-black text-white">
-                    {currentUser.username}
-                  </h1>
+              {/* Informações ou Formulário de Edição */}
+              {isEditing ? (
+                <div className="space-y-3 w-full max-w-md bg-black/40 p-4 rounded-2xl border border-brand-purple/40">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                      Nome de Usuário:
+                    </label>
+                    <input
+                      type="text"
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      data-testid="input-edit-username"
+                      placeholder="Nome de usuário"
+                      className="w-full bg-gray-950 border border-brand-purple/70 focus:border-brand-purple rounded-xl px-3 py-1.5 text-sm text-white font-bold outline-none shadow-inner"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Nome Real:
+                      </label>
+                      <input
+                        type="text"
+                        value={editRealName}
+                        onChange={(e) => setEditRealName(e.target.value)}
+                        data-testid="input-edit-realname"
+                        placeholder="Seu nome"
+                        className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                        Localização:
+                      </label>
+                      <input
+                        type="text"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        data-testid="input-edit-location"
+                        placeholder="Localização"
+                        className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">
+                      Biografia:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editBio}
+                      onChange={(e) => setEditBio(e.target.value)}
+                      data-testid="input-edit-bio"
+                      placeholder="Conte um pouco sobre você..."
+                      className="w-full bg-gray-950 border border-gray-700 focus:border-brand-purple rounded-xl px-3 py-1.5 text-xs text-white outline-none resize-none"
+                    />
+                  </div>
+
+                  {profileError && (
+                    <p className="text-xs text-rose-400 font-medium flex items-center gap-1.5">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                      <span>{profileError}</span>
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs lg:text-sm text-gray-300 mt-1 flex items-center gap-1.5">
-                  <span>{currentUser.realName || currentUser.username}</span>
-                  <span>🇧🇷</span>
-                  <span className="text-gray-400">{currentUser.location || 'Brasil'}</span>
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    {currentUser.status || 'Online'}
-                  </span>
-                  <span className="text-xs bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
-                    <i className="fa-solid fa-coins text-[10px]"></i>
-                    {(currentUser.pointsBalance ?? 0).toLocaleString('pt-BR')} Pontos
-                  </span>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl lg:text-3xl font-display font-black text-white">
+                      {currentUser.username}
+                    </h1>
+                  </div>
+
+                  {/* ID de Usuário para Adicionar Amigo */}
+                  {currentUser.id !== undefined && (
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <span
+                        data-testid="profile-user-id"
+                        className="text-xs bg-gray-900/90 text-gray-300 border border-gray-700/80 px-2.5 py-0.5 rounded-lg font-mono flex items-center gap-1.5"
+                      >
+                        <i className="fa-solid fa-hashtag text-[10px] text-brand-purple"></i>
+                        ID: {currentUser.id}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                            navigator.clipboard.writeText(String(currentUser.id));
+                          }
+                          setCopiedId(true);
+                          setTimeout(() => setCopiedId(false), 2000);
+                        }}
+                        data-testid="btn-copy-user-id"
+                        title="Copiar seu ID para envio a amigos"
+                        className="text-[11px] text-gray-400 hover:text-white transition px-2 py-0.5 rounded-md hover:bg-gray-800 flex items-center gap-1 border border-transparent hover:border-gray-700 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${copiedId ? 'fa-check text-emerald-400' : 'fa-copy'}`}></i>
+                        <span>{copiedId ? 'Copiado!' : 'Copiar'}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <p className="text-xs lg:text-sm text-gray-300 mt-1 flex items-center gap-1.5">
+                    <span>{currentUser.realName || currentUser.username}</span>
+                    <span>🇧🇷</span>
+                    <span className="text-gray-400">{currentUser.location || 'Brasil'}</span>
+                  </p>
+
+                  {currentUser.bio && (
+                    <p className="text-xs text-gray-300 mt-2 italic bg-black/30 px-3 py-1.5 rounded-xl border border-gray-800/60 max-w-md">
+                      "{currentUser.bio}"
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <span className="text-xs bg-emerald-950 text-emerald-300 border border-emerald-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      {currentUser.status || 'Online'}
+                    </span>
+                    <span className="text-xs bg-cyan-950/80 text-cyan-300 border border-cyan-700/50 px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5">
+                      <i className="fa-solid fa-coins text-[10px]"></i>
+                      {(currentUser.pointsBalance ?? 0).toLocaleString('pt-BR')} Pontos
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Nível e Destaque da Insígnia */}
             <div className="flex flex-col md:items-end gap-3 w-full md:w-auto">
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 bg-brand-card/80 border border-purple-800/40 px-4 py-2 rounded-2xl shadow-inner">
-                  <span className="text-sm font-bold text-gray-300">Nível</span>
-                  <span className="w-9 h-9 rounded-full border-2 border-brand-purple flex items-center justify-center font-display font-black text-lg text-white bg-brand-purple/20">
-                    {currentUser.level || 1}
-                  </span>
+                <div className="flex flex-col gap-1.5 bg-brand-card/90 border border-brand-purple/40 p-3 rounded-2xl shadow-inner min-w-[210px]" data-testid="profile-xp-header">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-300">Nível MIST</span>
+                    <span className="w-8 h-8 rounded-full border-2 border-brand-purple flex items-center justify-center font-display font-black text-sm text-white bg-brand-purple/20">
+                      {levelProgress?.level ?? currentUser.level ?? 1}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+                    <span>{levelProgress ? `${levelProgress.current_xp_in_level} XP` : '0 XP'}</span>
+                    <span>{levelProgress ? `${levelProgress.xp_needed_in_level} XP próx.` : '100 XP'}</span>
+                  </div>
+                  <div className="w-full bg-gray-800/90 h-2 rounded-full overflow-hidden border border-gray-700/50" title={`${levelProgress?.progress_percent ?? 0}% para o próximo nível`}>
+                    <div
+                      className="bg-gradient-to-r from-brand-purple via-indigo-500 to-brand-green h-full rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(160,32,240,0.5)]"
+                      style={{ width: `${Math.max(4, levelProgress?.progress_percent ?? 0)}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
 
@@ -422,12 +642,61 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm"
-              >
-                {isEditing ? 'Salvar Perfil' : 'Editar perfil'}
-              </button>
+              {/* Botões de Ação do Header */}
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={cancelEditing}
+                      data-testid="btn-cancel-edit"
+                      className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveProfile}
+                      disabled={isSavingProfile}
+                      data-testid="btn-save-profile"
+                      className="bg-brand-purple hover:bg-purple-600 disabled:opacity-50 text-white px-5 py-2 rounded-xl text-xs font-bold transition shadow-lg flex items-center gap-1.5 cursor-pointer"
+                    >
+                      {isSavingProfile ? (
+                        <>
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>Salvando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-check"></i>
+                          <span>Salvar Perfil</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsPrivacyModalOpen(true)}
+                      data-testid="btn-open-privacy-modal"
+                      className="bg-brand-surface hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700 hover:border-brand-purple px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-user-shield text-brand-purple"></i>
+                      Privacidade
+                    </button>
+                    <button
+                      type="button"
+                      onClick={startEditing}
+                      data-testid="btn-edit-profile"
+                      className="bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-5 py-2 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-pen-to-square"></i>
+                      Editar perfil
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -473,6 +742,20 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                 <i className="fa-solid fa-box-open text-emerald-400"></i> Inventário de Cosméticos
                 <span className="ml-1 bg-black/40 text-[11px] px-2 py-0.5 rounded-full border border-gray-700">
                   {inventoryItems.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveSection('badges')}
+                data-testid="profile-tab-badges"
+                className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition ${
+                  activeSection === 'badges'
+                    ? 'bg-brand-purple text-white shadow-[0_0_12px_rgba(160,32,240,0.4)]'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                }`}
+              >
+                <i className="fa-solid fa-medal text-amber-400"></i> Insígnias
+                <span className="ml-1 bg-black/40 text-[11px] px-2 py-0.5 rounded-full border border-gray-700">
+                  {userBadges.length}
                 </span>
               </button>
             </div>
@@ -782,6 +1065,16 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
               <div className="space-y-6" data-testid="profile-inventory-section">
                 {/* Filtros de Categoria do Inventário */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  {onNavigate && (
+                    <button
+                      onClick={() => onNavigate('inventory')}
+                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-brand-purple/20 text-brand-purple hover:bg-brand-purple hover:text-white border border-brand-purple/40 transition flex items-center gap-2 shrink-0"
+                      title="Abrir página completa do inventário"
+                    >
+                      <i className="fa-solid fa-boxes-stacked"></i>
+                      Inventário Completo
+                    </button>
+                  )}
                   <button
                     onClick={() => setInventoryCategory('todos')}
                     className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
@@ -935,6 +1228,85 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                               Disponível no bate-papo
                             </span>
                           )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SEÇÃO 4: Insígnias Craftadas e Progressão (Bloco K) */}
+            {activeSection === 'badges' && (
+              <div className="bg-brand-surface/90 border border-gray-800 rounded-3xl p-6 shadow-2xl space-y-6" data-testid="profile-badges-section">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                  <div>
+                    <h3 className="font-display font-black text-xl text-white flex items-center gap-2">
+                      <i className="fa-solid fa-medal text-amber-400"></i> Insígnias Conquistadas
+                    </h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Insígnias forjadas a partir de coleções completas de cartas colecionáveis na MIST.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-xl">
+                      {userBadges.length} {userBadges.length === 1 ? 'Insígnia' : 'Insígnias'}
+                    </span>
+                    <button
+                      onClick={() => onNavigate?.('inventory')}
+                      className="text-xs font-bold bg-brand-purple/20 hover:bg-brand-purple/40 text-brand-purple hover:text-white border border-brand-purple/40 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-boxes-stacked"></i> Forjar no Inventário
+                    </button>
+                  </div>
+                </div>
+
+                {userBadges.length === 0 ? (
+                  <div className="text-center py-12 bg-brand-card/40 rounded-2xl border border-gray-800/80">
+                    <i className="fa-solid fa-award text-4xl text-gray-600 mb-3 block"></i>
+                    <h4 className="text-base font-bold text-gray-300">Nenhuma insígnia forjada ainda</h4>
+                    <p className="text-xs text-gray-400 mt-1 max-w-md mx-auto">
+                      Jogue seus títulos favoritos para receber cartas colecionáveis ou visite o Inventário para forjar sua primeira insígnia e subir de nível!
+                    </p>
+                    <button
+                      onClick={() => onNavigate?.('inventory')}
+                      className="mt-4 bg-brand-purple hover:bg-brand-purpleDark text-white text-xs font-bold py-2 px-5 rounded-xl transition shadow"
+                    >
+                      Ir ao Inventário de Cartas
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="bg-brand-card/90 border border-gray-700/60 hover:border-brand-purple p-4 rounded-2xl flex items-center gap-4 transition group shadow-md"
+                      >
+                        <div className="relative shrink-0">
+                          <img
+                            src={badge.asset_url || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=300&q=80'}
+                            alt={badge.name}
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500/50 group-hover:scale-105 transition"
+                          />
+                          <div className="absolute -bottom-1 -right-1 bg-amber-500 text-black font-black text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-black">
+                            ★
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h5 className="font-bold text-sm text-white truncate group-hover:text-brand-purple transition">
+                            {badge.name}
+                          </h5>
+                          <p className="text-[11px] text-gray-400 line-clamp-2 mt-0.5">
+                            {badge.description || 'Insígnia de mestre forjada na plataforma.'}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                              +100 XP
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              {badge.rarity || 'Especial'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1207,6 +1579,27 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
           </div>
         </div>
       )}
+
+      {/* Modal de Configurações de Privacidade (P-05) */}
+      <PrivacySettingsModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+        onSaved={() => {
+          setFeedbackMessage('Preferências de privacidade salvas!');
+          setTimeout(() => setFeedbackMessage(null), 3500);
+        }}
+      />
+
+      {/* Modal de Seleção de Foto de Perfil (Avatar) */}
+      <AvatarSelectModal
+        isOpen={isAvatarModalOpen}
+        onClose={() => setIsAvatarModalOpen(false)}
+        onSelectAvatar={(avatarUrl) => {
+          setEditAvatarUrl(avatarUrl);
+        }}
+        currentAvatarUrl={editAvatarUrl || currentUser.avatarUrl}
+        onNavigateToShop={() => onNavigate?.('points_shop')}
+      />
     </div>
   );
 };

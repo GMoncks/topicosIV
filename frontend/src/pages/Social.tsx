@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { FriendItem, ActivityItem, socialApi, API_GATEWAY_URL } from '../api/client';
+import { FriendPendingRequestItem } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { ChatWindow } from '../components/ChatWindow';
 import { Groups } from './Groups';
 import { ScreenshotsGallery } from '../components/ScreenshotsGallery';
 
 export const Social: React.FC = () => {
+  const { user } = useAuth();
+  const currentUserId = user?.id || 1;
+
   const [activeSection, setActiveSection] = useState<'feed' | 'groups' | 'screenshots'>('feed');
   const [friends, setFriends] = useState<FriendItem[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<FriendPendingRequestItem[]>([]);
   const [feed, setFeed] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeChatFriend, setActiveChatFriend] = useState<FriendItem | null>(null);
@@ -16,14 +22,16 @@ export const Social: React.FC = () => {
   const [addFriendId, setAddFriendId] = useState('');
   const [addFriendStatus, setAddFriendStatus] = useState<string | null>(null);
 
-  // Carrega lista de amigos e feed
+  // Carrega lista de amigos, solicitações pendentes e feed
   const loadSocialData = async () => {
     try {
-      const [friendsData, feedData] = await Promise.all([
+      const [friendsData, feedData, requestsData] = await Promise.all([
         socialApi.getFriends().catch(() => []),
         socialApi.getFeed().catch(() => []),
+        socialApi.getFriendRequests().catch(() => []),
       ]);
       setFriends(friendsData);
+      setPendingRequests(Array.isArray(requestsData) ? requestsData : []);
 
       const uniqueFeed: ActivityItem[] = [];
       const seenFeedKeys = new Set<string>();
@@ -55,7 +63,7 @@ export const Social: React.FC = () => {
   // WebSocket de Presença em tempo real (F-04, F-08)
   useEffect(() => {
     const wsBase = API_GATEWAY_URL.replace(/^http/, 'ws');
-    const wsUrl = `${wsBase}/ws/presence?user_id=1`;
+    const wsUrl = `${wsBase}/ws/presence?user_id=${currentUserId}`;
 
     let ws: WebSocket | null = null;
     try {
@@ -126,6 +134,36 @@ export const Social: React.FC = () => {
       setAddFriendStatus(err.message || 'Erro ao enviar solicitação.');
     }
   };
+
+  const handleAcceptRequest = async (friendshipId: number) => {
+    try {
+      await socialApi.acceptFriend(friendshipId);
+      setPendingRequests((prev) => prev.filter((r) => r.friendship_id !== friendshipId));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:toast', { detail: '✅ Solicitação de amizade aceita!' }));
+      }
+      loadSocialData();
+    } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:toast', { detail: `❌ ${err.message || 'Erro ao aceitar pedido.'}` }));
+      }
+    }
+  };
+
+  const handleRejectRequest = async (friendshipId: number) => {
+    try {
+      await socialApi.deleteFriend(friendshipId);
+      setPendingRequests((prev) => prev.filter((r) => r.friendship_id !== friendshipId));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:toast', { detail: 'Solicitação de amizade recusada.' }));
+      }
+    } catch (err: any) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('mist:toast', { detail: `❌ ${err.message || 'Erro ao recusar pedido.'}` }));
+      }
+    }
+  };
+
 
   // Separação de MIST Companion Bot (G-04 & G-06) e amigos humanos
   const botFriend: FriendItem = friends.find((f) => f.is_bot || f.friend_user_id === 0) || {
@@ -280,6 +318,62 @@ export const Social: React.FC = () => {
         </div>
       )}
 
+      {/* Solicitações de Amizade Pendentes */}
+      {pendingRequests.length > 0 && (
+        <div data-testid="section-pending-requests" className="mb-8 p-5 bg-gradient-to-r from-purple-950/40 via-brand-card to-brand-surface border border-brand-purple/50 rounded-2xl shadow-lg animate-fade-in">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-white text-base flex items-center gap-2">
+              <i className="fa-solid fa-user-clock text-amber-400"></i>
+              Solicitações de Amizade Pendentes
+              <span className="bg-amber-500/20 text-amber-300 text-xs px-2.5 py-0.5 rounded-full border border-amber-500/40 font-mono font-bold">
+                {pendingRequests.length}
+              </span>
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {pendingRequests.map((req) => (
+              <div
+                key={req.friendship_id}
+                data-testid={`pending-request-card-${req.friendship_id}`}
+                className="p-3 bg-brand-surface border border-gray-800 hover:border-gray-700 rounded-xl flex items-center justify-between gap-3 shadow-sm transition"
+              >
+                <div className="flex items-center gap-2.5 truncate">
+                  <img
+                    src={req.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${req.username || req.requester_id}`}
+                    alt={req.username || 'Usuário'}
+                    className="w-10 h-10 rounded-xl object-cover border border-brand-purple/40 bg-gray-900 shrink-0"
+                  />
+                  <div className="truncate">
+                    <p className="font-bold text-sm text-white truncate">{req.username || `Jogador #${req.requester_id}`}</p>
+                    <span className="text-[11px] text-gray-400 block truncate">Quer ser seu amigo</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleAcceptRequest(req.friendship_id)}
+                    data-testid={`btn-accept-request-${req.friendship_id}`}
+                    title="Aceitar Amizade"
+                    className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-sm"
+                  >
+                    <i className="fa-solid fa-check"></i>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRejectRequest(req.friendship_id)}
+                    data-testid={`btn-reject-request-${req.friendship_id}`}
+                    title="Recusar Solicitação"
+                    className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-rose-900/60 text-gray-300 hover:text-rose-300 border border-gray-700 flex items-center justify-center text-xs transition cursor-pointer"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Coluna 1 & 2: Feed de Atividades (F-06) */}
         <div className="lg:col-span-2 space-y-6">
@@ -357,9 +451,17 @@ export const Social: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-white">
-                            <span className="text-brand-purple font-bold">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const uname = act.payload.username || `Jogador_${act.user_id}`;
+                                window.dispatchEvent(new CustomEvent('mist:visit-profile', { detail: uname }));
+                              }}
+                              className="text-brand-purple font-bold hover:underline cursor-pointer transition text-left"
+                              title="Visitar Perfil Público"
+                            >
                               {act.payload.username || `Jogador #${act.user_id}`}
-                            </span>{' '}
+                            </button>{' '}
                             {isAchievement ? (
                               <span>
                                 desbloqueou a conquista{' '}

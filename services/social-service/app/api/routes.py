@@ -8,6 +8,7 @@ from app.schemas.friend import (
     FriendActionResponse,
     FriendshipResponse,
     FriendListItem,
+    FriendPendingRequestItem,
 )
 from app.services.social_service import SocialService
 
@@ -99,6 +100,32 @@ def list_friends(
     Lista todos os amigos confirmados (status accepted) do usuário autenticado.
     """
     return SocialService.list_friends(db=db, user_id=user_id)
+
+
+@router.get("/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+@router.get("/social/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+def list_friend_requests(
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todas as solicitações de amizade pendentes recebidas pelo usuário logado.
+    """
+    return SocialService.list_friend_requests(db=db, user_id=user_id)
+
+
+@router.get("/relationship/{user_id_a}/{user_id_b}")
+@router.get("/social/relationship/{user_id_a}/{user_id_b}")
+def get_relationship(
+    user_id_a: int,
+    user_id_b: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Verifica a relação social entre dois usuários (self, friend, group_member, none).
+    """
+    rel = SocialService.check_relationship(db=db, user_id_a=user_id_a, user_id_b=user_id_b)
+    return {"relationship": rel, "user_id_a": user_id_a, "user_id_b": user_id_b}
 
 
 from app.schemas.activity import ActivityCreate, ActivityResponse

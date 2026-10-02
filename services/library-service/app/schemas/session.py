@@ -32,6 +32,7 @@ class SessionPingResponse(BaseModel):
     game_id: int
     playtime_minutes: int = Field(..., description="Tempo total acumulado de jogo em minutos")
     last_ping_at: datetime
+    card_dropped: Optional[dict] = Field(None, description="Detalhes da carta obtida por drop na sessão")
 
 
 class SessionEndRequest(BaseModel):

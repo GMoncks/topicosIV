@@ -48,7 +48,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-PUBLIC_AUTH_PATHS = {"register", "login", "health", "points-shop/items"}
+PUBLIC_AUTH_PATHS = {"register", "login", "health", "points-shop/items", "cards/catalog"}
 
 
 
@@ -151,6 +151,57 @@ async def proxy_inventory(request: Request, path: str = ""):
     """Proxy reverso para inventário de cosméticos no auth-service."""
     subpath = f"/{path}" if path else ""
     return await proxy_auth(f"inventory{subpath}", request)
+
+
+@app.api_route("/api/me/level-progress", methods=["GET", "OPTIONS"])
+async def proxy_my_level_progress(request: Request):
+    """Proxy reverso para progresso de nível do usuário atual."""
+    return await proxy_auth("me/level-progress", request)
+
+
+@app.api_route("/api/cards", methods=["GET", "POST", "OPTIONS"])
+@app.api_route("/api/cards/{path:path}", methods=["GET", "POST", "OPTIONS"])
+async def proxy_cards(request: Request, path: str = ""):
+    """Proxy reverso para catálogo e concessão de cartas no auth-service."""
+    subpath = f"/{path}" if path else ""
+    return await proxy_auth(f"cards{subpath}", request)
+
+
+@app.api_route("/api/crafting/{path:path}", methods=["POST", "OPTIONS"])
+async def proxy_crafting(path: str, request: Request):
+    """Proxy reverso para forja de insígnias no auth-service."""
+    return await proxy_auth(f"crafting/{path}", request)
+
+
+@app.api_route("/api/badges/{path:path}", methods=["GET", "OPTIONS"])
+async def proxy_badges(path: str, request: Request):
+    """Proxy reverso para insígnias por jogo ou por usuário no auth-service."""
+    return await proxy_auth(f"badges/{path}", request)
+
+
+@app.api_route("/api/me/privacy", methods=["GET", "PATCH", "OPTIONS"])
+async def proxy_privacy(request: Request):
+    """Proxy reverso para configurações de privacidade no auth-service."""
+    return await proxy_auth("me/privacy", request)
+
+
+@app.api_route("/api/me/profile", methods=["GET", "PATCH", "OPTIONS"])
+async def proxy_my_profile(request: Request):
+    """Proxy reverso para atualização do perfil do usuário autenticado no auth-service."""
+    return await proxy_auth("me/profile", request)
+
+
+@app.api_route("/api/me/wallet/recharge", methods=["POST", "OPTIONS"])
+async def proxy_wallet_recharge(request: Request):
+    """Proxy reverso para recarga de saldo da carteira no auth-service."""
+    return await proxy_auth("me/wallet/recharge", request)
+
+
+@app.api_route("/api/users/{username}/profile", methods=["GET", "OPTIONS"])
+async def proxy_public_profile(username: str, request: Request):
+    """Proxy reverso para perfil público visitável no auth-service."""
+    return await proxy_auth(f"users/{username}/profile", request)
+
 
 
 @app.api_route("/api/games", methods=["GET", "OPTIONS"])

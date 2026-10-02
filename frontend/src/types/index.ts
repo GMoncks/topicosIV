@@ -35,6 +35,7 @@ export interface UserProfile {
   id?: number;
   username: string;
   realName: string;
+  bio?: string;
   location: string;
   level: number;
   avatarText: string;
@@ -101,14 +102,25 @@ export interface InventoryItem {
   user_id: number;
   item_id: string;
   name: string;
-  item_type: 'avatar_frame' | 'background' | 'emoticon' | 'profile_bundle';
+  item_type: 'card' | 'emoticon' | 'background' | 'avatar_frame' | 'avatar' | 'badge' | 'profile_bundle';
   asset_url: string;
   price_points: number;
   is_equipped: boolean;
+  status: 'disponivel' | 'equipado' | 'listado';
+  game_id?: number;
+  game_title?: string;
+  rarity?: string;
+  description?: string;
   acquired_at: string;
 }
 
-export type NavigationTab = 'store' | 'library' | 'market' | 'social' | 'groups' | 'news' | 'points' | 'profile' | 'login' | 'workshop';
+export interface InventoryGroupedResponse {
+  items: InventoryItem[];
+  grouped: Record<string, InventoryItem[]>;
+  total: number;
+}
+
+export type NavigationTab = 'store' | 'library' | 'market' | 'inventory' | 'social' | 'groups' | 'news' | 'points' | 'profile' | 'public_profile' | 'login' | 'workshop';
 
 export interface LibraryGame {
   id: number;
@@ -135,3 +147,98 @@ export interface AchievementResponse {
   is_unlocked: boolean;
   unlocked_at: string | null;
 }
+
+export interface LevelProgress {
+  level: number;
+  total_xp: number;
+  current_level_min_xp: number;
+  next_level_min_xp: number;
+  current_xp_in_level: number;
+  xp_needed_in_level: number;
+  progress_percent: number;
+}
+
+export interface TradingCard {
+  id: number;
+  game_id: number;
+  card_name: string;
+  card_art_url: string;
+  rarity: string;
+  is_foil: boolean;
+  description?: string;
+}
+
+export interface Badge {
+  id: number;
+  game_id: number;
+  name: string;
+  description?: string;
+  xp_value: number;
+  icon_url: string;
+  is_foil: boolean;
+  level: number;
+}
+
+export interface CraftBadgeResponse {
+  success: boolean;
+  message: string;
+  badge: Badge;
+  badge_item: InventoryItem;
+  new_level: number;
+  new_total_xp: number;
+  leveled_up: boolean;
+  xp_gained: number;
+  consumed_cards_count: number;
+}
+
+export interface PrivacySettings {
+  privacy_games: 'Todos' | 'Amigos' | 'Privado';
+  privacy_achievements: 'Todos' | 'Amigos' | 'Privado';
+  privacy_playtime: 'Todos' | 'Amigos' | 'Privado';
+  privacy_inventory: 'Todos' | 'Amigos' | 'Privado';
+  privacy_screenshots: 'Todos' | 'Amigos' | 'Privado';
+  privacy_groups: 'Todos' | 'Amigos' | 'Privado';
+}
+
+export interface PublicProfileResponse {
+  id: number;
+  username: string;
+  real_name?: string;
+  location?: string;
+  avatar_url?: string;
+  avatar_frame_url?: string;
+  profile_background_url?: string;
+  level: number;
+  total_xp: number;
+  status: string;
+  relationship: 'self' | 'friend' | 'group_member' | 'none';
+  games?: any[] | null;
+  achievements_count?: number | null;
+  playtime_minutes?: number | null;
+  inventory_count?: number | null;
+  screenshots_count?: number | null;
+  groups?: any[] | null;
+  badges: any[];
+  privacy_settings?: PrivacySettings | null;
+}
+
+export interface FriendPendingRequestItem {
+  friendship_id: number;
+  requester_id: number;
+  addressee_id: number;
+  status: string;
+  created_at: string;
+  username?: string;
+  avatar_url?: string;
+  avatar_frame_url?: string;
+}
+
+export interface WalletRechargeResponse {
+  user_id: number;
+  previous_balance: number;
+  amount: number;
+  new_balance: number;
+  operation: string;
+}
+
+

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { walletApi, WalletTransactionApiResponse, WalletTransactionType } from '../api/client';
+import { AddFundsModal } from './AddFundsModal';
 
 interface WalletHistoryModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({
   const [typeFilter, setTypeFilter] = useState<WalletTransactionType | ''>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAddFundsOpen, setIsAddFundsOpen] = useState(false);
 
   const loadHistory = useCallback(() => {
     let isMounted = true;
@@ -107,14 +109,25 @@ export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({
             <h2 id="wallet-history-title" className="text-xl font-display font-bold text-white">Extrato da Carteira</h2>
             <p className="text-sm text-gray-400">Histórico de compras, vendas, recargas e resgates</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar"
-            className="w-9 h-9 bg-black/40 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition cursor-pointer"
-          >
-            <i className="fa-solid fa-xmark pointer-events-none"></i>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsAddFundsOpen(true)}
+              data-testid="btn-history-add-funds"
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow"
+            >
+              <i className="fa-solid fa-plus text-[10px]"></i>
+              <span>Adicionar Saldo</span>
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fechar"
+              className="w-9 h-9 bg-black/40 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition cursor-pointer"
+            >
+              <i className="fa-solid fa-xmark pointer-events-none"></i>
+            </button>
+          </div>
         </div>
 
         <div className="px-6 pt-4 flex items-center gap-2" role="tablist" aria-label="Filtrar por tipo">
@@ -202,6 +215,14 @@ export const WalletHistoryModal: React.FC<WalletHistoryModalProps> = ({
           </div>
         )}
       </div>
+
+      <AddFundsModal
+        isOpen={isAddFundsOpen}
+        onClose={() => setIsAddFundsOpen(false)}
+        onSuccess={() => {
+          loadHistory();
+        }}
+      />
     </div>
   );
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Profile } from './Profile';
-import { profileApi, libraryApi, socialApi, ugcApi, WorkshopItem } from '../api/client';
+import { profileApi, libraryApi, socialApi, ugcApi, cardsApi, WorkshopItem } from '../api/client';
 import * as AuthContextModule from '../context/AuthContext';
 import { UserProfile } from '../types';
 
@@ -10,6 +10,7 @@ vi.mock('../api/client', () => ({
   profileApi: {
     getInventory: vi.fn(),
     equipCosmetic: vi.fn(),
+    updateProfile: vi.fn(),
   },
   libraryApi: {
     getMyGames: vi.fn(),
@@ -20,6 +21,10 @@ vi.mock('../api/client', () => ({
   },
   ugcApi: {
     getWorkshopItems: vi.fn(),
+  },
+  cardsApi: {
+    getLevelProgress: vi.fn(),
+    getUserBadges: vi.fn(),
   },
   getUgcImageUrl: (url: string) => url,
 }));
@@ -462,6 +467,96 @@ describe('Profile Page Workshop Integration (Ticket O-06)', () => {
     fireEvent.click(goToWorkshopBtn);
 
     expect(onNavigateMock).toHaveBeenCalledWith('workshop');
+  });
+
+  it('exibe a barra de XP progressivo no header e a aba de insígnias craftadas (K-06 & K-07)', async () => {
+    vi.spyOn(cardsApi, 'getLevelProgress').mockResolvedValue({
+      level: 5,
+      total_xp: 2500,
+      current_level_min_xp: 2500,
+      next_level_min_xp: 3600,
+      current_xp_in_level: 250,
+      xp_needed_in_level: 1100,
+      progress_percent: 23.0,
+    });
+
+    render(<Profile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-xp-header')).toBeInTheDocument();
+      expect(screen.getByText('Nível MIST')).toBeInTheDocument();
+      expect(screen.getByText('250 XP')).toBeInTheDocument();
+    });
+
+    const badgesTab = screen.getByTestId('profile-tab-badges');
+    fireEvent.click(badgesTab);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-badges-section')).toBeInTheDocument();
+      expect(screen.getByText('Insígnias Conquistadas')).toBeInTheDocument();
+    });
+  });
+
+  it('permite iniciar edição do perfil, alterar nome, abrir modal de avatar e salvar alterações', async () => {
+    vi.mocked(profileApi.updateProfile).mockResolvedValueOnce({
+      id: 1,
+      username: 'novo_ggtorres',
+      real_name: 'Gabriel T',
+      bio: 'Desenvolvedor MIST',
+      location: 'Porto Alegre',
+      avatar_url: 'https://mist.gg/new-avatar.png',
+    });
+
+    const testUser: any = {
+      username: 'ggtorres2001',
+      realName: 'Gabriel Torres',
+      location: 'Brasil',
+      level: 10,
+      avatarText: 'GG',
+      avatarUrl: 'https://images.unsplash.com/avatar.jpg',
+      walletBalance: 150.0,
+      pointsBalance: 2500,
+      status: 'Online',
+      featuredBadge: { title: 'Pioneiro MIST', xp: 190, icon: 'fa-certificate' },
+      recentPlaytimeWeeks: 5.0,
+      recentGames: [],
+      badges: [],
+      stats: {
+        gamesCount: 22,
+        inventoryCount: 2,
+        screenshotsCount: 5,
+        videosCount: 1,
+        workshopCount: 0,
+        reviewsCount: 3,
+      },
+    };
+
+    render(<Profile user={testUser} />);
+
+    // Clica em Editar perfil
+    const btnEdit = screen.getByTestId('btn-edit-profile');
+    fireEvent.click(btnEdit);
+
+    // Verifica que o formulário de edição e o botão de alterar foto aparecem
+    expect(screen.getByTestId('input-edit-username')).toBeInTheDocument();
+    expect(screen.getByTestId('btn-change-avatar')).toBeInTheDocument();
+
+    // Edita campos
+    const inputUsername = screen.getByTestId('input-edit-username');
+    fireEvent.change(inputUsername, { target: { value: 'novo_ggtorres' } });
+
+    // Salva perfil
+    const btnSave = screen.getByTestId('btn-save-profile');
+    fireEvent.click(btnSave);
+
+    await waitFor(() => {
+      expect(profileApi.updateProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          username: 'novo_ggtorres',
+        })
+      );
+      expect(screen.getByText('Perfil atualizado com sucesso!')).toBeInTheDocument();
+    });
   });
 });
 

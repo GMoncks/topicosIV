@@ -77,6 +77,51 @@ POINTS_SHOP_CATALOG: List[Dict[str, Any]] = [
         "price_points": 2500,
         "asset_url": "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1600&q=80",
         "description": "Conjunto comemorativo de verão com cores tropicais."
+    },
+    {
+        "id": "avatar_cyberpunk",
+        "name": "Avatar Cyberpunk Operative",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 800,
+        "asset_url": "https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80",
+        "description": "Retrato cibernético de um mercenário nas luzes de neon de Neo-Tóquio."
+    },
+    {
+        "id": "avatar_arcane_mage",
+        "name": "Avatar Mago Arcano",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 800,
+        "asset_url": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=400&q=80",
+        "description": "Conjurador das artes antigas e manipulador dos mistérios do éter."
+    },
+    {
+        "id": "avatar_valkyrie",
+        "name": "Avatar Valquíria Cósmica",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 1000,
+        "asset_url": "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=400&q=80",
+        "description": "Guerreira lendária forjada na poeira de supernovas astrais."
+    },
+    {
+        "id": "avatar_pixel_knight",
+        "name": "Avatar Cavaleiro Pixel",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 600,
+        "asset_url": "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=400&q=80",
+        "description": "Herói nostálgico 16-bit pronto para enfrentar qualquer masmorra."
+    },
+    {
+        "id": "avatar_mecha_bot",
+        "name": "Avatar MIST Mecha",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 700,
+        "asset_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80",
+        "description": "Unidade autônoma de combate blindada com tecnologia de ponta."
     }
 ]
 

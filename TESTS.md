@@ -113,6 +113,162 @@
 - Resultado esperado: Retorno HTTP 200 com refletividade imediata no perfil do usuário.
 - Rastreabilidade: `services/auth-service/app/models/user.py`, `services/auth-service/app/services/auth_service.py`
 
+#### AUTH-UNIT-09 — Agrupamento de itens por tipo e filtros no inventário (J-01 & J-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_get_inventory_grouped_and_filtering"`
+- Pré-condições: Itens de múltiplos tipos (cartas, emoticons, planos de fundo, molduras e insígnias) e status (disponível, listado) persistidos no inventário do usuário.
+- Passos:
+  - Dado um usuário autenticado com itens de diversas categorias no inventário
+  - Quando requisita GET /inventory sem parâmetros ou com item_type e status_filter
+  - Então a resposta retorna a contagem total, lista de itens e dicionário agrupado por cada tipo de item
+- Resultado esperado: Retorno HTTP 200 com itens agrupados em chaves de categorias e filtros aplicados corretamente.
+- Rastreabilidade: `services/auth-service/app/models/inventory.py`, `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-10 — Equipamento e desequipamento granular de itens com bloqueio de itens no mercado (J-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_equip_and_unequip_item_endpoints or test_cannot_equip_listed_item_conflict or test_equip_other_user_item_forbidden"`
+- Pré-condições: Itens disponíveis e itens listados no mercado no inventário do usuário.
+- Passos:
+  - Dado itens no inventário com status 'disponivel' e outro com status 'listado'
+  - Quando aciona POST /inventory/items/{id}/equip ou POST /inventory/items/{id}/unequip
+  - Então o item disponível é equipado com sucesso atualizando o perfil, e a tentativa de equipar item listado resulta em HTTP 409 Conflict
+- Resultado esperado: Transição de status consistente entre 'disponivel' e 'equipado' e proteção contra equipar itens anunciados no mercado.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-11 — Custódia e transferência de itens do inventário para o Mercado da Comunidade (J-01 & L-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_inventory_full.py -k "test_market_custody_lock_unlock_and_transfer"`
+- Pré-condições: Usuário dono de itens no inventário e segundo usuário cadastrado.
+- Passos:
+  - Dado um item disponível no inventário de um usuário
+  - Quando os endpoints de custódia /lock, /unlock e /transfer são acionados
+  - Então o status transita para 'listado', 'disponivel' e a titularidade é transferida para o novo usuário
+- Resultado esperado: Confirmação de lock/unlock e transferência com HTTP 200 e integridade de posse.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-12 — Cálculo de XP progressivo e progressão de nível (K-06)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_xp_and_crafting.py -k "test_xp_engine_math"`
+- Pré-condições: Módulo xp_service disponível com função calculate_level e thresholds.
+- Passos:
+  - Dado valores de XP acumulado (100, 399, 400, 899, 900, 1600)
+  - Quando calculate_level e get_level_progress são chamados
+  - Então o nível é calculado por piso da raiz quadrada de total_xp/100 com percentual de progresso exato
+- Resultado esperado: Nível 1 para [100, 399], nível 2 para [400, 899], nível 3 para [900, 1599] e cálculos de XP restante consistentes.
+- Rastreabilidade: `services/auth-service/app/services/xp_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-13 — Forja de insígnias consumindo set completo de cartas colecionáveis (K-04 & K-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_xp_and_crafting.py -k "test_crafting_full_set_success_and_level_up"`
+- Pré-condições: Usuário autenticado com conjunto completo de cartas colecionáveis de um jogo.
+- Passos:
+  - Dado a posse de todas as cartas exigidas pelo catálogo de um jogo
+  - Quando a requisição POST /crafting/badge é enviada
+  - Então as cartas são consumidas do inventário, a Badge correspondente é criada, +100 XP é concedido e o nível progride
+- Resultado esperado: Retorno HTTP 200 com CraftBadgeResponse, badge criada e total_xp atualizado.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-14 — Visita ao perfil público com visibilidade de seções por privacidade (P-01)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_anonymous_visitor_privacy"`
+- Pré-condições: Usuário com seções configuradas como Privado/Todos no modelo User.
+- Passos:
+  - Dado um perfil de usuário existente com seções 'playtime' e 'inventory' como 'Privado'
+  - Quando um visitante anônimo ou terceiro consulta `GET /users/{username}/profile`
+  - Então as seções marcadas como privadas retornam `null`, enquanto badges e dados públicos permanecem visíveis
+- Resultado esperado: Retorno HTTP 200 com `PublicProfileResponse`, preservando o sigilo das seções restritas.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`, `services/auth-service/app/models/user.py`
+
+#### AUTH-UNIT-15 — Visualização do próprio perfil público com acesso integral e configurações (P-01 & P-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_self_view"`
+- Pré-condições: Usuário autenticado consultando o próprio perfil público.
+- Passos:
+  - Dado o cabeçalho `X-User-Id` correspondente ao dono do perfil
+  - Quando o endpoint `GET /users/{username}/profile` é requisitado
+  - Então o perfil retorna `relationship: 'self'`, exibe suas seções mesmo se configuradas como privadas e inclui o objeto `privacy_settings`
+- Resultado esperado: Acesso completo irrestrito ao próprio perfil e metadados de privacidade expostos apenas ao proprietário.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`
+
+#### AUTH-UNIT-16 — Atualização granular de preferências de privacidade via PATCH /me/privacy (P-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_update_privacy_settings"`
+- Pré-condições: Usuário autenticado com opções de privacidade padrão ('Todos').
+- Passos:
+  - Dado uma requisição PATCH contendo novos níveis de privacidade (`Todos`, `Amigos`, `Privado`)
+  - Quando o endpoint `/me/privacy` é executado
+  - Então os campos são persistidos no banco de dados e refletidos imediatamente nas consultas subsequentes
+- Resultado esperado: Retorno HTTP 200 com os valores atualizados confirmados.
+- Rastreabilidade: `services/auth-service/app/api/privacy.py`, `services/auth-service/app/models/user.py`
+
+#### AUTH-UNIT-17 — Erro 404 ao buscar perfil público inexistente (P-01)
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_public_profile.py -k "test_public_profile_not_found"`
+- Pré-condições: Banco de usuários sem o username buscado.
+- Passos:
+  - Dado uma requisição GET para um nome de usuário que não existe
+  - Quando `GET /users/{username}/profile` é executado
+  - Então a API responde com status HTTP 404 Not Found e mensagem descritiva
+- Resultado esperado: Retorno HTTP 404 seguro.
+- Rastreabilidade: `services/auth-service/app/api/public_profile.py`
+
+#### AUTH-UNIT-18 — Atualização cadastral de perfil com validação de unicidade de username
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_update_user_profile_success or test_update_user_profile_duplicate_username"`
+- Pré-condições: Usuário autenticado com token JWT no auth-service.
+- Passos:
+  - Dado dados cadastrais de perfil para atualização (username, avatar_url, real_name, bio, location)
+  - Quando `PATCH /me/profile` é acionado
+  - Então os dados são validados, impedindo nomes já utilizados e persistindo as alterações no banco de dados
+- Resultado esperado: Retorno HTTP 200 para alteração válida e HTTP 400 para username já existente.
+- Rastreabilidade: `services/auth-service/app/services/auth_service.py`, `services/auth-service/app/api/routes.py`
+
+#### AUTH-UNIT-19 — Recarga instantânea simulada e adição de saldo à Carteira MIST
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_recharge_wallet_endpoint"`
+- Pré-condições: Usuário cadastrado no sistema auth-service.
+- Passos:
+  - Dado um valor positivo de crédito a adicionar (ex: R$ 50,00)
+  - Quando `POST /me/wallet/recharge` é executado
+  - Então o saldo da carteira é incrementado com precisão e um registro de transação do tipo recarga é emitido
+- Resultado esperado: Retorno HTTP 200 contendo o saldo anterior, valor creditado e novo saldo atualizado.
+- Rastreabilidade: `services/auth-service/app/api/routes.py`, `services/auth-service/app/services/auth_service.py`
+
+#### AUTH-UNIT-20 — Catálogo de avatares cosméticos adicionados à Loja de Pontos
+- Prioridade: P1
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/auth-service/tests/test_profile_and_wallet.py -k "test_points_shop_catalog_has_avatars"`
+- Pré-condições: Catálogo de pontos inicializado em `points_shop_catalog.py`.
+- Passos:
+  - Dado o catálogo de itens cosméticos da Loja de Pontos
+  - Quando a lista de itens é consultada
+  - Então itens do tipo `avatar` (ex: Cyberpunk, Mage, Valkyrie, Pixel Knight, Mecha Bot) estão disponíveis com custo em pontos e URL de imagem válida
+- Resultado esperado: Existência comprovada de avatares no catálogo para compra e equipagem.
+- Rastreabilidade: `services/auth-service/app/constants/points_shop_catalog.py`
+
 ### Loja e Catálogo (Store Service)
 
 #### STORE-UNIT-01 — Criação e tipagem do modelo Game
@@ -459,6 +615,58 @@
 - Resultado esperado: Entrega imediata de eventos via WebSocket com formato JSON padronizado.
 - Rastreabilidade: `services/social-service/app/services/notification_manager.py`, `services/social-service/app/api/notifications.py`
 
+#### SOC-UNIT-05 — Verificação de auto-relação retornando status 'self' (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_self"`
+- Pré-condições: Endpoints `/social/relationship/{a}/{b}` implementados no social-service.
+- Passos:
+  - Dado dois identificadores de usuário idênticos (ex: 1 e 1)
+  - Quando a rota `/social/relationship/1/1` é consultada
+  - Então a resposta retorna `{"relationship": "self"}` com código HTTP 200
+- Resultado esperado: Reconhecimento imediato do próprio usuário.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/api/routes.py`
+
+#### SOC-UNIT-06 — Detecção bidirecional de amizade confirmada (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_friend"`
+- Pré-condições: Relação de amizade com status 'accepted' no banco do social-service.
+- Passos:
+  - Dado uma amizade aceita entre usuário 1 e usuário 2
+  - Quando `GET /social/relationship/1/2` e `GET /social/relationship/2/1` são consultados
+  - Então ambas as rotas retornam `{"relationship": "friend"}`
+- Resultado esperado: Consistência bilateral na resolução da relação de amizade.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOC-UNIT-07 — Resolução de relação sem vínculo e membros do mesmo grupo (P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_relationship.py -k "test_relationship_none_and_group"`
+- Pré-condições: Usuários sem amizade mútua, com e sem grupo compartilhado.
+- Passos:
+  - Dado usuários sem amizade e sem grupos comuns, a consulta retorna `relationship: 'none'`
+  - Dado que os mesmos usuários passam a compartilhar a participação em um mesmo grupo
+  - Quando a rota de relação é consultada novamente
+  - Então o status transiciona para `relationship: 'group_member'`
+- Resultado esperado: Resolução correta da hierarquia social entre usuários.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`
+
+#### SOC-UNIT-08 — Listagem e processamento de solicitações pendentes de amizade com notificações em tempo real
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/social-service/tests/test_friend_requests.py -k "test_list_friend_requests_pending or test_accept_friend_request_flow or test_reject_friend_request_flow"`
+- Pré-condições: Usuário remetente enviando solicitação para destinatário no social-service.
+- Passos:
+  - Dado um pedido de amizade enviado de A para B
+  - Quando B consulta `GET /friends/requests`
+  - Então o pedido aparece na lista com perfil real do remetente e pode ser aceito ou rejeitado
+- Resultado esperado: Retorno HTTP 200 nas rotas de listagem, aceite e rejeição com notificações push emitidas.
+- Rastreabilidade: `services/social-service/app/services/social_service.py`, `services/social-service/app/api/routes.py`
 
 ### Inteligência Artificial e Agentes (MIST AI)
 #### AI-UNIT-01 — Resolução multi-provedor e fallback determinístico do AIClient
@@ -564,6 +772,19 @@
   - Quando `GET /library/users/{id}/has-game/{game_id}` é chamado em cada estágio
   - Então o campo `playtime_minutes` retorna 0, 0 e o valor real, respectivamente, mantendo `owned` correto
 - Resultado esperado: Extensão aditiva e retrocompatível do endpoint, consumida pelo `store-service` no Bloco H.
+- Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
+
+#### LIB-UNIT-07 — Drop de cartas colecionáveis no ping de sessão com probabilidade configurável (K-02)
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/library-service/tests/test_sessions.py -k "test_session_ping_card_drop_mechanic"`
+- Pré-condições: Sessão de jogo ativa iniciada na biblioteca.
+- Passos:
+  - Dado uma sessão de jogo com status ativo
+  - Quando o endpoint POST /session/ping é acionado periodicamente
+  - Então o sistema avalia a probabilidade de drop por minuto jogado e despacha a concessão de carta temática
+- Resultado esperado: Retorno HTTP 200 contendo `card_dropped` com os metadados da carta sorteada quando acionado.
 - Rastreabilidade: `services/library-service/app/services/library_service.py`, `services/library-service/app/api/routes.py`
 
 ### Mercado e Carteira (Market Service)
@@ -1423,6 +1644,162 @@
   - Então a seção "Meus Jogos" é exibida, listando cada jogo da biblioteca com seu tempo de jogo formatado, data da última sessão e barra de progresso percentual de conquistas
 - Resultado esperado: Visualização analítica dos títulos do usuário com foco no engajamento, horas jogadas e progressão de conquistas.
 - Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-45 — Renderização do Inventário Completo com abas de categorias e contadores (J-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "renderiza o cabeçalho, abas e grid com contadores corretos"`
+- Pré-condições: Endpoint de inventário mockado retornando itens distribuídos em cartas, emoticons, planos de fundo, molduras e insígnias.
+- Passos:
+  - Dado a montagem da página Inventory.tsx
+  - Quando a consulta à API de inventário é resolvida
+  - Então o cabeçalho, as abas de categorias com contadores dinâmicos e os cards de itens são renderizados na interface
+- Resultado esperado: Exibição completa da taxonomia do inventário com badges e contadores precisos.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`
+
+#### FRONT-UNIT-46 — Filtros por status, busca e ações de equipar/desequipar no Inventário (J-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "filtra itens ao selecionar uma aba de categoria|filtra itens por status|equipa um item disponível|desequipa um item previamente equipado|impede ação de equipar em itens com status listado"`
+- Pré-condições: Itens disponíveis, equipados e anunciados no mercado exibidos no inventário.
+- Passos:
+  - Dado a navegação pelas abas de filtro e cards de itens no grid
+  - Quando o usuário filtra por status, busca por texto ou clica em Equipar/Desequipar
+  - Então a listagem filtra instantaneamente, itens no mercado permanecem bloqueados e ações de equipar atualizam o estado visual
+- Resultado esperado: Interatividade responsiva de filtros e execução das ações de equipar/desequipar com feedback toast.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-47 — Exibição da barra de XP progressivo e nível no Profile (K-06 & K-07)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "exibe a barra de XP progressivo"`
+- Pré-condições: Usuário autenticado com resposta da API de nível e progresso de XP.
+- Passos:
+  - Dado o carregamento da página Profile.tsx com autenticação
+  - Quando a consulta a `cardsApi.getLevelProgress` é resolvida
+  - Então o header exibe o badge com o nível calculado e a barra de progresso com os percentuais e XP restante
+- Resultado esperado: Elemento `profile-xp-header` renderizado com os valores precisos de nível e XP.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/components/Sidebar.tsx`
+
+#### FRONT-UNIT-48 — Conjuntos de cartas colecionáveis e fluxo modal de forja de insígnias no Inventário (K-04 & K-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Inventory.test.tsx -t "exibe banner de crafting de insígnias|executa forja de insígnia"`
+- Pré-condições: Usuário no inventário na aba "Cartas" com conjunto de 3 cartas disponíveis.
+- Passos:
+  - Dado a seleção da aba de Cartas
+  - Quando o usuário visualiza o banner de Forja e clica em "Forjar Insígnia" confirmando no modal
+  - Então o sistema dispara a requisição `cardsApi.craftBadge`, atualiza a lista e exibe modal celebratório de sucesso
+- Resultado esperado: Forja bem-sucedida com feedback celebratório indicando novo nível e XP acumulado.
+- Rastreabilidade: `frontend/src/pages/Inventory.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-49 — Exibição de badge de relação contextual no Perfil Público (P-03 & P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-49"`
+- Pré-condições: Página `PublicProfile.tsx` montada para usuários com relações `none`, `friend` e `self`.
+- Passos:
+  - Dado o carregamento do perfil de um usuário não-amigo, amigo ou o próprio usuário
+  - Quando a resposta da API define o atributo `relationship`
+  - Então o perfil exibe o chip correspondente ("Amigo", "Você mesmo") e botões de ação ("Adicionar Amigo", "Mensagem" ou "Privacidade")
+- Resultado esperado: Badges `profile-relation-badge-*` renderizados com cores e ações exclusivas.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`
+
+#### FRONT-UNIT-50 — Ocultação de seções privadas com cadeado no Perfil Público (P-01 & P-03)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-50"`
+- Pré-condições: Perfil retornado com campos de seções iguais a `null` por restrição de privacidade.
+- Passos:
+  - Dado um usuário que definiu jogos, conquistas ou inventário como privados
+  - Quando outro jogador visita seu perfil público
+  - Então as seções afetadas exibem o indicador com ícone de cadeado e mensagem "Privado" / "Oculto"
+- Resultado esperado: Elementos `section-hidden-*` presentes sem vazamento de dados confidenciais.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`
+
+#### FRONT-UNIT-51 — Exibição e cópia do ID de usuário para solicitação de amizade (P-03 & P-04)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/PublicProfile.test.tsx -t "FRONT-UNIT-51"`
+- Pré-condições: Perfil com ID numérico conhecido e botão de cópia de ID.
+- Passos:
+  - Dado a visualização do cabeçalho do perfil
+  - Quando o usuário clica no botão "Copiar" ao lado do ID
+  - Então o ID numérico é transferido para a área de transferência e o botão exibe o estado "Copiado!"
+- Resultado esperado: Elemento `profile-user-id` presente e botão interativo com feedback visual.
+- Rastreabilidade: `frontend/src/pages/PublicProfile.tsx`, `frontend/src/pages/Profile.tsx`
+
+#### FRONT-UNIT-52 — Modal de configurações de privacidade de seções (P-02 & P-05)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/PrivacySettingsModal.test.tsx -t "FRONT-UNIT-52"`
+- Pré-condições: Modal `PrivacySettingsModal.tsx` aberta com 6 seções configuráveis.
+- Passos:
+  - Dado as 6 seções (Jogos, Conquistas, Horas de Jogo, Inventário, Screenshots, Grupos)
+  - Quando o usuário alterna opções entre Todos, Amigos e Privado e clica em Salvar
+  - Então a requisição PATCH para `publicProfileApi.updatePrivacySettings` é disparada com o payload exato
+- Resultado esperado: Seleção precisa das opções e salvamento assíncrono com feedback toast.
+- Rastreabilidade: `frontend/src/components/PrivacySettingsModal.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-53 — Modal de recarga de saldo da Carteira MIST com opções pré-definidas e valor customizado
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AddFundsModal.test.tsx`
+- Pré-condições: Componente `AddFundsModal.tsx` renderizado.
+- Passos:
+  - Dado a abertura da modal de recarga
+  - Quando o usuário seleciona um valor pré-definido (ex: R$ 50,00) ou insere um valor personalizado e confirma
+  - Então a chamada `walletApi.recharge` é disparada, o saldo no contexto global é atualizado e eventos `mist:wallet-updated` e `mist:toast` são emitidos
+- Resultado esperado: Modal interativa com cálculo de valor, chamada de API e feedback de sucesso.
+- Rastreabilidade: `frontend/src/components/AddFundsModal.tsx`, `frontend/src/components/AddFundsModal.test.tsx`
+
+#### FRONT-UNIT-54 — Modal de seleção de foto de perfil com avatares do inventário e upload de imagem própria
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AvatarSelectModal.test.tsx`
+- Pré-condições: Componente `AvatarSelectModal.tsx` renderizado.
+- Passos:
+  - Dado a abertura da modal de alteração de foto
+  - Quando o usuário navega entre a aba de avatares adquiridos e a aba de upload
+  - Então os avatares do inventário são listados para seleção direta ou a foto carregada/URL informada é aplicada
+- Resultado esperado: Callback `onSelectAvatar` acionado com a URL correta e fechamento da modal.
+- Rastreabilidade: `frontend/src/components/AvatarSelectModal.tsx`, `frontend/src/components/AvatarSelectModal.test.tsx`
+
+#### FRONT-UNIT-55 — Edição de nome de usuário e foto de perfil na página Profile
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "permite iniciar edição do perfil"`
+- Pré-condições: Perfil do usuário montado com botão de editar perfil.
+- Passos:
+  - Dado o clique em "Editar perfil"
+  - Quando o usuário altera o nome de usuário, seleciona uma foto e clica em "Salvar Perfil"
+  - Então a API `profileApi.updateProfile` é chamada com os dados atualizados e o contexto do usuário é sincronizado
+- Resultado esperado: Formulário de edição interativo com salvamento assíncrono e feedback positivo.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-56 — Gestão visual e ações de aceitar/rejeitar pedidos de amizade na página Social
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Social.test.tsx -t "exibe a seção de solicitações de amizade pendentes"`
+- Pré-condições: Usuário com solicitações de amizade pendentes recebidas.
+- Passos:
+  - Dado a renderização da página de comunidade Social
+  - Quando há pedidos pendentes listados no banner superior
+  - Então o usuário pode aceitar (`socialApi.acceptFriend`) ou rejeitar (`socialApi.deleteFriend`) o pedido com remoção instantânea da fila e feedback
+- Resultado esperado: Seção `section-pending-requests` visível com botões de ação e integração de rede.
+- Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
 
 ## Integração
 

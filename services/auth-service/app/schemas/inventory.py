@@ -36,6 +36,10 @@ class InventoryItemResponse(BaseModel):
     asset_url: str
     price_points: int
     is_equipped: bool
+    status: str = "disponivel"
+    game_id: Optional[int] = None
+    rarity: Optional[str] = "Comum"
+    description: Optional[str] = None
     acquired_at: datetime
 
     model_config = {"from_attributes": True}
@@ -61,10 +65,22 @@ class CosmeticEquipResponse(BaseModel):
     success: bool
     message: str
     equipped_item: InventoryItemResponse
+    avatar_url: Optional[str] = None
     avatar_frame_url: Optional[str] = None
     profile_background_url: Optional[str] = None
 
 
 class InventoryListResponse(BaseModel):
     items: List[InventoryItemResponse]
+    grouped: dict[str, List[InventoryItemResponse]] = Field(default_factory=dict)
     total: int
+
+
+class InventoryLockRequest(BaseModel):
+    user_id: int
+
+
+class InventoryTransferRequest(BaseModel):
+    item_id: int
+    from_user_id: int
+    to_user_id: int
