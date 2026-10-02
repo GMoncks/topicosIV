@@ -36,8 +36,9 @@ export const Store: React.FC<StoreProps> = ({
   activeSubTab = 'destaques',
   onNavigateToLibrary,
 }) => {
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { isAuthenticated, openAuthModal, user } = useAuth();
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+  const [selectedGameRelevantInfo, setSelectedGameRelevantInfo] = useState<string | null>(null);
   const [games, setGames] = useState<GameItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +124,21 @@ export const Store: React.FC<StoreProps> = ({
     };
   }, [fetchWishlist, fetchOwnedGames, isAuthenticated]);
 
+  // Listener para abertura de jogo via notificações ou comunicados (ex: jogos deixando catálogo ou wishlist)
+  useEffect(() => {
+    const handleOpenGameDetail = (e: CustomEvent<{ gameId: number; relevantInfo?: string }>) => {
+      if (e.detail && e.detail.gameId) {
+        setSelectedGameId(Number(e.detail.gameId));
+        setSelectedGameRelevantInfo(e.detail.relevantInfo || null);
+      }
+    };
+
+    window.addEventListener('mist:open-game-detail' as any, handleOpenGameDetail);
+    return () => {
+      window.removeEventListener('mist:open-game-detail' as any, handleOpenGameDetail);
+    };
+  }, []);
+
   // Reseta para a página 1 ao alternar filtros ou buscar
   useEffect(() => {
     setCurrentPage(1);
@@ -165,6 +181,12 @@ export const Store: React.FC<StoreProps> = ({
 
   const handleCloseModal = useCallback(() => {
     setSelectedGameId(null);
+    setSelectedGameRelevantInfo(null);
+  }, []);
+
+  const handleSelectGame = useCallback((id: number, message?: string) => {
+    setSelectedGameId(id);
+    setSelectedGameRelevantInfo(message || null);
   }, []);
 
   const handleBuyGame = useCallback((id: number, price: number, title: string) => {
@@ -233,7 +255,7 @@ export const Store: React.FC<StoreProps> = ({
 
   const curatorElement = (
     <CuratorSection
-      onSelectGame={(id) => setSelectedGameId(id)}
+      onSelectGame={(id, message) => handleSelectGame(id, message)}
       onBuyGame={(game) => handleBuyGame(game.id, game.price, game.title)}
       ownedGameIds={ownedGameIds}
     />
@@ -318,7 +340,7 @@ export const Store: React.FC<StoreProps> = ({
               isWishlisted={wishlistIds.has(Number(game.id))}
               isOwned={ownedGameIds.has(Number(game.id))}
               onToggleWishlist={handleDirectWishlistToggle}
-              onSelect={() => setSelectedGameId(Number(game.id))}
+              onSelect={(g, msg) => handleSelectGame(Number(g.id), msg)}
             />
           ))}
         </div>
@@ -340,7 +362,7 @@ export const Store: React.FC<StoreProps> = ({
         </div>
       )}
 
-      {/* Modal de Detalhes */}
+      {/* Modal de Detalhes com Seção de Informação Relevante */}
       <GameDetailModal 
         gameId={selectedGameId} 
         onClose={handleCloseModal} 
@@ -349,6 +371,8 @@ export const Store: React.FC<StoreProps> = ({
         isAuthenticated={isAuthenticated}
         isOwned={selectedGameId ? ownedGameIds.has(selectedGameId) : false}
         onOpenAuth={() => openAuthModal('login')}
+        currentUserId={user?.id}
+        relevantInfo={selectedGameRelevantInfo}
       />
 
       {/* Modal de Checkout Unitário ("Comprar agora") */}

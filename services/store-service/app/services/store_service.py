@@ -10,7 +10,7 @@ from sqlalchemy import or_, desc, asc
 from app.models.game import Game
 from app.models.purchase import Purchase
 from app.services.ai_client import AIClient
-from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL
+from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL, MARKET_SERVICE_URL
 
 
 class StoreService:
@@ -385,6 +385,24 @@ class StoreService:
                 except Exception:
                     pass
 
+            # Registra o lançamento no extrato da carteira (T-02) — best-effort,
+            # não bloqueia o checkout se o market-service estiver indisponível.
+            # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
+            if total_amount > 0:
+                try:
+                    titles = ", ".join(g.title for g in games)
+                    await client.post(
+                        f"{MARKET_SERVICE_URL.rstrip('/')}/wallet/transactions",
+                        json={
+                            "user_id": user_id,
+                            "type": "compra",
+                            "amount": total_amount,
+                            "description": f"Compra: {titles}"[:500]
+                        }
+                    )
+                except Exception:
+                    pass
+
             return {
                 "status": "success",
                 "order_id": order_id,
@@ -448,4 +466,16 @@ class StoreService:
             limit=limit,
             user_favorite_tags=user_favorite_tags
         )
+
+        from app.services.ai_curator import generate_contextual_justification
+        for rec in recommendations:
+            if not rec.get("recommendation_reason") or "Destaque da comunidade" in rec.get("recommendation_reason", ""):
+                # Se o usuário possui biblioteca, enriquece com a justificativa contextual avançada
+                if user_library_games:
+                    rec["recommendation_reason"] = generate_contextual_justification(
+                        played_games=user_library_games,
+                        target_game=rec
+                    )
+
         return recommendations
+

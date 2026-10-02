@@ -1,9 +1,10 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from typing import Optional
 import httpx
 import jwt
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, Response, Query, WebSocket, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,6 +13,8 @@ from app.config import (
     STORE_SERVICE_URL,
     LIBRARY_SERVICE_URL,
     SOCIAL_SERVICE_URL,
+    MARKET_SERVICE_URL,
+    UGC_SERVICE_URL,
     JWT_SECRET_KEY,
     JWT_ALGORITHM,
 )
@@ -397,6 +400,139 @@ async def proxy_social(path: str, request: Request):
         )
 
 
+@app.api_route("/api/market/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_market(path: str, request: Request):
+    """
+    Proxy reverso genérico para rotas do market-service (/api/market/*).
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+            forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+            forward_headers["X-User-Token"] = token
+        except Exception:
+            pass
+
+    target_url = f"{MARKET_SERVICE_URL.rstrip('/')}/{path}"
+    body = await request.body()
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params,
+            content=body
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço de mercado temporariamente indisponível"}
+        )
+
+
+@app.api_route("/api/ugc/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_ugc(path: str, request: Request):
+    """
+    Proxy reverso para o ugc-service (/api/ugc/*).
+    - Remove cabeçalhos X-User-* para evitar spoofing.
+    - Valida token JWT.
+    - Rotas de leitura pública (health, uploads/, GET /screenshots): permitem acesso anônimo,
+      mas se houver JWT injetam X-User-Id para cálculo de liked_by_me.
+    - Rotas protegidas (upload, like, unlike, delete): bloqueiam 401 se ausente/inválido e injetam X-User-Id / X-User-Name.
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=15.0)
+
+    forward_headers = {}
+    for header_name, header_value in request.headers.items():
+        lower_name = header_name.lower()
+        if lower_name.startswith("x-user-"):
+            continue
+        if lower_name not in ("host", "content-length"):
+            forward_headers[header_name] = header_value
+
+    auth_header = request.headers.get("authorization")
+    user_payload: Optional[dict] = None
+
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        except Exception:
+            user_payload = None
+
+    is_public = (
+        path.startswith("health")
+        or path.startswith("uploads/")
+        or (request.method == "GET" and (
+            path == "screenshots"
+            or path.startswith("screenshots/")
+            or path == "workshop/items"
+            or path.startswith("workshop/items/")
+        ))
+        or (request.method == "POST" and "/download" in path)
+    )
+
+    if not is_public:
+        if not user_payload:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Token de autenticação ausente ou inválido"}
+            )
+        forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        if user_payload.get("username"):
+            forward_headers["X-User-Name"] = str(user_payload.get("username", ""))
+    elif user_payload:
+        forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        if user_payload.get("username"):
+            forward_headers["X-User-Name"] = str(user_payload.get("username", ""))
+
+    target_url = f"{UGC_SERVICE_URL.rstrip('/')}/{path}"
+    body = await request.body()
+
+    try:
+        upstream_response = await http_client.request(
+            method=request.method,
+            url=target_url,
+            headers=forward_headers,
+            params=request.query_params,
+            content=body
+        )
+        return Response(
+            content=upstream_response.content,
+            status_code=upstream_response.status_code,
+            headers=dict(upstream_response.headers),
+            media_type=upstream_response.headers.get("content-type")
+        )
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.RequestError):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={"detail": "Serviço UGC temporariamente indisponível"}
+        )
+
+
 # ==============================================================================
 # WEBSOCKET PROXY (F-03, F-04)
 # ==============================================================================
@@ -459,6 +595,137 @@ async def gateway_ws_presence_proxy(websocket: WebSocket):
     if query_str:
         upstream_url += f"?{query_str}"
     await proxy_websocket_connection(websocket, upstream_url)
+
+
+@app.websocket("/ws/notifications")
+async def gateway_ws_notifications_proxy(websocket: WebSocket):
+    query_str = str(websocket.query_params)
+    base_ws_url = SOCIAL_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://").rstrip("/")
+    upstream_url = f"{base_ws_url}/ws/notifications"
+    if query_str:
+        upstream_url += f"?{query_str}"
+    await proxy_websocket_connection(websocket, upstream_url)
+
+
+@app.websocket("/ws/group/{group_id}/chat")
+async def gateway_ws_group_chat_proxy(websocket: WebSocket, group_id: int):
+    query_str = str(websocket.query_params)
+    base_ws_url = SOCIAL_SERVICE_URL.replace("http://", "ws://").replace("https://", "wss://").rstrip("/")
+    upstream_url = f"{base_ws_url}/ws/group/{group_id}/chat"
+    if query_str:
+        upstream_url += f"?{query_str}"
+    await proxy_websocket_connection(websocket, upstream_url)
+
+
+
+@app.get("/api/search")
+async def global_search(
+    request: Request,
+    q: Optional[str] = Query(None, description="Termo de pesquisa global"),
+    limit: int = Query(5, ge=1, le=20, description="Limite de resultados por categoria")
+):
+    """
+    Busca Global Agregada (R-01 a R-04).
+    Dispara consultas assíncronas paralelas via httpx para Store, Auth, Social e Market services.
+    Resiliência graciosa: se algum serviço estiver indisponível ou retornar erro,
+    retorna lista vazia para aquela seção sem falhar a resposta global.
+    """
+    global http_client
+    if http_client is None:
+        http_client = httpx.AsyncClient(timeout=10.0)
+
+    if not q or not q.strip():
+        return {
+            "query": "",
+            "total": 0,
+            "games": [],
+            "users": [],
+            "groups": [],
+            "market_items": []
+        }
+
+    query_term = q.strip()
+    auth_header = request.headers.get("authorization")
+    social_headers = {"Authorization": auth_header} if auth_header else {}
+
+    # Helpers assíncronos resilientes
+    async def fetch_games():
+        try:
+            resp = await http_client.get(
+                f"{STORE_SERVICE_URL.rstrip('/')}/games",
+                params={"search": query_term, "limit": limit}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data if isinstance(data, list) else data.get("items", [])
+            return []
+        except Exception:
+            return []
+
+    async def fetch_users():
+        try:
+            resp = await http_client.get(
+                f"{AUTH_SERVICE_URL.rstrip('/')}/users/search",
+                params={"q": query_term, "limit": limit}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data if isinstance(data, list) else []
+            return []
+        except Exception:
+            return []
+
+    async def fetch_groups():
+        try:
+            resp = await http_client.get(
+                f"{SOCIAL_SERVICE_URL.rstrip('/')}/groups",
+                params={"q": query_term, "search": query_term, "limit": limit},
+                headers=social_headers
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data if isinstance(data, list) else []
+            return []
+        except Exception:
+            return []
+
+    async def fetch_market():
+        try:
+            resp = await http_client.get(
+                f"{MARKET_SERVICE_URL.rstrip('/')}/market/listings",
+                params={"search": query_term, "limit": limit}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get("items", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+            return []
+        except Exception:
+            return []
+
+    # Execução concorrente com asyncio.gather
+    results = await asyncio.gather(
+        fetch_games(),
+        fetch_users(),
+        fetch_groups(),
+        fetch_market(),
+        return_exceptions=True
+    )
+
+    games_res = results[0] if isinstance(results[0], list) else []
+    users_res = results[1] if isinstance(results[1], list) else []
+    groups_res = results[2] if isinstance(results[2], list) else []
+    market_res = results[3] if isinstance(results[3], list) else []
+
+    total_count = len(games_res) + len(users_res) + len(groups_res) + len(market_res)
+
+    return {
+        "query": query_term,
+        "total": total_count,
+        "games": games_res,
+        "users": users_res,
+        "groups": groups_res,
+        "market_items": market_res
+    }
 
 
 if __name__ == "__main__":

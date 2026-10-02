@@ -336,3 +336,21 @@ def get_user_inventory(db: Session, user_id: int, item_type: Optional[str] = Non
         query = query.filter(InventoryItem.item_type == item_type)
     return query.order_by(InventoryItem.acquired_at.desc()).all()
 
+
+def search_users(db: Session, query: str, limit: int = 10):
+    """Busca usuários por correspondência parcial de username ou email."""
+    if not query or not query.strip():
+        return []
+    term = f"%{query.strip()}%"
+    return (
+        db.query(User)
+        .filter(
+            or_(
+                User.username.ilike(term),
+                User.email.ilike(term),
+            )
+        )
+        .limit(limit)
+        .all()
+    )
+

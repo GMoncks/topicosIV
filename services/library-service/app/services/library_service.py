@@ -59,6 +59,14 @@ class LibraryService:
         return db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first() is not None
 
     @staticmethod
+    def get_playtime_minutes(db: Session, user_id: int, game_id: int) -> int:
+        """
+        Retorna os minutos jogados pelo usuário no jogo (0 se não possuir a licença).
+        """
+        item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+        return item.playtime_minutes if item else 0
+
+    @staticmethod
     async def enrich_library_items(
         items: List[LibraryItem],
         store_service_url: str,

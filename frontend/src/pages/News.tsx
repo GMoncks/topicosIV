@@ -3,6 +3,20 @@ import { NewsArticle } from '../types';
 
 const mockNews: NewsArticle[] = [
   {
+    id: 'n0',
+    gameTitle: 'Comunicado Oficial MIST',
+    gameIcon: 'fa-bullhorn',
+    libraryRelation: 'Seguindo',
+    title: 'COMUNICADO: 3 jogos deixarão o catálogo MIST em 31 de Outubro',
+    dateLabel: 'AVISO IMPORTANTE — 30 de Set.',
+    timeframe: 'EM BREVE',
+    content: 'Atenção membros da comunidade MIST: os títulos Onimusha: Way of the Sword, Wardogs e Silent Hill: Townfall deixarão o catálogo da loja oficial no dia 31 de Outubro de 2026. Usuários que já adquiriram ou comprarem com desconto de despedida de até 75% OFF manterão acesso perpétuo em suas Bibliotecas.',
+    bannerImage: 'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/761620/header.jpg',
+    reminderScheduled: false,
+    likesCount: 8430,
+    commentsCount: 1140
+  },
+  {
     id: 'n1',
     gameTitle: 'Call of Duty®: Modern Warfare 4',
     gameIcon: 'fa-shield-halved',
@@ -197,14 +211,14 @@ export const News: React.FC = () => {
           <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
             Buscar notícias
           </span>
-          <div className="bg-brand-card rounded-xl flex items-center px-3 py-2 border border-gray-700 focus-within:border-brand-purple">
+          <div className="bg-white rounded-xl flex items-center px-3 py-2 border border-gray-300 focus-within:border-brand-purple shadow-sm">
             <i className="fa-solid fa-search text-gray-500 text-xs"></i>
             <input
               type="text"
               placeholder="Nome do jogo ou tag..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs text-white ml-2 w-full"
+              className="bg-transparent border-none outline-none text-xs text-black placeholder-gray-500 ml-2 w-full"
             />
           </div>
         </div>

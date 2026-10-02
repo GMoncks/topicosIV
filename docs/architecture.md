@@ -6,7 +6,7 @@ O **MIST** é uma prova de conceito avançada que recria a infraestrutura e os f
 
 ## 1. Visão Geral da Arquitetura
 
-O sistema é composto por um **API Gateway**, 4 **Microsserviços de Domínio** independentes, uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
+O sistema é composto por um **API Gateway**, 5 **Microsserviços de Domínio** independentes (o quinto, `market-service`, ainda em construção — ver §2.6), uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
 
 ```mermaid
 graph TD
@@ -84,11 +84,16 @@ graph TD
   - **Saga Compensation:** Se a concessão falhar, o serviço estorna automaticamente 100% do valor para a carteira e retorna HTTP 502.
   - Limpeza automática de itens adquiridos da wishlist.
   - Disparo de evento de atividade `game_purchased` para o feed do `social-service`.
+- **Avaliações de Jogos (Bloco H):**
+  - `POST /games/{id}/reviews`: cria (201) ou atualiza (200) o review do usuário (um por jogo). Exige posse no `library-service`, que também informa as horas jogadas gravadas em `playtime_at_review`; falha fechado (403 sem posse, 503 se a biblioteca não confirmar).
+  - `GET /games/{id}/reviews`: lista com `sort=recent|helpful`, filtro `is_recommended` e paginação.
+  - `POST /reviews/{id}/helpful`: voto "útil" idempotente (um por usuário; não vale no próprio review).
+  - `GET /games/{id}` inclui `approval_pct` e `approval_label` (ex.: "Muito Positivo - 92%"), calculados dos reviews reais; a coluna `review_score` fica como fallback do seed.
 - **Distribuição de Jogos:** Gera pacotes dinâmicos em `.zip` contendo o executável Python, o `mist_sdk.py` e o arquivo de contexto `session.json`.
 
 ### 2.4. Library Service (`/services/library-service`, Porta `8003`)
 - **Banco de Dados:** `library.db` (SQLite).
-- **Gestão de Posse:** Consulta e concessão de jogos por usuário (`LibraryItem`).
+- **Gestão de Posse:** Consulta e concessão de jogos por usuário (`LibraryItem`). `GET /library/users/{id}/has-game/{game_id}` devolve `owned` e `playtime_minutes`.
 - **Ciclo de Vida de Sessões (E-04):**
   - `POST /session/start`: Abre sessão e despacha status *"Jogando [Jogo]"* para o Social Service.
   - `POST /session/ping`: Heartbeat a cada 60s acumulando playtime (`playtime_minutes`).
@@ -111,6 +116,32 @@ graph TD
   - Broadcast instantâneo de transições de status (*Jogando [Título]*, *Online*, *Ausente*, *Offline*).
 - **Feed de Atividades (F-06):**
   - Endpoint `GET /feed` consolidando conquistas, compras de jogos e progressão.
+
+### 2.6. Market Service (`/services/market-service`, Porta `8005`)
+- **Banco de Dados:** `market.db` (SQLite dedicado).
+- **Status:** todo o Bloco L e Bloco T implementados (esqueleto L-01, Extrato T-01 a T-03, Mercado L-02 a L-05/L-11, Trocas Diretas L-06 a L-08). Único gap conhecido: a criação de anúncios/trocas no frontend depende do Inventário do Bloco J (Dev 2), ainda não implementado — ver nota no fim desta seção.
+- **Extrato da Carteira (T-01 a T-03):**
+  - `WalletTransaction`: `user_id`, `type` (`compra`, `venda`, `recarga`, `resgate`), `amount` (magnitude positiva), `description`, `created_at`.
+  - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, e o próprio market-service após toda venda no mercado, de forma *best-effort* (falha não derruba a compra).
+  - `GET /wallet/history`: extrato paginado do usuário autenticado, com filtro por `type` e por período (`start_date`/`end_date`). Direção (`credit`/`debit`) é derivada do tipo: `compra` debita; `venda`, `recarga` e `resgate` creditam.
+- **Mercado da Comunidade (L-02 a L-05, L-11):**
+  - `MarketListing`: `seller_id`, `item_id`, `item_type` (`card`, `emoticon`, `background`, `avatar_frame`, `badge`), `item_name` (snapshot legível), `game_id` (opcional), `price`, `status` (`ativo`, `vendido`, `cancelado`), `buyer_id`.
+  - `POST /market/list`: anuncia um item. Valida posse e bloqueia o item no auth-service antes de criar o anúncio (falha fechada — 503/404/403/409 conforme a resposta do auth-service).
+  - `GET /market/listings`: catálogo público de anúncios ativos, com filtro por `item_type`/`game_id`, ordenado por menor preço.
+  - `GET /market/my-listings`: anúncios do usuário autenticado, em qualquer status.
+  - `POST /market/listings/{id}/cancel`: cancela um anúncio ativo próprio e libera o item no inventário.
+  - `POST /market/buy/{listing_id}`: compra um anúncio. Saga com compensação (mesmo padrão do checkout de jogos no store-service): débito do comprador → crédito do vendedor (estorna o comprador se falhar) → transferência de custódia do item (estorna ambos se falhar) → extrato da carteira (`compra`/`venda`, best-effort) para as duas partes.
+- **Trocas Diretas (L-06 a L-08):**
+  - `TradeOffer`: `sender_id`, `receiver_id`, `offered_items`/`requested_items` (JSON, cada item `{item_id, item_type, item_name}`), `status` (`pending`, `accepted`, `declined`).
+  - `POST /trades/offer`: propõe uma troca. Bloqueia só os itens **oferecidos** (do remetente) — os solicitados só são validados/bloqueados no aceite, para não travar itens de alguém que ainda não viu a proposta.
+  - `POST /trades/{id}/accept`: só o destinatário pode aceitar. Valida e bloqueia os itens solicitados, transfere a custódia dos dois lados (com rollback de transferências já concluídas se alguma falhar no meio do caminho).
+  - `POST /trades/{id}/decline`: só o destinatário pode recusar; libera os itens do remetente.
+  - `GET /trades/received` e `GET /trades/sent`: histórico paginado, com filtro por status.
+  - Não existe endpoint de cancelamento pelo remetente (fora do escopo do L-07).
+- **Cliente compartilhado do inventário (`inventory_client.py`):** lock/unlock/transfer usados por anúncios, checkout e trocas centralizados num único módulo.
+  - **Contrato assumido com o `auth-service`** (Bloco J do Dev 2, ainda não implementado — market-service falha fechado enquanto isso): `POST /inventory/items/{item_id}/lock` e `.../unlock`, body `{"user_id": <id>}` → 200 confirma/libera, 404/403/409 nos casos de erro; `POST /inventory/transfer`, body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono. **Dev 2:** o `unlock` não estava no contrato original do cronograma (§6) — foi adicionado por simetria, necessário para cancelar anúncios/trocas sem prender o item para sempre.
+- **Gateway:** `MARKET_SERVICE_URL` configurado e rota de proxy genérica `/api/market/*` em `gateway/app/main.py` (mesmo padrão de `/api/store/*`).
+- **Frontend (`Market.tsx`):** catálogo, compra, "Meus Anúncios" e "Trocas" (gerenciar ofertas recebidas/enviadas: aceitar, recusar, histórico) estão completos e funcionais. **Pendente:** as telas de **criar** um anúncio ou uma nova troca (que exigem escolher itens do próprio inventário e, no caso de trocas, também do inventário do amigo) — não há dados reais de inventário em lugar nenhum do sistema ainda para alimentar esses seletores.
 
 ---
 

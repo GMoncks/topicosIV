@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, GameActivity, InventoryItem } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem } from '../api/client';
+import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem, ugcApi, WorkshopItem, getUgcImageUrl } from '../api/client';
 
 interface ProfileProps {
   user?: UserProfile;
+  onNavigate?: (tab: string) => void;
 }
 
 interface GameProgressItem {
@@ -53,7 +54,7 @@ const defaultFallbackRecentGames: GameActivity[] = [
   }
 ];
 
-export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
+export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) => {
   const { user: authUser, updateUserCosmetics, isAuthenticated } = useAuth();
   const [activeSection, setActiveSection] = useState<'activity' | 'inventory' | 'games'>('activity');
   const [inventoryCategory, setInventoryCategory] = useState<string>('todos');
@@ -62,6 +63,12 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
   const [equippingId, setEquippingId] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+
+  // Estados da Oficina (Ticket O-06)
+  const [userWorkshopItems, setUserWorkshopItems] = useState<WorkshopItem[]>([]);
+  const [workshopTotal, setWorkshopTotal] = useState<number>(propUser?.stats?.workshopCount ?? 0);
+  const [isWorkshopModalOpen, setIsWorkshopModalOpen] = useState(false);
+  const [isLoadingWorkshop, setIsLoadingWorkshop] = useState(false);
 
   // Estados Inteligentes de Jogos e Atividade Recente
   const [libraryGames, setLibraryGames] = useState<LibraryItemResponse[]>([]);
@@ -99,6 +106,32 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
       reviewsCount: 12
     }
   };
+
+  useEffect(() => {
+    async function loadUserWorkshop() {
+      const targetId = currentUser.id || propUser?.id || authUser?.id;
+      if (targetId) {
+        try {
+          setIsLoadingWorkshop(true);
+          const data = await ugcApi.getWorkshopItems({ author_id: targetId, size: 20 });
+          setUserWorkshopItems(data.items);
+          setWorkshopTotal(data.total);
+        } catch (err) {
+          console.error('Falha ao buscar itens da oficina do perfil:', err);
+        } finally {
+          setIsLoadingWorkshop(false);
+        }
+      } else if (currentUser.stats?.workshopCount !== undefined) {
+        setWorkshopTotal(currentUser.stats.workshopCount);
+      }
+    }
+    loadUserWorkshop();
+  }, [currentUser.id, propUser?.id, authUser?.id]);
+
+  const totalDownloads = userWorkshopItems.reduce((acc, curr) => acc + (curr.downloads_count || 0), 0);
+  const totalSubscriptions = userWorkshopItems.reduce((acc, curr) => acc + (curr.subscriptions_count || 0), 0);
+
+  const profileData = currentUser;
 
   // Carrega inventário de cosméticos
   const loadInventory = async () => {
@@ -145,7 +178,7 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
               id: item.id,
               gameId: item.game_id,
               title: item.game?.title || `Jogo #${item.game_id}`,
-              bannerUrl: item.game?.banner_url || `https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80`,
+              bannerUrl: item.game?.banner_url || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80',
               playtimeMinutes: item.playtime_minutes || 0,
               lastPlayed: item.last_played,
               achievementsUnlocked: unlockedList.length,
@@ -245,7 +278,6 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
     if (inventoryCategory === 'emoticon') return item.item_type === 'emoticon';
     return true;
   });
-
   const formatPlaytime = (minutes: number): string => {
     if (!minutes || minutes <= 0) return '0 horas registradas';
     if (minutes < 60) return `${minutes} min registrados`;
@@ -376,7 +408,9 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
 
               <div className="flex items-center gap-3 bg-brand-card/70 border border-gray-800 p-2.5 rounded-2xl">
                 <div className="w-10 h-10 rounded-xl bg-purple-900/60 border border-purple-500/40 flex items-center justify-center font-display font-black text-purple-300 text-sm shadow">
-                  10+
+                  {(currentUser.featuredBadge as any)?.code || (
+                    <i className={`fa-solid ${(currentUser.featuredBadge as any)?.icon || 'fa-certificate'}`}></i>
+                  )}
                 </div>
                 <div className="text-left">
                   <p className="text-xs font-bold text-white leading-tight">
@@ -992,11 +1026,17 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
                   </span>
                   <i className="fa-solid fa-chevron-right text-xs text-gray-600"></i>
                 </li>
-                <li className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white">
+                <li
+                  onClick={() => setIsWorkshopModalOpen(true)}
+                  className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white group"
+                >
                   <span className="flex items-center gap-2">
-                    <i className="fa-solid fa-wrench text-orange-400"></i> Itens da Oficina
+                    <i className="fa-solid fa-wrench text-orange-400 group-hover:rotate-45 transition-transform"></i> Itens da Oficina
                   </span>
-                  <i className="fa-solid fa-chevron-right text-xs text-gray-600"></i>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-base">{workshopTotal}</span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-600"></i>
+                  </div>
                 </li>
                 <li className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800/60 transition cursor-pointer text-gray-300 hover:text-white">
                   <span className="flex items-center gap-2">
@@ -1009,6 +1049,164 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Criações da Oficina do Usuário (Ticket O-06) */}
+      {isWorkshopModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+        >
+          <div className="relative w-full max-w-3xl bg-zinc-950 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/60">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center">
+                  <i className="fa-solid fa-wrench text-sm"></i>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Criações na Oficina • {profileData.username}
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    Gerenciamento de mods, skins e pacotes publicados
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWorkshopModalOpen(false)}
+                className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition cursor-pointer"
+                aria-label="Fechar modal"
+              >
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            {/* Painel de Estatísticas Acumuladas */}
+            <div className="grid grid-cols-3 gap-3 p-6 pb-2">
+              <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center">
+                <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider block">
+                  Publicações
+                </span>
+                <span className="text-xl font-display font-black text-white mt-1 block">
+                  {workshopTotal}
+                </span>
+              </div>
+              <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center">
+                <span className="text-[11px] font-semibold text-cyan-400 uppercase tracking-wider block">
+                  Downloads
+                </span>
+                <span className="text-xl font-display font-black text-cyan-300 mt-1 block">
+                  {totalDownloads}
+                </span>
+              </div>
+              <div className="bg-zinc-900/80 border border-zinc-800 p-3.5 rounded-2xl text-center">
+                <span className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider block">
+                  Inscritos
+                </span>
+                <span className="text-xl font-display font-black text-purple-300 mt-1 block">
+                  {totalSubscriptions}
+                </span>
+              </div>
+            </div>
+
+            {/* Lista de Itens Criados */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-3">
+              {isLoadingWorkshop ? (
+                <div className="flex flex-col items-center justify-center py-12 text-zinc-500 gap-2">
+                  <i className="fa-solid fa-spinner animate-spin text-2xl text-purple-400"></i>
+                  <p className="text-xs">Carregando itens publicados...</p>
+                </div>
+              ) : userWorkshopItems.length === 0 ? (
+                <div className="text-center py-10 border border-dashed border-zinc-800 rounded-2xl p-6">
+                  <i className="fa-solid fa-wrench text-3xl text-zinc-600 mb-2"></i>
+                  <p className="text-sm font-semibold text-zinc-300">Nenhum mod publicado ainda</p>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Crie mods ou skins personalizadas e compartilhe com toda a comunidade MIST.
+                  </p>
+                </div>
+              ) : (
+                userWorkshopItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-4 p-3.5 rounded-2xl bg-zinc-900/90 border border-zinc-800 hover:border-purple-600/40 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-black/60 shrink-0 border border-zinc-800">
+                        {item.preview_url ? (
+                          <img
+                            src={getUgcImageUrl(item.preview_url)}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-orange-400">
+                            <i className="fa-solid fa-wrench"></i>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800/60 font-semibold">
+                            {item.category}
+                          </span>
+                          <span className="text-[10px] text-zinc-500 font-mono">v{item.version}</span>
+                        </div>
+                        <h4 className="text-sm font-bold text-white truncate mt-0.5">
+                          {item.title}
+                        </h4>
+                        <p className="text-xs text-zinc-400 truncate">
+                          {item.game_title}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0 text-xs">
+                      <div className="hidden sm:flex flex-col items-end text-zinc-400 text-[11px]">
+                        <span>{item.downloads_count} downloads</span>
+                        <span>{item.subscriptions_count} inscritos</span>
+                      </div>
+                      {onNavigate && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsWorkshopModalOpen(false);
+                            onNavigate('workshop');
+                          }}
+                          className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition cursor-pointer"
+                        >
+                          Ver na Oficina
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Rodapé com Ações */}
+            <div className="p-4 border-t border-zinc-800 bg-zinc-900/60 flex items-center justify-between">
+              <span className="text-xs text-zinc-400">
+                Oficina MIST • Compartilhe suas criações
+              </span>
+              {onNavigate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsWorkshopModalOpen(false);
+                    onNavigate('workshop');
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow transition cursor-pointer"
+                >
+                  <i className="fa-solid fa-compass"></i>
+                  <span>Ir para a Oficina</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -39,3 +39,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #A020F0;
 }
+
+/* Garantia de alta legibilidade para inputs, textareas e selects em toda a plataforma */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+textarea,
+select {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"])::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+}
+

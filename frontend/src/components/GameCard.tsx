@@ -1,9 +1,10 @@
 import React from 'react';
 import { GameItem } from '../types';
+import { Tooltip } from './Tooltip';
 
 interface GameCardProps {
   game: GameItem;
-  onSelect?: (game: GameItem) => void;
+  onSelect?: (game: GameItem, message?: string) => void;
   isWishlisted?: boolean;
   isOwned?: boolean;
   onToggleWishlist?: (gameId: number, nextState: boolean) => void;
@@ -28,25 +29,41 @@ export const GameCard: React.FC<GameCardProps> = ({
       }).format(game.originalPrice)
     : null;
 
+  const subText = game.publisherOrParent
+    ? `Para: ${game.publisherOrParent}`
+    : game.tags || 'Jogo em Destaque';
+
+  const fullMessage = game.discountPercentage
+    ? `${subText} • Oferta Especial com -${game.discountPercentage}% de desconto na loja MIST!`
+    : subText;
+
   return (
     <div
-      onClick={() => onSelect && onSelect(game)}
-      className="bg-brand-card rounded-2xl overflow-hidden hover:ring-2 ring-brand-purple transition-all duration-300 group cursor-pointer shadow-lg flex flex-col justify-between"
+      onClick={() => onSelect && onSelect(game, fullMessage)}
+      className="bg-brand-card rounded-2xl overflow-visible hover:ring-2 ring-brand-purple transition-all duration-300 group cursor-pointer shadow-lg flex flex-col justify-between relative hover:z-30"
     >
       <div>
-        <div className="relative h-40 overflow-hidden">
+        <div className="relative h-40 rounded-t-2xl overflow-hidden">
           <img
             src={game.image}
             alt={game.title}
             className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
           />
           {game.category === 'DESEJO' ? (
-            <div className="absolute top-2 left-2 bg-brand-purple/80 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white border border-brand-purple flex items-center gap-1">
-              <i className="fa-solid fa-heart"></i> DESEJO
+            <div className="absolute top-2 left-2 z-10">
+              <Tooltip content="Item presente na sua Lista de Desejos" position="bottom" align="left">
+                <div className="bg-brand-purple/80 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-white border border-brand-purple flex items-center gap-1 shadow-md">
+                  <i className="fa-solid fa-heart"></i> DESEJO
+                </div>
+              </Tooltip>
             </div>
           ) : (
-            <div className="absolute top-2 left-2 bg-brand-green/90 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-emerald-200 border border-emerald-500/40">
-              {game.category}
+            <div className="absolute top-2 left-2 z-10">
+              <Tooltip content={`Categoria: ${game.category}`} position="bottom" align="left">
+                <div className="bg-brand-green/90 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-emerald-200 border border-emerald-500/40 shadow-md">
+                  {game.category}
+                </div>
+              </Tooltip>
             </div>
           )}
 
@@ -72,14 +89,17 @@ export const GameCard: React.FC<GameCardProps> = ({
         </div>
 
         <div className="p-4">
-          <h4 className="font-bold text-lg mb-1 truncate text-white group-hover:text-brand-purple transition">
-            {game.title}
-          </h4>
-          <p className="text-xs text-gray-400 mb-4 truncate">
-            {game.publisherOrParent
-              ? `Para: ${game.publisherOrParent}`
-              : game.tags || 'Jogo em Destaque'}
-          </p>
+          <Tooltip content={game.title} position="top">
+            <h4 className="font-bold text-lg mb-1 truncate text-white group-hover:text-brand-purple transition w-full">
+              {game.title}
+            </h4>
+          </Tooltip>
+
+          <Tooltip content={fullMessage} position="top">
+            <p className="text-xs text-gray-400 mb-4 truncate w-full cursor-help hover:text-gray-200 transition-colors">
+              {subText}
+            </p>
+          </Tooltip>
         </div>
       </div>
 
@@ -87,14 +107,18 @@ export const GameCard: React.FC<GameCardProps> = ({
         <div className="flex justify-between items-center border-t border-gray-800/60 pt-3">
           <div className="flex items-center gap-2">
             {isOwned ? (
-              <span className="bg-emerald-600/90 text-white font-bold text-[11px] px-2.5 py-1 rounded border border-emerald-400/50 shadow-sm flex items-center gap-1.5">
-                <i className="fa-solid fa-check text-[10px]"></i>
-                <span>Adquirido</span>
-              </span>
+              <Tooltip content="Você já possui este título na sua biblioteca" position="top" align="left">
+                <span className="bg-emerald-600/90 text-white font-bold text-[11px] px-2.5 py-1 rounded border border-emerald-400/50 shadow-sm flex items-center gap-1.5 cursor-help">
+                  <i className="fa-solid fa-check text-[10px]"></i>
+                  <span>Adquirido</span>
+                </span>
+              </Tooltip>
             ) : game.discountPercentage ? (
-              <div className="bg-brand-green text-white font-bold text-xs px-2.5 py-1 rounded border border-emerald-600/40 shadow-sm">
-                -{game.discountPercentage}%
-              </div>
+              <Tooltip content={`Economize ${game.discountPercentage}% nesta oferta especial`} position="top" align="left">
+                <div className="bg-brand-green text-white font-bold text-xs px-2.5 py-1 rounded border border-emerald-600/40 shadow-sm cursor-help">
+                  -{game.discountPercentage}%
+                </div>
+              </Tooltip>
             ) : null}
           </div>
 

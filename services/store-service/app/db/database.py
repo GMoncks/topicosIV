@@ -32,6 +32,7 @@ def get_db():
 def init_db():
     import app.models.game  # noqa: F401
     import app.models.wishlist  # noqa: F401
+    import app.models.review  # noqa: F401
     Base.metadata.create_all(bind=engine)
     with engine.connect() as conn:
         try:
@@ -43,6 +44,8 @@ def init_db():
                 "publisher": "VARCHAR(100) DEFAULT 'Steam Imported'",
                 "review_score": "FLOAT DEFAULT 0.0",
                 "game_file": "VARCHAR(255) DEFAULT NULL",
+                "original_price": "FLOAT DEFAULT NULL",
+                "discount_percentage": "INTEGER DEFAULT 0",
             }
 
             for col_name, col_def in column_definitions.items():

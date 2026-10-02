@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { GameDetailApiResponse, storeApi } from '../api/client';
+import { GameDetailApiResponse, ReviewApiResponse, storeApi } from '../api/client';
 import { GameItem } from '../types';
 import { useCart } from '../context/CartContext';
+import { ReviewFormModal } from './ReviewFormModal';
+import { ReviewsList } from './ReviewsList';
+import { ScreenshotsGallery } from './ScreenshotsGallery';
 
 interface GameDetailModalProps {
   gameId: number | null;
@@ -11,6 +14,8 @@ interface GameDetailModalProps {
   isAuthenticated: boolean;
   isOwned?: boolean;
   onOpenAuth: () => void;
+  currentUserId?: number;
+  relevantInfo?: string | null;
 }
 
 const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
@@ -21,6 +26,8 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   isAuthenticated,
   isOwned = false,
   onOpenAuth,
+  currentUserId,
+  relevantInfo,
 }) => {
   const [game, setGame] = useState<GameDetailApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,6 +35,8 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
   const [selectedScreenshotIndex, setSelectedScreenshotIndex] = useState<number>(0);
   const [inWishlist, setInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+  const [myReview, setMyReview] = useState<ReviewApiResponse | null>(null);
 
   const { isInCart, toggleCart } = useCart();
   const inCart = game ? isInCart(game.id) : false;
@@ -134,9 +143,35 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
     }
   };
 
+  const handleReviewsLoaded = useCallback(
+    (reviews: ReviewApiResponse[]) => {
+      setMyReview(
+        currentUserId !== undefined ? reviews.find((r) => r.user_id === currentUserId) ?? null : null
+      );
+    },
+    [currentUserId]
+  );
+
+  const handleReviewSubmitted = useCallback((review: ReviewApiResponse) => {
+    setMyReview(review);
+  }, []);
+
   const screenshots = useMemo(() => {
     return game?.screenshots && game.screenshots.length > 0 ? game.screenshots : [];
   }, [game]);
+
+  const defaultRelevantMessage = useMemo(() => {
+    if (!game) return null;
+    if (game.discount_percentage && game.discount_percentage > 0) {
+      return `Título com oferta imperdível de ${game.discount_percentage}% OFF na loja MIST. Excelente pontuação de ${game.review_score}/10 com suporte integral e conquistas da comunidade.`;
+    }
+    if (game.review_score >= 9.0) {
+      return `Altamente aclamado pela crítica com nota ${game.review_score}/10 na categoria ${game.category}. Recomendado para jogadores que apreciam experiências imersivas.`;
+    }
+    return `Jogo em destaque na categoria ${game.category}. Explore a jogabilidade, capturas e avaliações completas na plataforma MIST.`;
+  }, [game]);
+
+  const effectiveRelevantInfo = relevantInfo || defaultRelevantMessage;
 
   const hasPrevScreenshot = selectedScreenshotIndex > 0;
   const hasNextScreenshot = selectedScreenshotIndex < screenshots.length - 1;
@@ -238,6 +273,43 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
 
             <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
+                {/* Seção de Informação Relevante para o Usuário (destaque da mensagem do card) */}
+                {effectiveRelevantInfo && (
+                  <div
+                    data-testid="relevant-info-section"
+                    className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-r from-purple-950/40 via-brand-surface to-[#0f172a] border border-brand-purple/40 shadow-[0_0_30px_rgba(168,85,247,0.12)] space-y-2.5 transition-all duration-300"
+                  >
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purpleLight text-sm shadow-[0_0_12px_rgba(168,85,247,0.3)]">
+                          <i className="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
+                        </div>
+                        <h4 className="font-display font-bold text-base text-white tracking-wide flex items-center gap-2">
+                          Informações Relevantes para Você
+                        </h4>
+                      </div>
+
+                      <span className="text-[11px] bg-brand-purple/30 text-purple-200 border border-brand-purple/40 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                        <i className="fa-solid fa-sparkles text-[9px] text-amber-300"></i>
+                        Destaque do Curador MIST
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-medium text-gray-200 leading-relaxed pl-10">
+                      {effectiveRelevantInfo}
+                    </p>
+
+                    {game.discount_percentage ? (
+                      <div className="ml-10 pt-2 border-t border-purple-500/20 flex items-center gap-2 text-xs font-semibold text-emerald-400">
+                        <i className="fa-solid fa-tag text-xs"></i>
+                        <span>
+                          Desconto ativo de {game.discount_percentage}% OFF na loja MIST. Economia garantida!
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
                 {/* Visualizador de Capturas de Tela com Setas Inteligentes */}
                 {screenshots.length > 0 && (
                   <div className="space-y-4">
@@ -305,6 +377,43 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                   <div className="prose prose-invert max-w-none text-gray-300 leading-relaxed">
                     <p>{game.description}</p>
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <h3 className="text-xl font-display font-bold text-white border-b border-gray-800 pb-2 flex-1 min-w-[200px]">
+                      Avaliações
+                    </h3>
+                    {isOwned && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!isAuthenticated && !hasAuthToken) {
+                            handleUnauthenticatedAction();
+                          } else {
+                            setIsReviewFormOpen(true);
+                          }
+                        }}
+                        className="bg-brand-purple/20 border border-brand-purple text-brand-purple hover:bg-brand-purple/30 font-medium text-sm px-4 py-2 rounded-lg transition cursor-pointer whitespace-nowrap"
+                      >
+                        <i className="fa-solid fa-pen mr-1.5"></i>
+                        {myReview ? 'Editar avaliação' : 'Escrever avaliação'}
+                      </button>
+                    )}
+                  </div>
+                  <ReviewsList
+                    gameId={game.id}
+                    currentUserId={currentUserId}
+                    isAuthenticated={isAuthenticated || hasAuthToken}
+                    onReviewsLoaded={handleReviewsLoaded}
+                  />
+
+                  {/* Capturas da Comunidade (Ticket N-05) */}
+                  <ScreenshotsGallery
+                    gameId={game.id}
+                    gameTitle={game.title}
+                    className="mt-8 pt-6 border-t border-gray-800"
+                  />
                 </div>
               </div>
 
@@ -384,12 +493,20 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
                       <span className="text-gray-400">Categoria</span>
                       <span className="text-white font-medium">{game.category}</span>
                     </li>
+                    <li className="flex justify-between items-center">
+                      <span className="text-gray-400">Aprovação</span>
+                      {game.reviews_count > 0 ? (
+                        <span className="text-brand-purple font-medium flex items-center gap-1 text-right">
+                          <i className="fa-solid fa-thumbs-up text-xs"></i>
+                          {game.approval_label}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 text-xs italic">Sem avaliações</span>
+                      )}
+                    </li>
                     <li className="flex justify-between">
-                      <span className="text-gray-400">Review Score</span>
-                      <span className="text-brand-purple font-medium flex items-center gap-1">
-                        <i className="fa-solid fa-star text-xs"></i>
-                        {game.review_score.toFixed(1)} / 10
-                      </span>
+                      <span className="text-gray-400">Avaliações</span>
+                      <span className="text-white font-medium">{game.reviews_count}</span>
                     </li>
                   </ul>
                 </div>
@@ -411,6 +528,17 @@ const GameDetailModalComponent: React.FC<GameDetailModalProps> = ({
           </>
         ) : null}
       </div>
+
+      {game && (
+        <ReviewFormModal
+          gameId={game.id}
+          gameTitle={game.title}
+          isOpen={isReviewFormOpen}
+          existingReview={myReview}
+          onClose={() => setIsReviewFormOpen(false)}
+          onSubmitted={handleReviewSubmitted}
+        />
+      )}
     </div>
   );
 };

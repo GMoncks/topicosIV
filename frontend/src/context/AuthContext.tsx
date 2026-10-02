@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapAuthUserToProfile(authUser: AuthUserResponse): UserProfile {
   return {
+    id: authUser.id,
     username: authUser.username,
     realName: authUser.username,
     location: 'Brasil',
@@ -207,7 +208,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth deve ser utilizado dentro de um AuthProvider');
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      sessionNotice: null,
+      isAuthModalOpen: false,
+      authModalMode: 'login',
+      openAuthModal: () => {},
+      closeAuthModal: () => {},
+      login: async () => {},
+      register: async () => {},
+      logout: () => {},
+      refreshProfile: async () => {},
+      clearSessionNotice: () => {},
+      updateUserBalance: () => {},
+      updateUserCosmetics: () => {},
+    };
   }
   return context;
 };
+

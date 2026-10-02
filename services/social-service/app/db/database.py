@@ -33,4 +33,9 @@ def init_db():
     import app.models.friend  # noqa: F401
     import app.models.message  # noqa: F401
     import app.models.activity  # noqa: F401
+    import app.models.notification  # noqa: F401
+    import app.models.group  # noqa: F401
+    import app.models.forum  # noqa: F401
+    import app.models.group_message  # noqa: F401
     Base.metadata.create_all(bind=engine)
+

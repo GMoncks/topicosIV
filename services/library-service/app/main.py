@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import init_db, SessionLocal
 from app.db.seed_achievements import seed_achievements
+from app.db.seed_library import seed_library_items
 from app.api.routes import router as library_router
 
 
@@ -12,10 +13,11 @@ from app.api.routes import router as library_router
 async def lifespan(app: FastAPI):
     # Inicializa tabelas SQLite da biblioteca
     init_db()
-    # Executa a seed de conquistas se necessário
+    # Executa a seed de conquistas e itens da biblioteca se necessário
     db = SessionLocal()
     try:
         seed_achievements(db)
+        seed_library_items(db)
     finally:
         db.close()
     yield

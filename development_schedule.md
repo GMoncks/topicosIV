@@ -1,7 +1,7 @@
 # MIST — Cronograma e Planejamento de Desenvolvimento (Multi-Dev)
 
-> **Documento atualizado em:** 2026-09-26  
-> **Status de Progresso Atual:** Blocos A, B, C, D, E, F e tickets G-01 a G-06 **CONCLUÍDOS**.  
+> **Documento atualizado em:** 2026-10-01  
+> **Status de Progresso Atual:** Blocos A, B, C, D, E, F, G, M, N, O, Q, R, S **CONCLUÍDOS** (100% da TRILHA 3 concluída).  
 > **Prazo total restante:** Dias 3 a 15 (13 dias de execução)  
 > **Formato de Trabalho:** 3 Trilhas de Desenvolvimento Paralelas (3 Desenvolvedores) com isolamento arquitetural para minimizar conflitos de merge.
 
@@ -58,13 +58,13 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 | **J** | Inventário Completo de Itens | **DEV 2** | A Fazer |
 | **K** | Trading Cards, Badges e XP | **DEV 2** | A Fazer |
 | **L** | Mercado da Comunidade e Trades | **DEV 1** | A Fazer |
-| **M** | Grupos, Fórum e Chat de Grupo | **DEV 3** | A Fazer |
-| **N** | Showcase de Capturas de Tela | **DEV 3** | A Fazer |
-| **O** | Workshop de Conteúdo (Mods e Skins) | **DEV 3** | A Fazer |
+| **M** | Grupos, Fórum e Chat de Grupo | **DEV 3** | **CONCLUÍDO** |
+| **N** | Showcase de Capturas de Tela | **DEV 3** | **CONCLUÍDO** |
+| **O** | Workshop de Conteúdo (Mods e Skins) | **DEV 3** | **CONCLUÍDO** |
 | **P** | Perfil Público Visitável e Privacidade | **DEV 2** | A Fazer |
-| **Q** | Sistema de Notificações Global | **DEV 3** | A Fazer |
-| **R** | Busca Global | **DEV 3** | A Fazer |
-| **S** | AI Curator Avançado (S-01 a S-04) | **DEV 3** | A Fazer |
+| **Q** | Sistema de Notificações Global | **DEV 3** | **CONCLUÍDO** |
+| **R** | Busca Global | **DEV 3** | **CONCLUÍDO** |
+| **S** | AI Curator Avançado (S-01 a S-04) | **DEV 3** | **CONCLUÍDO** |
 | **T** | Histórico de Transações da Carteira | **DEV 1** | A Fazer |
 
 ---
@@ -164,61 +164,61 @@ Para evitar conflitos de commit e gargalos em pull requests durante o trabalho c
 > **Volume de Tickets:** 33 tickets (Blocos M, N, O, Q, R, S).
 
 #### Bloco M — Grupos, Comunidade e Fórum (`community`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| M-01 | `[B]` | `social-service/app/models/group.py` | Modelos `Group` e `GroupMember`: nome, descrição, avatar, privacidade, contagem de membros. |
-| M-02 | `[B]` | `social-service/app/api/groups.py` | Endpoints `POST /groups`, `GET /groups`, `POST /groups/{id}/join`, `DELETE /groups/{id}/leave`. |
-| M-03 | `[B]` | `social-service/app/models/forum.py` | Modelos `ForumPost` e `ForumReply`: tópicos, respostas, autor e contadores. |
-| M-04 | `[B]` | `social-service/app/api/forum.py` | Endpoints CRUD para tópicos e comentários de discussões do grupo. |
-| M-05 | `[B]` | `social-service/app/api/group_chat.py` | Endpoint WebSocket `WS /ws/group/{group_id}/chat` para bate-papo de grupo em tempo real. |
-| M-06 | `[F]` | `frontend/src/pages/Groups.tsx` | Nova página com busca de grupos, tela de criação, lista de membros, aba de discussões e sala de chat. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| M-01 | `[B]` | `social-service/app/models/group.py` | Modelos `Group` e `GroupMember`: nome, descrição, avatar, privacidade, contagem de membros. | **CONCLUÍDO** |
+| M-02 | `[B]` | `social-service/app/api/groups.py` | Endpoints `POST /groups`, `GET /groups`, `POST /groups/{id}/join`, `DELETE /groups/{id}/leave`. | **CONCLUÍDO** |
+| M-03 | `[B]` | `social-service/app/models/forum.py` | Modelos `ForumPost` e `ForumReply`: tópicos, respostas, autor e contadores. | **CONCLUÍDO** |
+| M-04 | `[B]` | `social-service/app/api/forum.py` | Endpoints CRUD para tópicos e comentários de discussões do grupo. | **CONCLUÍDO** |
+| M-05 | `[B]` | `social-service/app/api/group_chat.py` | Endpoint WebSocket `WS /ws/group/{group_id}/chat` para bate-papo de grupo em tempo real. | **CONCLUÍDO** |
+| M-06 | `[F]` | `frontend/src/pages/Groups.tsx` | Nova página com busca de grupos, tela de criação, lista de membros, aba de discussões e sala de chat. | **CONCLUÍDO** |
 
 #### Bloco N — Showcase de Capturas de Tela (`ugc`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| N-01 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `POST /screenshots/upload` (multipart/form-data) com metadados e armazenamento em volume. |
-| N-02 | `[B]` | `mist_sdk.py` | Função `take_screenshot(caption)` no SDK Python com captura de frame e envio automático. |
-| N-03 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `GET /screenshots` com filtros por jogo e por usuário. |
-| N-04 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoints `POST /screenshots/{id}/like` e `DELETE /like`. |
-| N-05 | `[F]` | `frontend/src/components/ScreenshotsGallery.tsx` | Galeria em grid responsivo com lightbox de ampliação e contador de likes no Perfil e na Loja. |
-| N-06 | `[F]` | `frontend/src/components/ScreenshotUploadModal.tsx` | Modal de upload com preview e drag-and-drop no frontend. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| N-01 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `POST /screenshots/upload` (multipart/form-data) com metadados e armazenamento em volume. | **CONCLUÍDO** |
+| N-02 | `[B]` | `mist_sdk.py` | Função `take_screenshot(caption)` no SDK Python com captura de frame e envio automático. | **CONCLUÍDO** |
+| N-03 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoint `GET /screenshots` com filtros por jogo e por usuário. | **CONCLUÍDO** |
+| N-04 | `[B]` | `ugc-service/app/api/screenshots.py` | Endpoints `POST /screenshots/{id}/like` e `DELETE /like`. | **CONCLUÍDO** |
+| N-05 | `[F]` | `frontend/src/components/ScreenshotsGallery.tsx` | Galeria em grid responsivo com lightbox de ampliação e contador de likes no Perfil e na Loja. | **CONCLUÍDO** |
+| N-06 | `[F]` | `frontend/src/components/ScreenshotUploadModal.tsx` | Modal de upload com preview e drag-and-drop no frontend. | **CONCLUÍDO** |
 
 #### Bloco O — Workshop de Conteúdo: Mods e Skins (`ugc`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| O-01 | `[B]` | `ugc-service/app/models/workshop.py` | Modelo `WorkshopItem`: `game_id`, `author_id`, `title`, `tags`, `file_url`, `downloads`. |
-| O-02 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `POST /workshop/upload` com validação de tipo de arquivo. |
-| O-03 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `GET /workshop/items` com busca por tags e ordenação por popularidade. |
-| O-04 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoints `POST /workshop/{id}/subscribe` e `/unsubscribe`. |
-| O-05 | `[F]` | `frontend/src/pages/Workshop.tsx` | Página completa do Workshop por jogo com busca, detalhes do mod e botão de download. |
-| O-06 | `[F]` | `frontend/src/pages/Profile.tsx` | Exibição de contagem e lista de criações do Workshop publicadas pelo usuário. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| O-01 | `[B]` | `ugc-service/app/models/workshop.py` | Modelo `WorkshopItem`: `game_id`, `author_id`, `title`, `tags`, `file_url`, `downloads`. | **CONCLUÍDO** |
+| O-02 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `POST /workshop/upload` com validação de tipo de arquivo. | **CONCLUÍDO** |
+| O-03 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoint `GET /workshop/items` com busca por tags e ordenação por popularidade. | **CONCLUÍDO** |
+| O-04 | `[B]` | `ugc-service/app/api/workshop.py` | Endpoints `POST /workshop/{id}/subscribe` e `/unsubscribe`. | **CONCLUÍDO** |
+| O-05 | `[F]` | `frontend/src/pages/Workshop.tsx` | Página completa do Workshop por jogo com busca, detalhes do mod e botão de download. | **CONCLUÍDO** |
+| O-06 | `[F]` | `frontend/src/pages/Profile.tsx` | Exibição de contagem e lista de criações do Workshop publicadas pelo usuário. | **CONCLUÍDO** |
 
 #### Bloco Q — Sistema de Notificações Global (`notifications`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| Q-01 | `[B]` | `social-service/app/models/notification.py` | Modelo `Notification`: `user_id`, `type` (amigo, conquista, trade, venda), `payload`, `is_read`. |
-| Q-02 | `[B]` | `social-service/app/api/notifications.py` | Endpoints `GET /notifications` e `POST /notifications/{id}/read`. |
-| Q-03 | `[B]` | `social-service/app/services/event_bus.py` | Disparador de eventos internos para geração automática de notificações. |
-| Q-04 | `[B]` | `social-service/app/api/ws_notifications.py` | Entrega de notificações push em tempo real via WebSocket `WS /ws/notifications`. |
-| Q-05 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Sininho com badge de não lidas no Header e menu dropdown expansível. |
-| Q-06 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Ação de redirecionamento contextual ao clicar na notificação (ex: abrir tela do trade). |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| Q-01 | `[B]` | `social-service/app/models/notification.py` | Modelo `Notification`: `user_id`, `type` (amigo, conquista, trade, venda), `payload`, `is_read`. | **CONCLUÍDO** |
+| Q-02 | `[B]` | `social-service/app/api/notifications.py` | Endpoints `GET /notifications` e `POST /notifications/{id}/read`. | **CONCLUÍDO** |
+| Q-03 | `[B]` | `social-service/app/services/event_bus.py` | Disparador de eventos internos para geração automática de notificações. | **CONCLUÍDO** |
+| Q-04 | `[B]` | `social-service/app/api/ws_notifications.py` | Entrega de notificações push em tempo real via WebSocket `WS /ws/notifications`. | **CONCLUÍDO** |
+| Q-05 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Sininho com badge de não lidas no Header e menu dropdown expansível. | **CONCLUÍDO** |
+| Q-06 | `[F]` | `frontend/src/components/NotificationsDropdown.tsx` | Ação de redirecionamento contextual ao clicar na notificação (ex: abrir tela do trade). | **CONCLUÍDO** |
 
 #### Bloco R — Busca Global (`notifications` `search`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| R-01 | `[B]` | `gateway/app/api/search.py` | Endpoint unificado `GET /search?q={query}` agregando respostas assíncronas via `httpx`. |
-| R-02 | `[B]` | `auth-service/app/api/search.py` | Endpoint interno de busca de usuários por nickname/nome. |
-| R-03 | `[B]` | `social-service/app/api/search.py` | Endpoint interno de busca de grupos. |
-| R-04 | `[B]` | `market-service/app/api/search.py` | Endpoint interno de busca de itens do mercado. |
-| R-05 | `[F]` | `frontend/src/components/GlobalSearchDropdown.tsx` | Barra de pesquisa com resultados em seções (Jogos, Usuários, Grupos, Mercado). |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| R-01 | `[B]` | `gateway/app/api/search.py` | Endpoint unificado `GET /search?q={query}` agregando respostas assíncronas via `httpx`. | **CONCLUÍDO** |
+| R-02 | `[B]` | `auth-service/app/api/search.py` | Endpoint interno de busca de usuários por nickname/nome. | **CONCLUÍDO** |
+| R-03 | `[B]` | `social-service/app/api/search.py` | Endpoint interno de busca de grupos. | **CONCLUÍDO** |
+| R-04 | `[B]` | `market-service/app/api/search.py` | Endpoint interno de busca de itens do mercado. | **CONCLUÍDO** |
+| R-05 | `[F]` | `frontend/src/components/GlobalSearchDropdown.tsx` | Barra de pesquisa com resultados em seções (Jogos, Usuários, Grupos, Mercado). | **CONCLUÍDO** |
 
 #### Bloco S — AI Curator Avançado (`ai`)
-| ID | Tipo | Arquivos Impactados | Descrição da Tarefa |
-|:---|:----:|:--------------------|:---------------------|
-| S-01 | `[B]` | `store-service/app/services/ai_trends.py` | Algoritmo de "Top Vendidos" e "Em Alta" calculado por volume recente de checkouts. |
-| S-02 | `[B]` | `store-service/app/services/ai_curator.py` | Geração de justificativas dinâmicas em linguagem natural ("Porque você jogou Elden Ring..."). |
-| S-03 | `[B]` | `store-service/app/services/wishlist_ai.py` | Alerta proativo de desconto em itens presentes na Wishlist do usuário. |
-| S-04 | `[F]` | `frontend/src/pages/Store.tsx` | Seções dinâmicas "Mais Populares da Semana" e banner de promoções recomendadas. |
+| ID | Tipo | Arquivos Impactados | Descrição da Tarefa | Status |
+|:---|:----:|:--------------------|:---------------------|:------:|
+| S-01 | `[B]` | `store-service/app/services/ai_trends.py` | Algoritmo de "Top Vendidos" e "Em Alta" calculado por volume recente de checkouts. | **CONCLUÍDO** |
+| S-02 | `[B]` | `store-service/app/services/ai_curator.py` | Geração de justificativas dinâmicas em linguagem natural ("Porque você jogou Elden Ring..."). | **CONCLUÍDO** |
+| S-03 | `[B]` | `store-service/app/services/wishlist_ai.py` | Alerta proativo de desconto em itens presentes na Wishlist do usuário. | **CONCLUÍDO** |
+| S-04 | `[F]` | `frontend/src/pages/Store.tsx` | Seções dinâmicas "Mais Populares da Semana" e banner de promoções recomendadas. | **CONCLUÍDO** |
 
 ---
 
