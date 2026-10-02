@@ -1,38 +1,38 @@
-﻿# MIST — Arquitetura de Microsserviços e Sistema
+# MIST — Arquitetura de Microsserviços e Sistema
 
-O **MIST** é uma prova de conceito avançada que recria a infraestrutura e os fluxos essenciais da Steam utilizando uma arquitetura orientada a microsserviços, mensageria em tempo real, execução nativa de jogos em console e inteligência artificial aplicada.
+O **MIST** é uma plataforma distribuída orientada a microsserviços que recria a infraestrutura e os fluxos essenciais da Steam, combinando mensageria assíncrona em tempo real, execução de jogos em console nativo, economia descentralizada e agentes de inteligência artificial aplicados.
 
 ---
 
 ## 1. Visão Geral da Arquitetura
 
-O sistema é composto por um **API Gateway**, 5 **Microsserviços de Domínio** independentes (o quinto, `market-service`, ainda em construção — ver §2.6), uma aplicação **Frontend SPA**, um **Daemon Local de Execução** e **Jogos Nativos**, orquestrados via Docker Compose ou executados nativamente no host.
+O sistema é composto por um **API Gateway**, 6 **Microsserviços de Domínio** desacoplados, um **MIST Local Daemon**, um **MIST SDK client-side**, uma **Interface Web SPA (React)** e a suíte de **Jogos Nativos e Wrappers**, orquestrados via Docker Compose ou executados nativamente.
 
 ```mermaid
 graph TD
-    subgraph Cliente ["Cliente / Interface Web"]
-        Frontend["Frontend SPA (React 18 + TS + Vite)\n:5173"]
+    subgraph Cliente ["Cliente / Interface Web & Local Host"]
+        Frontend["Frontend SPA (React 18 + TS + Vite)\n:5173 / :3000"]
+        Daemon["MIST Local Daemon (:39090)\nrunner/mist_daemon.py\n- Supera sandbox do browser\n- Dispara subprocessos no SO host"]
+        GamesNativos["Jogos MIST Studios (Terminal ASCII)\n(Forca, Labirinto, Quiz)\n- 100% jogáveis em Python nativo"]
+        GamesImportados["Jogos Importados / Comerciais\n(Control, Cyberpunk, BG3, etc.)\n- Wrappers de telemetria via MIST SDK"]
     end
 
     subgraph Roteamento ["Borda & Roteamento"]
-        Gateway["API Gateway (FastAPI)\n:8000\n- Validação centralizada de JWT\n- Proxy reverso HTTP e WebSockets"]
+        Gateway["API Gateway (FastAPI)\n:8000\n- Validação centralizada de JWT\n- Proxy reverso HTTP e WebSockets\n- Agregador de Busca Global"]
     end
 
-    subgraph Microsservicos ["Ecossistema de Microsserviços"]
-        Auth["Auth Service (:8001)\nSQLite: auth.db\n- Carteira Virtual (R$ 200)\n- Perfis & Tokens JWT"]
-        Store["Store Service (:8002)\nSQLite: store.db\n- Catálogo, Wishlist & Carrinho\n- Orquestrador Saga de Checkout\n- Empacotador de Jogos (.zip)"]
-        Library["Library Service (:8003)\nSQLite: library.db\n- Posse e Concessão de Jogos\n- Sessões & Telemetria Playtime\n- Catálogo e Desbloqueio de Troféus"]
-        Social["Social Service (:8004)\nSQLite: social.db\n- Chat WebSockets (/ws/chat)\n- Presença WebSockets (/ws/presence)\n- Feed Agregador de Atividades"]
-    end
-
-    subgraph ExecucaoNativa ["Execução Nativa no SO Host"]
-        Daemon["MIST Local Daemon (:39090)\nrunner/mist_daemon.py\n- Supera sandbox do browser\n- Descompacta e prepara session.json"]
-        Game["Jogo Nativo em Console\n(MIST Forca, Labirinto, Quiz)\n- mist_sdk.py (stdlib-only)\n- Sessões, pings e troféus"]
+    subgraph Microsservicos ["Ecossistema de Microsserviços Desacoplados"]
+        Auth["Auth Service (:8001)\nSQLite: auth.db\n- Perfis, Avatares, Inventário\n- Carteira Virtual (Simulada)\n- XP, Insígnias & Níveis"]
+        Store["Store Service (:8002)\nSQLite: store.db\n- Catálogo, Wishlist & Reviews\n- Orquestrador Saga de Checkout\n- AI Curator & Recommender"]
+        Library["Library Service (:8003)\nSQLite: library.db\n- Posse & Licenças de Jogos\n- Sessões & Telemetria Playtime\n- Conquistas & Drops de Cartas"]
+        Social["Social Service (:8004)\nSQLite: social.db\n- Amigos & Solicitações Pendentes\n- Chat 1:1 e Grupos (WebSockets)\n- Presença em Tempo Real\n- MIST Companion Bot (IA)"]
+        Market["Market Service (:8005)\nSQLite: market.db\n- Mercado da Comunidade (Compra/Venda)\n- Ofertas de Troca Direta (Trades)\n- Extrato Financeiro da Carteira"]
+        UGC["UGC Service (:8006)\nSQLite: ugc.db\n- Showcase de Capturas de Tela\n- Workshop de Mods e Skins"]
     end
 
     %% Conexões do Frontend
     Frontend -->|HTTP REST /api/*| Gateway
-    Frontend -->|WebSockets /ws/chat e /ws/presence| Gateway
+    Frontend -->|WebSockets /ws/*| Gateway
     Frontend -.->|POST /launch (Loopback 127.0.0.1:39090)| Daemon
 
     %% Conexões do Gateway
@@ -40,160 +40,124 @@ graph TD
     Gateway -->|HTTP Proxy + Header X-User-Id| Store
     Gateway -->|HTTP Proxy + Header X-User-Id| Library
     Gateway -->|HTTP Proxy & WS Passthrough| Social
+    Gateway -->|HTTP Proxy + Header X-User-Id| Market
+    Gateway -->|HTTP Proxy + Header X-User-Id| UGC
 
-    %% Comunicação Inter-serviços
-    Store -->|1. Débito na Carteira| Auth
-    Store -->|2. Concessão de Posse| Library
-    Store -->|Saga Rollback: Estorno integral em falha| Auth
-    Store -->|3. Disparo de Atividade game_purchased| Social
+    %% Comunicação Inter-serviços (Sagas & Contratos)
+    Store -->|Saga: Débito na Carteira| Auth
+    Store -->|Saga: Concessão de Licença| Library
+    Store -->|Extrato Financeiro best-effort| Market
+    Store -->|Disparo de Atividade game_purchased| Social
 
-    Library -->|Disparo de Presença (playing/online)| Social
+    Market -->|Validação & Trava de Itens| Auth
+    Market -->|Transferência de Custódia de Itens| Auth
+    Market -->|Saga: Transferência de Saldo de Carteira| Auth
+
+    Library -->|Disparo de Status (Playing/Online)| Social
     Library -->|Disparo de Atividade achievement_unlocked| Social
+    Library -->|Eventos de Notificação Push| Social
 
     %% Execução Nativa
-    Daemon -->|Dispara subprocesso em nova janela| Game
-    Game -->|Telemetria HTTP direta via mist_sdk.py| Library
+    Daemon -->|Dispara subprocesso em nova janela de console| GamesNativos
+    Daemon -->|Dispara wrapper de telemetria| GamesImportados
+    GamesNativos -->|mist_sdk.py: Telemetria HTTP| Library
+    GamesImportados -->|mist_sdk.py: Telemetria HTTP| Library
 ```
 
 ---
 
-## 2. Microsserviços e Responsabilidades
+## 2. Distinção Arquitetural dos Jogos no MIST
 
-### 2.1. API Gateway (`/gateway`, Porta `8000`)
-- **Ponto Único de Entrada:** Recebe todas as conexões da SPA web.
-- **Validação de Segurança:** Valida o JWT emitido pelo Auth Service, elimina headers forjados de clientes externos e injeta headers seguros (`X-User-Id`, `X-User-Role`) para os microsserviços downstream.
-- **Proxy WebSocket:** Tunelamento bidirecional assíncrono para os canais de chat e presença do Social Service.
+Um dos pilares da arquitetura do MIST é a diferenciação clara entre os **jogos nativos da plataforma** e os **jogos comerciais importados**:
 
-### 2.2. Auth Service (`/services/auth-service`, Porta `8001`)
+### 2.1. Jogos Nativos do MIST Studios (`MIST Forca`, `MIST Labirinto`, `MIST Quiz`)
+- **Natureza:** Jogos interativos de terminal/console ASCII desenvolvidos em Python puro.
+- **Dependências:** Utilizam **exclusivamente a biblioteca padrão do Python** (`stdlib-only`, zero dependências externas ou `pip install`), permitindo execução imediata em qualquer ambiente com Python instalado.
+- **Funcionamento:** São aplicações 100% jogáveis. O jogador interage diretamente no console (ex: adivinhando letras na Forca, movendo o personagem no Labirinto com W/A/S/D ou respondendo perguntas no Quiz).
+- **Integração:** Importam o `mist_sdk.py`, lêem o `session.json` injetado pelo Daemon e disparam pings de tempo de jogo e desbloqueio real de conquistas conforme o progresso do jogador.
+
+### 2.2. Jogos Comerciais / Importados da Steam (`Control Resonant`, `Cyberpunk 2077`, `Baldur's Gate 3`, `Elden Ring`, etc.)
+- **Natureza:** Executáveis/scripts wrappers em Python leves que simulam o ciclo de vida do jogo no ecossistema MIST.
+- **Motivação Arquitetural:** Permitem que o sistema ofereça a experiência completa de uma loja de grande porte (catálogo comercial, compras, horas jogadas na biblioteca, conquistas, drops de cartas e reputação) sem exigir que o computador do aluno/avaliador tenha placas de vídeo dedicadas ou os binários proprietários de dezenas de gigabytes instalados.
+- **Funcionamento:** Quando o usuário clica em "Jogar", o MIST Daemon executa o wrapper, que mantém a sessão ativa, envia heartbeats para o `library-service`, simula a obtenção de conquistas e gera drops probabilísticos de cartas colecionáveis.
+
+---
+
+## 3. Microsserviços e Responsabilidades
+
+### 3.1. API Gateway (`/gateway`, Porta `8000`)
+- **Ponto Único de Entrada:** Interface unificada para a SPA React.
+- **Segurança de Identidade:** Valida os tokens JWT emitidos pelo `auth-service`, remove cabeçalhos `X-User-Id` forjados por clientes externos e injeta o header de identidade confiável `X-User-Id` para os microsserviços downstream.
+- **Tunelamento WebSocket:** Proxy bidirecional para `/ws/chat/{room_id}`, `/ws/group/{group_id}/chat`, `/ws/presence` e `/ws/notifications`.
+- **Busca Global Agregada:** Endpoint `GET /api/search?q={query}` que faz fan-out assíncrono para os serviços de usuários, grupos, mercado e catálogo.
+
+### 3.2. Auth Service (`/services/auth-service`, Porta `8001`)
 - **Banco de Dados:** `auth.db` (SQLite).
-- **Contas de Usuário:** Registro com requisitos estritos de segurança, hash seguro de senhas (bcrypt) e login com JWT.
-- **Carteira Virtual (MIST Wallet):**
-  - Todo novo cadastro recebe bônus inicial de **R$ 200,00**.
-  - Operações atômicas de débito (`POST /users/{id}/wallet/debit`), crédito compensatório (`POST /users/{id}/wallet/credit`) e extrato.
-- **Perfis:** Endpoint `GET /users/{id}` para resolução rápida de nomes e avatares nos outros serviços.
+- **Autenticação:** Cadastro de usuários com hashing `bcrypt` e login JWT.
+- **Carteira Virtual:** Crédito inicial de bônus (R$ 200,00) e endpoint de recarga instantânea direta (`POST /me/wallet/recharge`).
+- **Gestão de Perfil:** Atualização de nome de usuário, nome real, bio, localização e foto de perfil (`PATCH /me/profile`), com suporte a upload de imagem local ou seleção de avatares comprados.
+- **Inventário do Usuário:** Modelo `InventoryItem` que centraliza avatares, molduras animadas, planos de fundo, emoticons, cartas e insígnias.
+- **Gamificação e Níveis:** Cálculo do XP total e do nível do usuário com base no crafting de insígnias ($Level = \lfloor\sqrt{\text{total\_xp}/100}\rfloor$).
+- **Privacidade Granular:** Configurações de visibilidade (`PATCH /me/privacy`) para jogos, conquistas, inventário e horas jogadas.
 
-### 2.3. Store Service (`/services/store-service`, Porta `8002`)
+### 3.3. Store Service (`/services/store-service`, Porta `8002`)
 - **Banco de Dados:** `store.db` (SQLite).
-- **Catálogo:** Listagem, filtros por preço/categoria, paginação sob demanda e detalhes de jogos.
-- **Wishlist:** Adição e remoção suave sem recarregamento ou flickering visual.
-- **Orquestração de Checkout (Saga Pattern):**
-  - Suporte a checkout unitário e multi-jogo (carrinho de compras).
-  - Verificação prévia de posse no `library-service` (previne compras duplicadas).
-  - Débito na carteira do `auth-service`.
-  - Concessão de licença no `library-service`.
-  - **Saga Compensation:** Se a concessão falhar, o serviço estorna automaticamente 100% do valor para a carteira e retorna HTTP 502.
-  - Limpeza automática de itens adquiridos da wishlist.
-  - Disparo de evento de atividade `game_purchased` para o feed do `social-service`.
-- **Avaliações de Jogos (Bloco H):**
-  - `POST /games/{id}/reviews`: cria (201) ou atualiza (200) o review do usuário (um por jogo). Exige posse no `library-service`, que também informa as horas jogadas gravadas em `playtime_at_review`; falha fechado (403 sem posse, 503 se a biblioteca não confirmar).
-  - `GET /games/{id}/reviews`: lista com `sort=recent|helpful`, filtro `is_recommended` e paginação.
-  - `POST /reviews/{id}/helpful`: voto "útil" idempotente (um por usuário; não vale no próprio review).
-  - `GET /games/{id}` inclui `approval_pct` e `approval_label` (ex.: "Muito Positivo - 92%"), calculados dos reviews reais; a coluna `review_score` fica como fallback do seed.
-- **Distribuição de Jogos:** Gera pacotes dinâmicos em `.zip` contendo o executável Python, o `mist_sdk.py` e o arquivo de contexto `session.json`.
+- **Catálogo:** Listagem com busca, ordenação, categorias e paginação (5, 10, 15, 25, 50 itens).
+- **Wishlist:** Adição/remoção dinâmica de jogos da lista de desejos.
+- **Avaliações (Reviews):** Formulário de avaliação por jogo (exige posse na biblioteca), score de aprovação percentual ("Muito Positivo"), contagem de horas jogadas no momento do review e votos de utilidade.
+- **Orquestração de Checkout (Saga Pattern):** Débito na carteira (`auth-service`) → Concessão de licença (`library-service`) → Registro no extrato (`market-service`). Em caso de falha em qualquer etapa, a Saga executa o estorno financeiro automático de 100% do valor (Rollback).
+- **Empacotamento de Download:** Geração dinâmica de arquivos `.zip` com `game.py`, `mist_sdk.py` e `session.json`.
+- **MIST AI Curator:** Vitrines inteligentes "Recomendado para Você", "Top Vendidos da Semana", "Em Alta" e "Alertas de Desconto da Wishlist".
 
-### 2.4. Library Service (`/services/library-service`, Porta `8003`)
+### 3.4. Library Service (`/services/library-service`, Porta `8003`)
 - **Banco de Dados:** `library.db` (SQLite).
-- **Gestão de Posse:** Consulta e concessão de jogos por usuário (`LibraryItem`). `GET /library/users/{id}/has-game/{game_id}` devolve `owned` e `playtime_minutes`.
-- **Ciclo de Vida de Sessões (E-04):**
-  - `POST /session/start`: Abre sessão e despacha status *"Jogando [Jogo]"* para o Social Service.
-  - `POST /session/ping`: Heartbeat a cada 60s acumulando playtime (`playtime_minutes`).
-  - `POST /session/end`: Encerra a sessão e restaura status *"Online"* no Social Service.
-- **Conquistas e Troféus:**
-  - Persistência relacional em `user_achievements`.
-  - Desbloqueio via `POST /achievements/unlock` (disparado pelo `mist_sdk.py` durante o jogo).
-  - Polling de conquistas recentes (`GET /achievements/recent`) com disparo de notificação Toast dourada no frontend.
+- **Gestão de Licenças:** Registro e verificação de jogos adquiridos (`LibraryItem`).
+- **Telemetria de Sessões:** Endpoints `/session/start`, `/session/ping` (acumula minutos jogados) e `/session/end`.
+- **Conquistas e Troféus:** Desbloqueio relacional de troféus, notificações toast douradas, modal de detalhes com raridades (comum, rara, épica, lendária) e geração de troféus dinâmicos pelo **MIST Quest Master**.
+- **Trading Cards Drop:** Algoritmo probabilístico de drop de cartas a cada heartbeat (ping) de sessão.
 
-### 2.5. Social Service (`/services/social-service`, Porta `8004`)
+### 3.5. Social Service (`/services/social-service`, Porta `8004`)
 - **Banco de Dados:** `social.db` (SQLite).
-- **Amizades:** Pedidos bilaterais com controle de estados (`pending`, `accepted`).
-- **Chat em Tempo Real (F-03 & F-07):**
-  - Canal WebSocket `WS /ws/chat/{room_id}` gerenciado pelo `ChatConnectionManager`.
-  - Suporte a mensagens de texto e indicador animado de digitação (*typing indicator*).
-  - Endpoints REST para histórico (`GET /chat/{room_id}/messages`) e leitura (`POST /chat/{room_id}/read`).
-- **Presença em Tempo Real (F-04, F-05 & F-08):**
-  - Canal WebSocket `WS /ws/presence` gerenciado pelo `PresenceManager`.
-  - Snapshot de amigos conectados no handshake inicial.
-  - Broadcast instantâneo de transições de status (*Jogando [Título]*, *Online*, *Ausente*, *Offline*).
-- **Feed de Atividades (F-06):**
-  - Endpoint `GET /feed` consolidando conquistas, compras de jogos e progressão.
+- **Amizades:** Pedidos bilaterais com controle de estado (`pending`, `accepted`), solicitações pendentes e remoção.
+- **Chat 1:1 WebSocket:** Canal `/ws/chat/{room_id}` com histórico de mensagens, indicador de digitação e parser de emoticons cosméticos inline.
+- **Presença em Tempo Real:** Canal `/ws/presence` informando estados (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*).
+- **Grupos e Fórum:** Criação de grupos de comunidade, lista de membros, fórum de discussões (tópicos e respostas) e salas de chat de grupo WebSocket (`/ws/group/{id}/chat`).
+- **Notificações Push:** Gestão de notificações em tempo real via WebSocket (`/ws/notifications`) para conquistas, amizades, vendas e trades.
+- **MIST Companion Bot:** Contato de inteligência artificial integrado diretamente na lista de amigos.
 
-### 2.6. Market Service (`/services/market-service`, Porta `8005`)
-- **Banco de Dados:** `market.db` (SQLite dedicado).
-- **Status:** todo o Bloco L e Bloco T implementados (esqueleto L-01, Extrato T-01 a T-03, Mercado L-02 a L-05/L-11, Trocas Diretas L-06 a L-08). Único gap conhecido: a criação de anúncios/trocas no frontend depende do Inventário do Bloco J (Dev 2), ainda não implementado — ver nota no fim desta seção.
-- **Extrato da Carteira (T-01 a T-03):**
-  - `WalletTransaction`: `user_id`, `type` (`compra`, `venda`, `recarga`, `resgate`), `amount` (magnitude positiva), `description`, `created_at`.
-  - `POST /wallet/transactions`: endpoint **interno** (service-to-service, sem `X-User-Id`) usado por outros microsserviços para registrar um lançamento — não move saldo real, é só auditoria/histórico. O `store-service` chama este endpoint após todo checkout pago, e o próprio market-service após toda venda no mercado, de forma *best-effort* (falha não derruba a compra).
-  - `GET /wallet/history`: extrato paginado do usuário autenticado, com filtro por `type` e por período (`start_date`/`end_date`). Direção (`credit`/`debit`) é derivada do tipo: `compra` debita; `venda`, `recarga` e `resgate` creditam.
-- **Mercado da Comunidade (L-02 a L-05, L-11):**
-  - `MarketListing`: `seller_id`, `item_id`, `item_type` (`card`, `emoticon`, `background`, `avatar_frame`, `badge`), `item_name` (snapshot legível), `game_id` (opcional), `price`, `status` (`ativo`, `vendido`, `cancelado`), `buyer_id`.
-  - `POST /market/list`: anuncia um item. Valida posse e bloqueia o item no auth-service antes de criar o anúncio (falha fechada — 503/404/403/409 conforme a resposta do auth-service).
-  - `GET /market/listings`: catálogo público de anúncios ativos, com filtro por `item_type`/`game_id`, ordenado por menor preço.
-  - `GET /market/my-listings`: anúncios do usuário autenticado, em qualquer status.
-  - `POST /market/listings/{id}/cancel`: cancela um anúncio ativo próprio e libera o item no inventário.
-  - `POST /market/buy/{listing_id}`: compra um anúncio. Saga com compensação (mesmo padrão do checkout de jogos no store-service): débito do comprador → crédito do vendedor (estorna o comprador se falhar) → transferência de custódia do item (estorna ambos se falhar) → extrato da carteira (`compra`/`venda`, best-effort) para as duas partes.
-- **Trocas Diretas (L-06 a L-08):**
-  - `TradeOffer`: `sender_id`, `receiver_id`, `offered_items`/`requested_items` (JSON, cada item `{item_id, item_type, item_name}`), `status` (`pending`, `accepted`, `declined`).
-  - `POST /trades/offer`: propõe uma troca. Bloqueia só os itens **oferecidos** (do remetente) — os solicitados só são validados/bloqueados no aceite, para não travar itens de alguém que ainda não viu a proposta.
-  - `POST /trades/{id}/accept`: só o destinatário pode aceitar. Valida e bloqueia os itens solicitados, transfere a custódia dos dois lados (com rollback de transferências já concluídas se alguma falhar no meio do caminho).
-  - `POST /trades/{id}/decline`: só o destinatário pode recusar; libera os itens do remetente.
-  - `GET /trades/received` e `GET /trades/sent`: histórico paginado, com filtro por status.
-  - Não existe endpoint de cancelamento pelo remetente (fora do escopo do L-07).
-- **Cliente compartilhado do inventário (`inventory_client.py`):** lock/unlock/transfer usados por anúncios, checkout e trocas centralizados num único módulo.
-  - **Contrato assumido com o `auth-service`** (Bloco J do Dev 2, ainda não implementado — market-service falha fechado enquanto isso): `POST /inventory/items/{item_id}/lock` e `.../unlock`, body `{"user_id": <id>}` → 200 confirma/libera, 404/403/409 nos casos de erro; `POST /inventory/transfer`, body `{"item_id", "from_user_id", "to_user_id"}` → 200 confirma a troca de dono. **Dev 2:** o `unlock` não estava no contrato original do cronograma (§6) — foi adicionado por simetria, necessário para cancelar anúncios/trocas sem prender o item para sempre.
-- **Gateway:** `MARKET_SERVICE_URL` configurado e rota de proxy genérica `/api/market/*` em `gateway/app/main.py` (mesmo padrão de `/api/store/*`).
-- **Frontend (`Market.tsx`):** catálogo, compra, "Meus Anúncios" e "Trocas" (gerenciar ofertas recebidas/enviadas: aceitar, recusar, histórico) estão completos e funcionais. **Pendente:** as telas de **criar** um anúncio ou uma nova troca (que exigem escolher itens do próprio inventário e, no caso de trocas, também do inventário do amigo) — não há dados reais de inventário em lugar nenhum do sistema ainda para alimentar esses seletores.
+### 3.6. Market Service (`/services/market-service`, Porta `8005`)
+- **Banco de Dados:** `market.db` (SQLite).
+- **Extrato da Carteira:** Modelo `WalletTransaction` e endpoint `GET /wallet/history` para auditoria financeira detalhada.
+- **Mercado da Comunidade:** Anúncio de itens em R$ (`POST /market/list`), listagem pública (`GET /market/listings`), compra com Saga financeira compensatória e transferência automática de custódia, e cancelamento de anúncios ativos.
+- **Trocas Diretas (Trade Offers):** Proposta de troca de itens entre amigos (`POST /trades/offer`), aceite (`POST /trades/{id}/accept`) com trava de segurança atômica dos itens dos dois lados, e recusa.
+
+### 3.7. UGC Service (`/services/ugc-service`, Porta `8006`)
+- **Banco de Dados:** `ugc.db` (SQLite).
+- **Showcase de Capturas de Tela:** Upload manual ou via SDK Python (`take_screenshot()`), galeria com lightbox e curtidas de comunidade.
+- **Workshop de Conteúdo:** Upload de mods e skins para jogos, busca por tags, filtro por popularidade, contagem de downloads e subscrições.
+
+### 3.8. MIST Local Daemon (`runner/mist_daemon.py`, Porta `39090`)
+- **Servidor HTTP Local:** Executado em `127.0.0.1:39090` na máquina do usuário (`iniciar_mist_daemon.bat`).
+- **Superação de Sandbox:** Ouve chamadas `POST /launch` da interface web, prepara o diretório local `~/.mist/installed/<game_id>/`, escreve o `session.json` com o token ativo do usuário e dispara o jogo em uma nova janela de terminal nativa (`subprocess.Popen` com `CREATE_NEW_CONSOLE`).
 
 ---
 
-## 3. Arquitetura de Execução Local de Jogos (MIST Daemon)
+## 4. Arquitetura do MIST SDK (`mist_sdk.py`)
 
-Como navegadores operam sob políticas rígidas de *sandbox*, a execução de jogos na máquina do usuário é viabilizada pelo **MIST Local Daemon**:
+O **MIST SDK** é a biblioteca de integração incluída nos pacotes de todos os jogos:
 
-```
-[ Frontend SPA (Browser) ]
-           │
-           │ 1. Usuário clica em "Jogar"
-           │    POST http://127.0.0.1:39090/launch
-           ▼
-[ MIST Local Daemon (runner/mist_daemon.py) ]
-           │
-           │ 2. Cria ~/.mist/installed/<slug>/
-           │ 3. Copia game.py e mist_sdk.py
-           │ 4. Grava session.json com token ativo
-           │ 5. subprocess.Popen(CREATE_NEW_CONSOLE)
-           ▼
-[ Console Nativo do Sistema Operacional ]
-   Abre nova janela com o jogo (ex: MIST Quiz)
-   O mist_sdk.py envia telemetria e conquistas via HTTP
-```
-
-### Características do MIST SDK:
-- Desenvolvido exclusivamente com a **biblioteca padrão do Python (`urllib.request`, `threading`, `json`)**.
-- Totalmente resiliente a falhas de rede: se o servidor estiver offline, o jogo não trava nem fecha, operando em modo offline gracioso.
+1. **Stdlib-Only:** Desenvolvido estritamente em Python nativo (`urllib.request`, `threading`, `json`, `os`), dispensando qualquer dependência de terceiros.
+2. **Ciclo de Vida Automático:**
+   - Ao chamar `mist_sdk.start_session()`, lê o `session.json`, faz autenticação com a API e inicia uma `Thread` em background para enviar heartbeats (pings) a cada 60 segundos.
+   - Ao chamar `mist_sdk.unlock_achievement(id)`, envia a notificação imediata para o `library-service`, que aciona o toast no frontend e avalia o drop de cartas colecionáveis.
+3. **Resiliência Offline:** Se a conexão de rede oscilar ou o servidor estiver indisponível, o SDK captura as exceções e mantém a execução do jogo fluida sem interrupções.
 
 ---
 
-## 4. Agentes de IA Integrados ao Ecossistema
+## 5. Garantia de Qualidade e Pirâmide de Testes
 
-| Agente | Serviço | Função |
-| :--- | :--- | :--- |
-| **MIST Curator & Recommender** | `store-service` | Vitrines personalizadas e análise de perfil combinando biblioteca e histórico. |
-| **MIST Dynamic Quest Master** | `library-service` | Desafios semanais dinâmicos e troféus comemorativos. |
-| **MIST Chatbot / NPC Companion** | `social-service` | Bot de suporte e estatísticas acessível diretamente pela lista de amigos. |
-
----
-
-## 5. Estratégia de QA e Pirâmide de Testes
-
-O projeto adota uma matriz de testes catalogada em [`TESTS.md`](../TESTS.md) e normalizada atomicamente em [`resultados.json`](../resultados.json):
-
-1. **Unitários:**
-   - Backend (`pytest`): regras de negócio, hashing de senhas, validações de modelo, SDK.
-   - Frontend (`vitest`): renderização de cards, modais, contexto de carrinho, WebSocket mocks.
-2. **Integração:**
-   - Comunicação síncrona HTTP entre serviços (Saga checkout, sessões de jogo, feed de compras).
-   - Comunicação assíncrona WebSockets (chat e presença).
-3. **E2E / Sistema Completo (`playwright`):**
-   - Fluxos ponta a ponta no navegador (registro, navegação na loja, alternância de telas).
-4. **Regressão:**
-   - Casos originados de bugs resolvidos (ex: suporte a R$ 0,00 para jogos gratuitos e preservação de tema).
+A integridade do projeto é mantida através de uma pirâmide de testes completa:
+- **Pytest:** Testes unitários e de integração de todos os 6 microsserviços e do API Gateway.
+- **Vitest:** Testes unitários de componentes e contextos React no frontend.
+- **Playwright:** Suíte de testes E2E validando navegação, cadastro, compra e interações na SPA.
+- **Runner Adapter:** Script de automação (`runner_adapter.py`) com rastreamento formal em `TESTS.md` e gravação em `resultados.json`.

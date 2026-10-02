@@ -234,6 +234,23 @@ async def websocket_chat_endpoint(
                     }
                     await chat_manager.broadcast_message(room_id, broadcast_payload)
 
+                    # Notificação em tempo real para o destinatário via NotificationManager se for chat direto
+                    if room_id.startswith("direct_"):
+                        parts = room_id.split("_")
+                        if len(parts) >= 3:
+                            try:
+                                u1, u2 = int(parts[1]), int(parts[2])
+                                recipient_id = u2 if sender_id == u1 else u1
+                                if recipient_id != 0:
+                                    await notification_manager.notify_user(recipient_id, {
+                                        "type": "new_chat_message",
+                                        "room_id": room_id,
+                                        "sender_id": sender_id,
+                                        "content": content[:100],
+                                    })
+                            except Exception:
+                                pass
+
                     # MIST Companion Bot (G-04): Se a sala for do bot e a mensagem partiu do usuário
                     is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"
                     if is_bot_room and sender_id != 0:

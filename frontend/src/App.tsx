@@ -124,12 +124,15 @@ function AppContent() {
   // Listener para toasts globais (ex: 'Usuário não autenticado. Realize o login') com auto-dismiss em 5s
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    const handleToast = (e: CustomEvent<string>) => {
-      setToastMessage(e.detail);
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setToastMessage(null);
-      }, 5000);
+    const handleToast = (e: CustomEvent<any>) => {
+      const msg = typeof e.detail === 'string' ? e.detail : e.detail?.message || String(e.detail || '');
+      if (msg) {
+        setToastMessage(msg);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          setToastMessage(null);
+        }, 5000);
+      }
     };
 
     window.addEventListener('mist:toast' as any, handleToast);

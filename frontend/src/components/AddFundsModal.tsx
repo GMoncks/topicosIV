@@ -53,10 +53,7 @@ export const AddFundsModal: React.FC<AddFundsModalProps> = ({
         );
         window.dispatchEvent(
           new CustomEvent('mist:toast', {
-            detail: {
-              message: `R$ ${res.amount.toFixed(2)} adicionados com sucesso ao seu saldo!`,
-              type: 'success',
-            },
+            detail: `R$ ${res.amount.toFixed(2)} adicionados com sucesso ao seu saldo!`,
           })
         );
       }

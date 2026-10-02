@@ -213,12 +213,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
               title="Ver Perfil"
             >
               <div className="relative">
-                <img
-                  src={user.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80"}
-                  alt={user.username}
-                  className="w-10 h-10 rounded-xl border-2 border-brand-green object-cover"
-                />
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-brand-green rounded-full border-2 border-brand-surface"></div>
+                <div
+                  className={`w-10 h-10 rounded-xl relative flex items-center justify-center overflow-hidden transition-all p-0.5 ${
+                    user.avatarFrameUrl
+                      ? user.avatarFrameUrl.includes('1618005182384') || user.avatarFrameUrl.toLowerCase().includes('gold')
+                        ? 'ring-2 ring-amber-400 border border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
+                        : 'ring-2 ring-cyan-400 border border-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]'
+                      : 'border-2 border-brand-green'
+                  }`}
+                >
+                  <img
+                    src={user.avatarUrl || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80"}
+                    alt={user.username}
+                    className="w-full h-full rounded-lg object-cover"
+                  />
+                  {user.avatarFrameUrl && (
+                    <div
+                      className={`absolute inset-0 rounded-xl pointer-events-none border-2 transition-all ${
+                        user.avatarFrameUrl.includes('1618005182384') || user.avatarFrameUrl.toLowerCase().includes('gold')
+                          ? 'border-amber-400/90'
+                          : 'border-cyan-400/90'
+                      }`}
+                    />
+                  )}
+                </div>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-brand-green rounded-full border-2 border-brand-surface"></div>
               </div>
               <div className="hidden lg:block ml-3 truncate">
                 <p className={`text-sm font-bold truncate ${activeTab === 'profile' ? 'text-brand-purple' : 'text-white'}`}>

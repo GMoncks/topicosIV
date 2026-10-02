@@ -122,6 +122,33 @@ POINTS_SHOP_CATALOG: List[Dict[str, Any]] = [
         "price_points": 700,
         "asset_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80",
         "description": "Unidade autônoma de combate blindada com tecnologia de ponta."
+    },
+    {
+        "id": "avatar_mestre_dourado",
+        "name": "Avatar Mestre Dourado",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 1000,
+        "asset_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80",
+        "description": "Retrato de prestígio dourado dos grandes mestres do MIST."
+    },
+    {
+        "id": "avatar_neon_cyberpunk",
+        "name": "Avatar Neon Cyberpunk",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 900,
+        "asset_url": "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80",
+        "description": "Arte gráfica retrofuturista com circuitos e tonalidades neon."
+    },
+    {
+        "id": "avatar_arcano_cosmico",
+        "name": "Avatar Arcano Cósmico",
+        "category": "Foto de perfil",
+        "item_type": "avatar",
+        "price_points": 900,
+        "asset_url": "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?auto=format&fit=crop&w=400&q=80",
+        "description": "Entidade mágica envolta por constelações e poder astral ancestral."
     }
 ]
 

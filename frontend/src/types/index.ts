@@ -89,7 +89,7 @@ export interface NewsArticle {
 export interface PointsShopItem {
   id: string;
   name: string;
-  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado' | 'Moldura de avatar';
+  category: 'Plano de fundo do perfil' | 'Emoticon' | 'Perfil de jogo' | 'Avatar animado' | 'Moldura de avatar' | 'Foto de perfil';
   itemType: 'background' | 'emoticon' | 'profile_bundle' | 'avatar' | 'avatar_frame';
   pricePoints: number;
   image: string;

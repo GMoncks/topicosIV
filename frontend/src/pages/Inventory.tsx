@@ -237,8 +237,9 @@ export const Inventory: React.FC<InventoryProps> = ({
       case 'background':
         return <span className="px-2 py-0.5 text-xs font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Plano de Fundo</span>;
       case 'avatar_frame':
-      case 'avatar':
         return <span className="px-2 py-0.5 text-xs font-bold rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Moldura</span>;
+      case 'avatar':
+        return <span className="px-2 py-0.5 text-xs font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Avatar</span>;
       case 'badge':
         return <span className="px-2 py-0.5 text-xs font-bold rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">Insígnia</span>;
       default:
