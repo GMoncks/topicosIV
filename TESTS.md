@@ -5,6 +5,14 @@
 - vitest → comando-base: `npm --prefix frontend run test:unit`, diretório: `.`
 - playwright → comando-base: `npm --prefix frontend run test:e2e`, diretório: `.`
 
+### Contagem de Testes por Runner
+| Runner | Quantidade de Testes | Percentual |
+| :--- | :---: | :---: |
+| `pytest` | 119 | 62,96% |
+| `vitest` | 67 | 35,45% |
+| `playwright` | 3 | 1,59% |
+| **Total** | **189** | **100%** |
+
 ## Unitários
 
 ### Autenticação (Auth Service)

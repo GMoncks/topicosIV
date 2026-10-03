@@ -455,3 +455,129 @@ Arquivo diÃ¡rio de rastreamento de prompts e decisÃµes tÃ©cnicas para a sessÃ£o 
   - `resultados.json`: Registros atÃ´micos de validaÃ§Ã£o (19 testes com status `pass`).
   - `prompts/gabriel-T800_2nd.md`: Registro perpÃ©tuo do ciclo.
 
+---
+
+## 2026-10-02 â€” Prompt 12
+
+### 1. Prompt do UsuÃ¡rio
+> "FaÃ§a um count de testes por runner e o count total no TESTS.md"
+
+### 2. DecisÃµes TÃ©cnicas e Arquiteturais
+- **Varredura e Contagem Granular do CatÃ¡logo `TESTS.md`:**
+  - Foi executado script de anÃ¡lise estÃ¡tica e contagem regex no arquivo `TESTS.md`, parseando os 189 blocos de testes catalogados (marcadores `#### <ID> â€” ...`), seus respectivos runners (`- Runner: <runner>`) e categorias da pirÃ¢mide de testes.
+  - Constatou-se a presenÃ§a de 3 runners registrados:
+    - `pytest`: 119 testes (testes unitÃ¡rios de backend, testes de integraÃ§Ã£o entre microsserviÃ§os e smoke tests).
+    - `vitest`: 67 testes (testes unitÃ¡rios e de isolamento de componentes React e pÃ¡ginas do frontend, bem como casos de regressÃ£o de interface).
+    - `playwright`: 3 testes (testes ponta a ponta / E2E de autenticaÃ§Ã£o, navegaÃ§Ã£o e fluxo completo).
+  - Total geral: 189 testes registrados.
+- **AtualizaÃ§Ã£o da DocumentaÃ§Ã£o (`TESTS.md`):**
+  - Inserida tabela resumo formal sob a seÃ§Ã£o `## Runners registrados` contendo a contagem por runner, distribuiÃ§Ã£o percentual e total geral para manter o documento autoexplicativo e atualizado.
+
+### 3. Resumo das SaÃ­das Geradas
+- **Modificados:**
+  - `TESTS.md`: InclusÃ£o da tabela de contagem de testes por runner e total cadastrado.
+  - `prompts/gabriel-T800_2nd.md`: Registro do Prompt 12 e mÃ©tricas do catÃ¡logo.
+
+
+---
+
+## 2026-10-02 — Prompt 13
+
+### 1. Prompt do Usuário
+> "Irei fazer o deploy do MIST para, rodando via container no meu Home-server, poder usar o sistema na internet. Para isso, o sistema agora deve ter maiores esquemas de segurança, permitindo o uso de https, autentificação robusta e outros padrões da industria para um ecossistema tal qual o da Steam. Não se esqueça que no docker-compose, por exemplo, está configurado o uso do localhost, que não sei se é o correto para esse deploy.
+Avalie de maneira minuciosa o sistema de microserviços para que façamos um deploy de um ecossistema seguro e adequado para rodar segundo todas as leis da internet. Pode me questionar ou fazer um grill-me se tiver dúvidas"
+
+
+---
+
+## 2026-10-02 — Prompt 14
+
+### 1. Prompt do Usuário
+> "Decisões de arquitetura para o deploy do MIST em Home Server: Seguir com SQLite por enquanto. Citar prós e contras de Caddy, Nginx e Traefik. Fazer túnel via Cloudflare (cloudflared). Subdomínio logado na Cloudflare. Sobre cookies/tokens: a configuração de cookies/tokens é a ideal ou Bearer token é muito mais complexo?"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Banco de Dados**: Mantido SQLite (olumes) para evitar complexidade excessiva de gerência no home-server no momento.
+- **Rede e Exposição**: Utilização do **Cloudflare Tunnel (cloudflared)** como sidecar no Docker Compose. Remove a necessidade de DDNS, abertura de portas 80/443 e contorna CGNAT.
+- **Autenticação**: Confirmado que o MIST já utiliza Bearer Token (JWT). Explicado ao usuário que Cookies HttpOnly são mais imunes a XSS, mas Bearer Token é muito mais simples para infraestrutura, CORS e domínios cruzados. Optou-se por manter o Bearer Token simplificado com um CORS rigoroso atrelado ao subdomínio Cloudflare.
+- **Plano de Implementação Atualizado**: Atualizado o implementation_plan.md refletindo o design de fechamento total das portas do host, roteamento direto via proxy reverso local e a persistência orientada a volumes do SQLite.
+
+
+---
+
+## 2026-10-02 — Prompt 15
+
+### 1. Prompt do Usuário
+> "Seguir com Nginx, visto que ele oferece segurança de forma rápida e simples e o CloudFlare será a camada maior de segurança. Qual desses tipos de rota devo seguir no túnel para ser seguro e funcional mesmo quando eu mando o link do frontend para um amigo (anexou imagem do Cloudflare Tunnel: Published application vs Private hostname)"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Proxy Reverso**: Confirmado o uso de Nginx no stack.
+- **Configuração do Cloudflare Tunnel**: Recomendada a opção 'Published application' (Public hostname) ao invés de redes privadas. Isso expõe o serviço MIST em um domínio público roteável sem a necessidade de os usuários finais (amigos) instalarem o client WARP da Cloudflare, mantendo a facilidade de acesso via link enquanto o túnel e a Cloudflare protegem contra ataques e ocultam o IP real do servidor.
+
+
+---
+
+## 2026-10-02 — Prompt 16
+
+### 1. Prompt do Usuário
+> "não seria preferivel fazer https? Ou o próprio cloudflare consegue gerenciar a segurança de um https do outro lado? (Referenciando o uso de http://nginx:80 no alvo do túnel)"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Terminação SSL (SSL Offloading)**: Explicado o conceito de SSL Termination. O tráfego externo (Amigo -> Cloudflare) ocorre via HTTPS estrito. O tráfego Cloudflare -> Home Server é criptografado pelo protocolo do túnel (cloudflared).
+- O roteamento final (cloudflared -> 
+ginx via porta 80) ocorre inteiramente dentro da rede isolada do Docker (mist-network), eliminando a necessidade de overhead criptográfico interno e certificados auto-assinados. Mantido o design para http://nginx:80 visando performance e simplicidade no home-server.
+
+
+---
+
+## 2026-10-02 — Prompt 17
+
+### 1. Prompt do Usuário
+> "Pode seguir com a implementação de segurança"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Refatoração do Arquivo docker-compose.yml**:
+  - Remoção de todas as exposições de portas host (ports:) dos containers internos (uth, store, library, social, market, ugc, gateway), forçando a comunicação exclusivamente via rede isolada (mist-network).
+  - O rontend manteve a porta apenas atrelada à interface local 127.0.0.1:3000 como fallback de teste do home-server, sendo o ponto de entrada roteado pelo Nginx nativo do frontend (que já resolve /api/ para o gateway).
+  - Adição do container cloudflared ao arquivo compose configurado para iniciar o túnel.
+  - Implementação transversal de logging config (max-size: 10m, max-file: 3) em todos os microsserviços para evitar exaustão do disco do host em caso de logs agressivos na produção.
+- **Atualização do Template de Variáveis (.env.example)**:
+  - Adicionada a chave obrigatória TUNNEL_TOKEN.
+  - Modificado o valor padrão de ENVIRONMENT para production.
+  - Configurada documentação e parâmetro base para a chave CORS_ORIGINS conter a origem pública HTTPS.
+
+
+---
+
+## 2026-10-02 — Prompt 18
+
+### 1. Prompt do Usuário
+> "Como há um local para inserir o Tunnel_TOKEN, em tese eu não preciso mudar o token que eu já usava no meu container cloudflared, correto? Pois me parece que quando eu usar esse env no container do MIST, ele mesmo já fará sua própria tarefa de conectar na cloudflare né"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Topologia de Múltiplos Túneis Cloudflare:** Confirmada a hipótese do usuário. A instância de cloudflared declarada no docker-compose.yml do MIST opera como um daemon independente, em paralelo a quaisquer outros túneis pré-existentes no home-server.
+- Explicado que essa arquitetura é imperativa dado o fechamento das portas do host: como os microsserviços do MIST (incluindo o frontend) agora residem exclusivamente na rede fechada mist-network sem bind no host local, um agente cloudflared genérico/externo seria incapaz de alcançá-los. O container dedicado se acopla à bridge network e estabelece a ponte L7 para a borda da Cloudflare usando seu próprio TUNNEL_TOKEN.
+
+
+---
+
+## 2026-10-02 — Prompt 19
+
+### 1. Prompt do Usuário
+> "O token deve ser somente o token dado pelo cloudflare, ou todo o comando no estilo docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token XXXXX"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Configuração de Variáveis (Cloudflare Tunnel):** Orientado o usuário a preencher o TUNNEL_TOKEN estritamente com o hash criptográfico (e.g. eyJhb...), ignorando o wrapper do comando docker run. Como a declaração da imagem e do comando 	unnel run já estão fixados na topologia do docker-compose.yml, a injeção via variável de ambiente espera unicamente a payload do token para o binding interno.
+
+
+---
+
+## 2026-10-02 — Prompt 20
+
+### 1. Prompt do Usuário
+> "Ok. Considerando agora então como ficou o trabalho, e que já preenchi o .env com os dados de CORS_ORIGINS e TUNNEL_TOKEN, quero entender se: Rodando localmente no meu PC, se eu rodar docker compose up -d ele irá subir a versão localhost funcional. Preparando o container no servidor (com monitoramento pelo watchtower para futuros deploys), ele já conseguirá subir tudo normalmente"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Validação de Ambientes Híbridos (Dev/Prod):** Confirmada a funcionalidade bidirecional da arquitetura desenhada.
+  - **Local (Dev):** Explicado que o mapeamento 127.0.0.1:3000:80 no frontend associado ao Nginx interno garante roteamento da interface e do /api/ para o gateway sem necessidade de portas expostas globalmente. Inserida advertência de não popular o TUNNEL_TOKEN localmente para evitar route hijacking (roubo da sessão do túnel pelo PC dev).
+  - **Servidor (Watchtower/Prod):** Validado que a total conteinerização com dependências blindadas e olumes persistentes atende plenamente ao ciclo de vida de deploys automatizados do Watchtower, assegurando persistência de estado do SQLite durante reciclagens e reconexão resiliente do tunnel da Cloudflare sem expor portas.
+
