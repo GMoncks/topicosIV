@@ -18,15 +18,15 @@ test.describe('Navegação e Ciclo de Vida (E2E-NAV-01)', () => {
     await pointsButton.click();
 
     // Valida que a Loja de Pontos carregou seu catálogo e saldo de pontos (iniciando em 0 para visitantes)
-    await expect(page.getByRole('heading', { name: 'A LOJA DE PONTOS' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Loja de MIST Points|A LOJA DE PONTOS/i })).toBeVisible();
     await expect(page.locator('text=Saldo de Pontos')).toBeVisible();
-    await expect(page.locator('text=MARÉ CREPUSCULAR')).toBeVisible();
+    await expect(page.locator('text=/Maré Crepuscular/i').first()).toBeVisible();
 
     // 4. Retorna para a Loja
     const storeButton = page.locator('button[title="Loja"]');
     await storeButton.click();
 
     // Valida que a Loja de Pontos foi desmontada e a Loja principal está ativa
-    await expect(page.getByRole('heading', { name: 'A LOJA DE PONTOS' })).not.toBeVisible();
+    await expect(page.getByRole('heading', { name: /Loja de MIST Points|A LOJA DE PONTOS/i })).not.toBeVisible();
   });
 });

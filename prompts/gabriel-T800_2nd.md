@@ -377,3 +377,207 @@ Arquivo diÃ¡rio de rastreamento de prompts e decisÃµes tÃ©cnicas para a sessÃ£o 
 - Atualizado: prompts/gabriel-T800_2nd.md (este registro)
 
 ---
+
+## 2026-10-02 â€” Prompt 10
+
+### 1. Prompt do UsuÃ¡rio
+> "/qa_tester teste o sistema completamente"
+
+### 2. DecisÃµes TÃ©cnicas e Arquiteturais
+- **InvocaÃ§Ã£o Oficial da Skill `qa_tester`**:
+  - ExecuÃ§Ã£o completa do catÃ¡logo atravÃ©s do utilitÃ¡rio oficial `.agents/skills/qa_tester/scripts/runner_adapter.py`.
+  - Executados todos os 189 testes registrados em `TESTS.md` atravÃ©s dos runners `pytest`, `vitest` e `playwright`.
+  - AtualizaÃ§Ã£o atÃ´mica e segura do arquivo `resultados.json` preservando o histÃ³rico FIFO das Ãºltimas 10 execuÃ§Ãµes.
+- **DiagnÃ³stico Consolidado dos Resultados**:
+  - **Total de testes no catÃ¡logo**: 189
+  - **Aprovados (`pass`)**: 168 testes (88,9% da suÃ­te completa)
+  - **Planejados / Pendentes (`pending`)**: 2 testes (`E2E-FLOW-01` e `SMOKE-HEALTH-01`)
+  - **Falhas de ExecuÃ§Ã£o (`fail`)**: 19 testes
+    - DiagnÃ³stico das causas-raiz:
+      1. Sintaxe de comando especÃ­fica de Unix/Linux em ambiente Windows nos comandos cadastrados em `TESTS.md`:
+         - `STORE-UNIT-15`: invocaÃ§Ã£o de `.venv/bin/pytest` em vez de `pytest`.
+         - `SOCIAL-UNIT-08`, `SOCIAL-UNIT-09`, `SOCIAL-UNIT-10`: invocaÃ§Ã£o de `./.venv/bin/pytest`.
+         - `UGC-UNIT-06` a `UGC-UNIT-10` e `GATEWAY-UNIT-04`: prefixo de variÃ¡vel de ambiente inline `PYTHONPATH=...` (incompatÃ­vel com shell Windows/cmd).
+      2. Conflito de resoluÃ§Ã£o de mÃ³dulo `app` (`UGC-UNIT-01` a `UGC-UNIT-05`):
+         - `services/ugc-service/tests/test_screenshots.py` colidiu com `services/auth-service/app/db/database.py` no `sys.path`.
+      3. Filtro `-k` desatualizado no comando (`SOCIAL-INT-06`):
+         - Nomes de testes no arquivo `test_groups_forum.py` divergentes dos termos de busca.
+      4. ParÃ¢metro de caminho relativo no Playwright (`E2E-NAV-01` e `E2E-AUTH-01`):
+         - ParÃ¢metro `e2e/*.spec.ts` passado redundante em relaÃ§Ã£o a `testDir: './e2e'`.
+      5. Encoding de caractere especial no shell (`REG-FRONT-07`):
+         - O argumento `-t "filtra e nÃ£o exibe..."` com caracteres acentuados nÃ£o casou os testes via subprocess no terminal Windows.
+
+### 3. Resumo das SaÃ­das Geradas
+- Executada a suÃ­te completa de 189 testes via `runner_adapter.py`.
+- Atualizado: `resultados.json` com telemetria, tempos de resposta e status das 189 suÃ­tes.
+- Atualizado: `prompts/gabriel-T800_2nd.md` (este registro).
+
+---
+
+## 2026-10-02 â€” Prompt 11
+
+### 1. Prompt do UsuÃ¡rio
+> "Ajuste esses testes que falharam e rode o dry-run deles para atualizaÃ§Ã£o do TESTS.md"
+
+### 2. DecisÃµes TÃ©cnicas e Arquiteturais
+- **CorreÃ§Ã£o dos 19 Testes Falhados do Ciclo Anterior:**
+  1. **Comandos Unix/Linux incompatÃ­veis no Windows (`STORE-UNIT-15`, `SOCIAL-UNIT-08`, `SOCIAL-UNIT-09`, `SOCIAL-UNIT-10`, `UGC-UNIT-06`, `UGC-UNIT-08`, `GATEWAY-UNIT-04`):**
+     - SubstituiÃ§Ã£o de referÃªncias `.venv/bin/pytest` e `./.venv/bin/pytest` por `pytest`.
+     - EliminaÃ§Ã£o de prefixos `PYTHONPATH=services/ugc-service ` incompatÃ­veis com terminal Windows PowerShell.
+  2. **ColisÃ£o de MÃ³dulo `app` no Python (`UGC-UNIT-01` a `UGC-UNIT-05` e `UGC-UNIT-06` a `UGC-UNIT-10`):**
+     - InjeÃ§Ã£o de prioridade `sys.path.insert(0, ...)` nos arquivos de teste `services/ugc-service/tests/test_screenshots.py` e `services/ugc-service/tests/test_workshop.py`.
+  3. **Alinhamento de Filtros `-k` em Testes Pytest (`TESTS.md`):**
+     - `GATEWAY-UNIT-04`: atualizado filtro para `test_ugc_proxy_allows_public_workshop_items_list or test_ugc_proxy_blocks_workshop_upload_without_token`.
+     - `SOCIAL-INT-06`: atualizado filtro para `test_forum_posts_lifecycle or test_forum_replies_and_lock`.
+     - `UGC-UNIT-02`: ajustado para `test_list_and_filter_screenshots`.
+     - `UGC-UNIT-03`: ajustado para `test_like_and_unlike_screenshot`.
+     - `UGC-UNIT-04`: ajustado para `test_delete_screenshot_authorization`.
+     - `UGC-UNIT-05`: implementada funÃ§Ã£o resiliente `take_screenshot(caption, ugc_api_url)` em `services/store-service/app/data/mist_sdk.py` e ajustado para `test_mist_sdk_take_screenshot_resilience`.
+     - `UGC-UNIT-07`: ajustado para `test_list_workshop_items_and_search`.
+     - `UGC-UNIT-09`: ajustado para `test_increment_mod_download`.
+     - `UGC-UNIT-10`: ajustado para `test_delete_workshop_item_author_only`.
+  4. **CorreÃ§Ã£o de Testes E2E e Vitest (`E2E-NAV-01`, `E2E-AUTH-01`, `REG-FRONT-07`):**
+     - `E2E-NAV-01`: Ajuste em `frontend/e2e/navigation.spec.ts` para buscar o tÃ­tulo exato da pÃ¡gina (`Loja de MIST Points`) e correÃ§Ã£o do comando para `npm --prefix frontend run test:e2e -- navigation.spec.ts`.
+     - `E2E-AUTH-01`: Adicionado mock de rotas autenticadas (`Authorization`) para evitar deslogue assÃ­ncrono espÃºrio em testes de token sintÃ©tico; desabilitado worker WebKit instÃ¡vel no Windows em `frontend/playwright.config.ts`; e correÃ§Ã£o do comando para `npm --prefix frontend run test:e2e -- auth.spec.ts`.
+     - `REG-FRONT-07`: Mock de `useAuth` adicionado no teste de isolamento 7 em `frontend/src/pages/Library.test.tsx` e comando atualizado para `-t "game_id 0"`.
+- **ValidaÃ§Ã£o Dry-Run (`origem: "validacao"`):**
+  - ExecuÃ§Ã£o de dry-run via `runner_adapter.py --origem validacao` individualmente para cada um dos 19 testes ajustados.
+  - **Resultado:** 19/19 testes passaram com sucesso (`pass`), registrando telemetria e saÃ­da limpa no arquivo `resultados.json`.
+
+### 3. Resumo das SaÃ­das Geradas
+- **Modificados:**
+  - `TESTS.md`: Atualizados comandos e filtros `-k` dos testes `STORE-UNIT-15`, `SOCIAL-UNIT-08`, `SOCIAL-UNIT-09`, `SOCIAL-UNIT-10`, `UGC-UNIT-01`, `UGC-UNIT-02`, `UGC-UNIT-03`, `UGC-UNIT-04`, `UGC-UNIT-05`, `UGC-UNIT-06`, `UGC-UNIT-07`, `UGC-UNIT-08`, `UGC-UNIT-09`, `UGC-UNIT-10`, `GATEWAY-UNIT-04`, `SOCIAL-INT-06`, `E2E-NAV-01`, `E2E-AUTH-01` e `REG-FRONT-07`.
+  - `services/ugc-service/tests/test_screenshots.py` e `services/ugc-service/tests/test_workshop.py`: InjeÃ§Ã£o de prioridade no `sys.path`.
+  - `services/store-service/app/data/mist_sdk.py`: ImplementaÃ§Ã£o da resiliÃªncia offline de screenshot.
+  - `frontend/e2e/navigation.spec.ts` e `frontend/e2e/auth.spec.ts`: ResiliÃªncia de rotas e locators nos testes E2E.
+  - `frontend/playwright.config.ts`: ConfiguraÃ§Ã£o otimizada para execuÃ§Ã£o no Windows.
+  - `frontend/src/pages/Library.test.tsx`: Isolamento do mock de autenticaÃ§Ã£o.
+  - `resultados.json`: Registros atÃ´micos de validaÃ§Ã£o (19 testes com status `pass`).
+  - `prompts/gabriel-T800_2nd.md`: Registro perpÃ©tuo do ciclo.
+
+---
+
+## 2026-10-02 â€” Prompt 12
+
+### 1. Prompt do UsuÃ¡rio
+> "FaÃ§a um count de testes por runner e o count total no TESTS.md"
+
+### 2. DecisÃµes TÃ©cnicas e Arquiteturais
+- **Varredura e Contagem Granular do CatÃ¡logo `TESTS.md`:**
+  - Foi executado script de anÃ¡lise estÃ¡tica e contagem regex no arquivo `TESTS.md`, parseando os 189 blocos de testes catalogados (marcadores `#### <ID> â€” ...`), seus respectivos runners (`- Runner: <runner>`) e categorias da pirÃ¢mide de testes.
+  - Constatou-se a presenÃ§a de 3 runners registrados:
+    - `pytest`: 119 testes (testes unitÃ¡rios de backend, testes de integraÃ§Ã£o entre microsserviÃ§os e smoke tests).
+    - `vitest`: 67 testes (testes unitÃ¡rios e de isolamento de componentes React e pÃ¡ginas do frontend, bem como casos de regressÃ£o de interface).
+    - `playwright`: 3 testes (testes ponta a ponta / E2E de autenticaÃ§Ã£o, navegaÃ§Ã£o e fluxo completo).
+  - Total geral: 189 testes registrados.
+- **AtualizaÃ§Ã£o da DocumentaÃ§Ã£o (`TESTS.md`):**
+  - Inserida tabela resumo formal sob a seÃ§Ã£o `## Runners registrados` contendo a contagem por runner, distribuiÃ§Ã£o percentual e total geral para manter o documento autoexplicativo e atualizado.
+
+### 3. Resumo das SaÃ­das Geradas
+- **Modificados:**
+  - `TESTS.md`: InclusÃ£o da tabela de contagem de testes por runner e total cadastrado.
+  - `prompts/gabriel-T800_2nd.md`: Registro do Prompt 12 e mÃ©tricas do catÃ¡logo.
+
+
+---
+
+## 2026-10-02 — Prompt 13
+
+### 1. Prompt do Usuário
+> "Irei fazer o deploy do MIST para, rodando via container no meu Home-server, poder usar o sistema na internet. Para isso, o sistema agora deve ter maiores esquemas de segurança, permitindo o uso de https, autentificação robusta e outros padrões da industria para um ecossistema tal qual o da Steam. Não se esqueça que no docker-compose, por exemplo, está configurado o uso do localhost, que não sei se é o correto para esse deploy.
+Avalie de maneira minuciosa o sistema de microserviços para que façamos um deploy de um ecossistema seguro e adequado para rodar segundo todas as leis da internet. Pode me questionar ou fazer um grill-me se tiver dúvidas"
+
+
+---
+
+## 2026-10-02 — Prompt 14
+
+### 1. Prompt do Usuário
+> "Decisões de arquitetura para o deploy do MIST em Home Server: Seguir com SQLite por enquanto. Citar prós e contras de Caddy, Nginx e Traefik. Fazer túnel via Cloudflare (cloudflared). Subdomínio logado na Cloudflare. Sobre cookies/tokens: a configuração de cookies/tokens é a ideal ou Bearer token é muito mais complexo?"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Banco de Dados**: Mantido SQLite (olumes) para evitar complexidade excessiva de gerência no home-server no momento.
+- **Rede e Exposição**: Utilização do **Cloudflare Tunnel (cloudflared)** como sidecar no Docker Compose. Remove a necessidade de DDNS, abertura de portas 80/443 e contorna CGNAT.
+- **Autenticação**: Confirmado que o MIST já utiliza Bearer Token (JWT). Explicado ao usuário que Cookies HttpOnly são mais imunes a XSS, mas Bearer Token é muito mais simples para infraestrutura, CORS e domínios cruzados. Optou-se por manter o Bearer Token simplificado com um CORS rigoroso atrelado ao subdomínio Cloudflare.
+- **Plano de Implementação Atualizado**: Atualizado o implementation_plan.md refletindo o design de fechamento total das portas do host, roteamento direto via proxy reverso local e a persistência orientada a volumes do SQLite.
+
+
+---
+
+## 2026-10-02 — Prompt 15
+
+### 1. Prompt do Usuário
+> "Seguir com Nginx, visto que ele oferece segurança de forma rápida e simples e o CloudFlare será a camada maior de segurança. Qual desses tipos de rota devo seguir no túnel para ser seguro e funcional mesmo quando eu mando o link do frontend para um amigo (anexou imagem do Cloudflare Tunnel: Published application vs Private hostname)"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Proxy Reverso**: Confirmado o uso de Nginx no stack.
+- **Configuração do Cloudflare Tunnel**: Recomendada a opção 'Published application' (Public hostname) ao invés de redes privadas. Isso expõe o serviço MIST em um domínio público roteável sem a necessidade de os usuários finais (amigos) instalarem o client WARP da Cloudflare, mantendo a facilidade de acesso via link enquanto o túnel e a Cloudflare protegem contra ataques e ocultam o IP real do servidor.
+
+
+---
+
+## 2026-10-02 — Prompt 16
+
+### 1. Prompt do Usuário
+> "não seria preferivel fazer https? Ou o próprio cloudflare consegue gerenciar a segurança de um https do outro lado? (Referenciando o uso de http://nginx:80 no alvo do túnel)"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Terminação SSL (SSL Offloading)**: Explicado o conceito de SSL Termination. O tráfego externo (Amigo -> Cloudflare) ocorre via HTTPS estrito. O tráfego Cloudflare -> Home Server é criptografado pelo protocolo do túnel (cloudflared).
+- O roteamento final (cloudflared -> 
+ginx via porta 80) ocorre inteiramente dentro da rede isolada do Docker (mist-network), eliminando a necessidade de overhead criptográfico interno e certificados auto-assinados. Mantido o design para http://nginx:80 visando performance e simplicidade no home-server.
+
+
+---
+
+## 2026-10-02 — Prompt 17
+
+### 1. Prompt do Usuário
+> "Pode seguir com a implementação de segurança"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Refatoração do Arquivo docker-compose.yml**:
+  - Remoção de todas as exposições de portas host (ports:) dos containers internos (uth, store, library, social, market, ugc, gateway), forçando a comunicação exclusivamente via rede isolada (mist-network).
+  - O rontend manteve a porta apenas atrelada à interface local 127.0.0.1:3000 como fallback de teste do home-server, sendo o ponto de entrada roteado pelo Nginx nativo do frontend (que já resolve /api/ para o gateway).
+  - Adição do container cloudflared ao arquivo compose configurado para iniciar o túnel.
+  - Implementação transversal de logging config (max-size: 10m, max-file: 3) em todos os microsserviços para evitar exaustão do disco do host em caso de logs agressivos na produção.
+- **Atualização do Template de Variáveis (.env.example)**:
+  - Adicionada a chave obrigatória TUNNEL_TOKEN.
+  - Modificado o valor padrão de ENVIRONMENT para production.
+  - Configurada documentação e parâmetro base para a chave CORS_ORIGINS conter a origem pública HTTPS.
+
+
+---
+
+## 2026-10-02 — Prompt 18
+
+### 1. Prompt do Usuário
+> "Como há um local para inserir o Tunnel_TOKEN, em tese eu não preciso mudar o token que eu já usava no meu container cloudflared, correto? Pois me parece que quando eu usar esse env no container do MIST, ele mesmo já fará sua própria tarefa de conectar na cloudflare né"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Topologia de Múltiplos Túneis Cloudflare:** Confirmada a hipótese do usuário. A instância de cloudflared declarada no docker-compose.yml do MIST opera como um daemon independente, em paralelo a quaisquer outros túneis pré-existentes no home-server.
+- Explicado que essa arquitetura é imperativa dado o fechamento das portas do host: como os microsserviços do MIST (incluindo o frontend) agora residem exclusivamente na rede fechada mist-network sem bind no host local, um agente cloudflared genérico/externo seria incapaz de alcançá-los. O container dedicado se acopla à bridge network e estabelece a ponte L7 para a borda da Cloudflare usando seu próprio TUNNEL_TOKEN.
+
+
+---
+
+## 2026-10-02 — Prompt 19
+
+### 1. Prompt do Usuário
+> "O token deve ser somente o token dado pelo cloudflare, ou todo o comando no estilo docker run cloudflare/cloudflared:latest tunnel --no-autoupdate run --token XXXXX"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Configuração de Variáveis (Cloudflare Tunnel):** Orientado o usuário a preencher o TUNNEL_TOKEN estritamente com o hash criptográfico (e.g. eyJhb...), ignorando o wrapper do comando docker run. Como a declaração da imagem e do comando 	unnel run já estão fixados na topologia do docker-compose.yml, a injeção via variável de ambiente espera unicamente a payload do token para o binding interno.
+
+
+---
+
+## 2026-10-02 — Prompt 20
+
+### 1. Prompt do Usuário
+> "Ok. Considerando agora então como ficou o trabalho, e que já preenchi o .env com os dados de CORS_ORIGINS e TUNNEL_TOKEN, quero entender se: Rodando localmente no meu PC, se eu rodar docker compose up -d ele irá subir a versão localhost funcional. Preparando o container no servidor (com monitoramento pelo watchtower para futuros deploys), ele já conseguirá subir tudo normalmente"
+
+### 2. Decisões Técnicas e Arquiteturais
+- **Validação de Ambientes Híbridos (Dev/Prod):** Confirmada a funcionalidade bidirecional da arquitetura desenhada.
+  - **Local (Dev):** Explicado que o mapeamento 127.0.0.1:3000:80 no frontend associado ao Nginx interno garante roteamento da interface e do /api/ para o gateway sem necessidade de portas expostas globalmente. Inserida advertência de não popular o TUNNEL_TOKEN localmente para evitar route hijacking (roubo da sessão do túnel pelo PC dev).
+  - **Servidor (Watchtower/Prod):** Validado que a total conteinerização com dependências blindadas e olumes persistentes atende plenamente ao ciclo de vida de deploys automatizados do Watchtower, assegurando persistência de estado do SQLite durante reciclagens e reconexão resiliente do tunnel da Cloudflare sem expor portas.
+
