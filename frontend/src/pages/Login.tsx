@@ -144,7 +144,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 type="text"
                 value={loginIdentifier}
                 onChange={(e) => setLoginIdentifier(e.target.value)}
-                className="w-full bg-brand-card border border-gray-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                 placeholder="Digite seu email ou usuário"
                 required
               />
@@ -157,7 +157,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                   type={showLoginPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-brand-card border border-gray-700 rounded-xl pl-4 pr-11 py-3 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                  className="w-full bg-white border border-gray-300 rounded-xl pl-4 pr-11 py-3 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                   placeholder="••••••••"
                   required
                 />
@@ -197,7 +197,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-brand-card border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                 placeholder="Seu nick gamer"
                 required
                 minLength={3}
@@ -209,7 +209,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-brand-card border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                 placeholder="seuemail@exemplo.com"
                 required
               />
@@ -222,7 +222,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     type={showRegisterPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-brand-card border border-gray-700 rounded-xl pl-3 pr-9 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                    className="w-full bg-white border border-gray-300 rounded-xl pl-3 pr-9 py-2.5 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                     placeholder="••••••••"
                     required
                     minLength={8}
@@ -244,7 +244,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                     type={showRegisterConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-brand-card border border-gray-700 rounded-xl pl-3 pr-9 py-2.5 text-sm text-white focus:outline-none focus:border-brand-purple placeholder-gray-500"
+                    className="w-full bg-white border border-gray-300 rounded-xl pl-3 pr-9 py-2.5 text-sm text-black focus:outline-none focus:border-brand-purple placeholder-gray-500 shadow-sm"
                     placeholder="••••••••"
                     required
                     minLength={8}

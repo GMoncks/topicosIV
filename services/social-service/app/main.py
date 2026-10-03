@@ -5,12 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import init_db
 from app.api.routes import router as social_router
+from app.api.notifications import router as notifications_router
+from app.api.groups import router as groups_router
+from app.api.forum import router as forum_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Inicializa tabelas SQLite do social
     init_db()
+    from app.db.database import SessionLocal
+    from app.db.seed_social import seed_social_data
+    db = SessionLocal()
+    try:
+        seed_social_data(db)
+    finally:
+        db.close()
     yield
 
 
@@ -33,6 +43,9 @@ app.add_middleware(
 )
 
 app.include_router(social_router)
+app.include_router(notifications_router)
+app.include_router(groups_router)
+app.include_router(forum_router)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,8 @@ from sqlalchemy import or_, desc, asc
 
 from app.models.game import Game
 from app.models.purchase import Purchase
-from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL
+from app.services.ai_client import AIClient
+from app.config import AUTH_SERVICE_URL, LIBRARY_SERVICE_URL, SOCIAL_SERVICE_URL, MARKET_SERVICE_URL
 
 
 class StoreService:
@@ -351,6 +352,43 @@ class StoreService:
 
             db.commit()
 
+            # Dispara evento de atividade game_purchased para o social-service (F-06)
+            for g in games:
+                try:
+                    await client.post(
+                        f"{SOCIAL_SERVICE_URL.rstrip('/')}/activities",
+                        json={
+                            "user_id": user_id,
+                            "type": "game_purchased",
+                            "payload": {
+                                "game_id": g.id,
+                                "game_title": g.title,
+                                "price": float(g.price),
+                                "banner_url": g.banner_url
+                            }
+                        }
+                    )
+                except Exception:
+                    pass
+
+            # Registra o lançamento no extrato da carteira (T-02) — best-effort,
+            # não bloqueia o checkout se o market-service estiver indisponível.
+            # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
+            if total_amount > 0:
+                try:
+                    titles = ", ".join(g.title for g in games)
+                    await client.post(
+                        f"{MARKET_SERVICE_URL.rstrip('/')}/wallet/transactions",
+                        json={
+                            "user_id": user_id,
+                            "type": "compra",
+                            "amount": total_amount,
+                            "description": f"Compra: {titles}"[:500]
+                        }
+                    )
+                except Exception:
+                    pass
+
             return {
                 "status": "success",
                 "order_id": order_id,
@@ -362,3 +400,66 @@ class StoreService:
         finally:
             if owns_client:
                 await client.aclose()
+
+    @staticmethod
+    async def get_curated_recommendations(
+        db: Session,
+        user_id: Optional[int] = None,
+        limit: int = 4,
+        client: Optional[httpx.AsyncClient] = None
+    ) -> List[dict]:
+        """
+        MIST AI Curator (G-02): Gera recomendações personalizadas com base na
+        biblioteca do usuário e nas tags dos jogos favoritados na wishlist.
+        """
+        all_games = db.query(Game).all()
+        catalog_games = [g.to_dict() for g in all_games]
+
+        user_library_games = []
+        user_favorite_tags = []
+
+        if user_id:
+            # 1. Consulta biblioteca do usuário no library-service
+            owns_client = False
+            if client is None:
+                client = httpx.AsyncClient(timeout=4.0)
+                owns_client = True
+            try:
+                lib_resp = await client.get(f"{LIBRARY_SERVICE_URL.rstrip('/')}/library/users/{user_id}/games")
+                if lib_resp.status_code == 200:
+                    user_library_games = lib_resp.json()
+            except Exception:
+                pass
+            finally:
+                if owns_client:
+                    await client.aclose()
+
+            # 2. Consulta tags dos jogos na Wishlist em store.db
+            wishlist_items = StoreService.get_user_wishlist(db, user_id=user_id)
+            wishlist_game_ids = [item.game_id for item in wishlist_items]
+            if wishlist_game_ids:
+                wishlist_games = db.query(Game).filter(Game.id.in_(wishlist_game_ids)).all()
+                for wg in wishlist_games:
+                    tags = wg.tags if isinstance(wg.tags, list) else json.loads(wg.tags or "[]")
+                    user_favorite_tags.extend(tags)
+
+        ai_client = AIClient()
+        recommendations = await ai_client.curate_recommendations(
+            user_library_games=user_library_games,
+            catalog_games=catalog_games,
+            limit=limit,
+            user_favorite_tags=user_favorite_tags
+        )
+
+        from app.services.ai_curator import generate_contextual_justification
+        for rec in recommendations:
+            if not rec.get("recommendation_reason") or "Destaque da comunidade" in rec.get("recommendation_reason", ""):
+                # Se o usuário possui biblioteca, enriquece com a justificativa contextual avançada
+                if user_library_games:
+                    rec["recommendation_reason"] = generate_contextual_justification(
+                        played_games=user_library_games,
+                        target_game=rec
+                    )
+
+        return recommendations
+

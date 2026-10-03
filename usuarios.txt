@@ -1,0 +1,184 @@
+================================================================================
+MIST — LISTA DE USUÁRIOS DE TESTE, TRANSAÇÕES, CHECKOUTS E BIBLIOTECA
+================================================================================
+Data de Geração: 2026-09-30 19:25:02 UTC
+Senha padrão para todos os usuários: Password@123
+================================================================================
+
+--------------------------------------------------------------------------------
+USUÁRIO #1: mkritli (Nível 12)
+--------------------------------------------------------------------------------
+• E-mail:          mauricio@live.com
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 450.00
+• Pontos MIST:     3500 pts
+• Total Transações: 11 lançamentos no extrato
+• Total Checkouts:  6 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 11: Elden Ring: Shadow of the Erdtree      |  8420 min (140.3h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 13: Baldur's Gate 3                        |  5100 min ( 85.0h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 12: Cyberpunk 2077: Phantom Liberty        |  2760 min ( 46.0h) | Instalado    
+    - ID 01: The Blood of the Dawnwalker            |   480 min (  8.0h) | Instalado    
+    - ID 10: Hollow Knight: Silksong                |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+    - ID 14: MIST Forca                             |     0 min (  0.0h) | Não Instalado -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 19 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$  500.00 - Recarga via PIX aprovada (25 dias atrás)
+    - [COMPRA ] R$  199.90 - Compra: Elden Ring: Shadow of the Erdtree (24 dias atrás)
+    - [COMPRA ] R$  199.99 - Compra: Baldur's Gate 3 (20 dias atrás)
+    - [RECARGA] R$  300.00 - Recarga de saldo na Carteira MIST (16 dias atrás)
+    - [COMPRA ] R$  159.00 - Compra: Cyberpunk 2077: Phantom Liberty (15 dias atrás)
+    - ... e mais 6 transações registradas.
+
+--------------------------------------------------------------------------------
+USUÁRIO #2: gabriel_t800 (Nível 24)
+--------------------------------------------------------------------------------
+• E-mail:          gabriel@mistgames.com
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 1250.00
+• Pontos MIST:     8200 pts
+• Total Transações: 11 lançamentos no extrato
+• Total Checkouts:  6 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 08: The Witcher 3: Wild Hunt — Remastered  | 12300 min (205.0h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 09: Wardogs                                |  3600 min ( 60.0h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 02: Orbitals                               |  1500 min ( 25.0h) | Instalado    
+    - ID 15: MIST Labirinto                         |    45 min (  0.8h) | Instalado    
+    - ID 07: Control Resonant                       |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+    - ID 05: Fire Emblem: Fortune's Weave           |     0 min (  0.0h) | Não Instalado -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 19 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [1, 3, 4, 6, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$ 1000.00 - Recarga Bancária Carteira MIST (30 dias atrás)
+    - [COMPRA ] R$  300.00 - Compra: The Witcher 3: Wild Hunt — Remastered (28 dias atrás)
+    - [COMPRA ] R$  199.00 - Compra: Wardogs (22 dias atrás)
+    - [VENDA  ] R$  250.00 - Venda no Mercado: Faca Tática MIST (20 dias atrás)
+    - [VENDA  ] R$  320.00 - Venda no Mercado: Item Cosmético Lendário (18 dias atrás)
+    - ... e mais 6 transações registradas.
+
+--------------------------------------------------------------------------------
+USUÁRIO #3: sarah_connor (Nível 8)
+--------------------------------------------------------------------------------
+• E-mail:          sarah.connor@sky.net
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 380.00
+• Pontos MIST:     2100 pts
+• Total Transações: 7 lançamentos no extrato
+• Total Checkouts:  5 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 12: Cyberpunk 2077: Phantom Liberty        |  6800 min (113.3h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 03: Onimusha: Way of the Sword             |  1920 min ( 32.0h) | Instalado    
+    - ID 06: Silent Hill: Townfall                  |   750 min ( 12.5h) | Instalado    
+    - ID 01: The Blood of the Dawnwalker            |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+    - ID 16: MIST Quiz                              |     0 min (  0.0h) | Não Instalado -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 20 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [2, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$  600.00 - Recarga de saldo na Carteira MIST (22 dias atrás)
+    - [COMPRA ] R$  250.00 - Compra: Silent Hill: Townfall (20 dias atrás)
+    - [COMPRA ] R$  200.00 - Compra: Onimusha: Way of the Sword (16 dias atrás)
+    - [RECARGA] R$  300.00 - Recarga de saldo na Carteira MIST (12 dias atrás)
+    - [COMPRA ] R$  159.00 - Compra: Cyberpunk 2077: Phantom Liberty (10 dias atrás)
+    - ... e mais 2 transações registradas.
+
+--------------------------------------------------------------------------------
+USUÁRIO #4: lucas_speed (Nível 6)
+--------------------------------------------------------------------------------
+• E-mail:          lucas.speed@speedrun.io
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 85.00
+• Pontos MIST:     1450 pts
+• Total Transações: 6 lançamentos no extrato
+• Total Checkouts:  5 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 10: Hollow Knight: Silksong                |  9200 min (153.3h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 02: Orbitals                               |  4100 min ( 68.3h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 14: MIST Forca                             |   180 min (  3.0h) | Instalado    
+    - ID 15: MIST Labirinto                         |   120 min (  2.0h) | Instalado    
+    - ID 13: Baldur's Gate 3                        |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 20 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$  300.00 - Recarga PIX (26 dias atrás)
+    - [COMPRA ] R$   89.99 - Compra: Hollow Knight: Silksong (25 dias atrás)
+    - [COMPRA ] R$   90.00 - Compra: Orbitals (20 dias atrás)
+    - [RECARGA] R$  200.00 - Recarga de saldo na Carteira MIST (10 dias atrás)
+    - [COMPRA ] R$  199.99 - Compra: Baldur's Gate 3 (2 dias atrás)
+    - ... e mais 1 transações registradas.
+
+--------------------------------------------------------------------------------
+USUÁRIO #5: elena_rpg (Nível 15)
+--------------------------------------------------------------------------------
+• E-mail:          elena.rostova@questguild.org
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 740.00
+• Pontos MIST:     4800 pts
+• Total Transações: 9 lançamentos no extrato
+• Total Checkouts:  5 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 13: Baldur's Gate 3                        | 14500 min (241.7h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 05: Fire Emblem: Fortune's Weave           |  7200 min (120.0h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 08: The Witcher 3: Wild Hunt — Remastered  |  4800 min ( 80.0h) | Instalado     -> [MUITO JOGADO / HARDCORE]
+    - ID 03: Onimusha: Way of the Sword             |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+    - ID 02: Orbitals                               |     0 min (  0.0h) | Não Instalado -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 20 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [1, 4, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$  800.00 - Recarga Bancária Carteira MIST (28 dias atrás)
+    - [COMPRA ] R$  199.99 - Compra: Baldur's Gate 3 (26 dias atrás)
+    - [COMPRA ] R$  150.00 - Compra: Fire Emblem: Fortune's Weave (22 dias atrás)
+    - [RECARGA] R$  500.00 - Recarga de saldo na Carteira MIST (18 dias atrás)
+    - [COMPRA ] R$  300.00 - Compra: The Witcher 3: Wild Hunt — Remastered (15 dias atrás)
+    - ... e mais 4 transações registradas.
+
+--------------------------------------------------------------------------------
+USUÁRIO #6: novato_mist (Nível 1)
+--------------------------------------------------------------------------------
+• E-mail:          novato@mist.com
+• Senha de acesso: Password@123
+• Saldo Carteira:  R$ 200.00
+• Pontos MIST:     500 pts
+• Total Transações: 3 lançamentos no extrato
+• Total Checkouts:  2 compras finalizadas
+
+  [JOGOS ADQUIRIDOS NA BIBLIOTECA]
+    - ID 16: MIST Quiz                              |    35 min (  0.6h) | Instalado    
+    - ID 02: Orbitals                               |     0 min (  0.0h) | Instalado     -> [ATENÇÃO: JOGO AINDA NÃO INICIADO - 0 MINUTOS]
+
+  [JOGOS NÃO ADQUIRIDOS PELO USUÁRIO (DISPONÍVEIS NA LOJA)]
+    - Total de jogos não possuídos: 23 títulos disponíveis na loja
+    - IDs dos jogos não possuídos: [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+
+  [ÚLTIMAS TRANSAÇÕES NO EXTRATO DA CARTEIRA]
+    - [RECARGA] R$  200.00 - Bônus de Boas-vindas MIST (3 dias atrás)
+    - [COMPRA ] R$   90.00 - Compra: Orbitals (2 dias atrás)
+    - [RECARGA] R$   90.00 - Recarga de saldo na Carteira MIST (1 dias atrás)
+
+================================================================================
+Instruções de Login:
+1. Acesse o Frontend MIST em http://localhost:3000
+2. Clique em 'Iniciar Sessão'
+3. Digite o Usuário/E-mail de qualquer conta acima e a senha 'Password@123'
+4. Verifique a Biblioteca, Extrato da Carteira, Recomendações e Wishlist
+================================================================================

@@ -3001,3 +3001,232 @@ Este arquivo registra os prompts usados para conduzir o desenvolvimento do proje
 - Atualizado [`resultados.json`](./resultados.json) com os registros de validação dry-run (`origem: validacao`).
 - Registrado histórico completo no [`prompts.md`](./prompts.md).
 
+---
+
+## 2026-09-25 — Prompt 36
+
+**Prompt do usuário:**
+
+> Planeje a implementação das seguintes funcionalidades:
+> E-04 = Implementar endpoints de sessão no library-service: POST /session/start, POST /session/ping (acumula playtime) e POST /session/end
+> E-05 = Implementar endpoint POST /achievements/unlock com registro no banco e disparo de evento de atividade
+> E-06 = Conectar botão "Baixar" na Library.tsx ao endpoint de download e acionar o DownloadBar.tsx com progresso simulado
+> E-07 = Implementar notificação Toast no frontend para conquistas desbloqueadas (SSE ou polling leve)
+
+**Decisões arquiteturais e técnicas:**
+
+- Elaboração de plano técnico completo e detalhado no artefato [`implementation_plan.md`](./implementation_plan.md):
+  - **E-04**: Criação do modelo `GameSession` no `library-service`, mapeamento das rotas de sessão (`/session/start`, `/session/ping`, `/session/end`), lógica de acúmulo de tempo de jogo no `LibraryItem` e atualização de `last_played`.
+  - **E-05**: Atualização do `POST /achievements/unlock` para buscar metadados de conquista e disparar evento assíncrono resiliente de atividade (`POST /activities`) para o `social-service`, registrando na tabela `activities`.
+  - **E-06**: Conexão do botão "Baixar" na `Library.tsx` ao endpoint de pacote `.zip` real da Store, orquestrando eventos globais `mist:start-download` e `mist:game-installed` integrados com o `DownloadBar.tsx` (progresso simulado de 0 a 100% com pausa/retomada e transição reativa para instalado).
+  - **E-07**: Arquitetura híbrida para notificações Toast de conquistas (polling leve REST com `/achievements/recent` a cada 5–8s para máxima compatibilidade com o API Gateway, além de endpoint SSE no backend) com estilização destacada (troféu dourado).
+
+**Resumo das saídas:**
+
+- Criado o plano de implementação detalhado em [`implementation_plan.md`](./implementation_plan.md) com plano de verificação e testes.
+- Atualizado o [`prompts.md`](./prompts.md) com o histórico do planejamento.
+
+---
+
+## 2026-09-25 — Prompt 37
+
+**Prompt do usuário:**
+
+> Autorizado. Ao final, /qa_writer criar os novos testes
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação Backend E-04 (`library-service` & `mist_sdk`):
+   - Criado modelo SQLAlchemy `GameSession` em `services/library-service/app/models/game_session.py` (`id`, `user_id`, `game_id`, `started_at`, `last_ping`, `ended_at`, `duration_minutes`, `is_active`).
+   - Implementados schemas em `services/library-service/app/schemas/session.py` (`SessionStartRequest`, `SessionPingRequest`, `SessionEndRequest`, `SessionResponse`).
+   - Implementados métodos `start_session`, `ping_session` (com cálculo e acúmulo incremental de playtime no `LibraryItem` e atualização de `last_played`), e `end_session` em `services/library-service/app/services/library_service.py`.
+   - Adicionados endpoints `POST /session/start`, `POST /session/ping` e `POST /session/end` em `services/library-service/app/api/routes.py`.
+   - Atualizado `services/store-service/app/data/mist_sdk.py` adicionando o método `end_session()`.
+   - Criada suíte de testes unitários e de integração `services/library-service/tests/test_sessions.py`.
+
+2. Implementação Backend E-05 (`library-service` & `social-service`):
+   - Atualizado método `unlock_achievement` no `library-service` para disparar evento assíncrono resiliente de atividade (`POST /activities` no `social-service`) com tipo `achievement_unlocked`, incluindo nome e descrição da conquista nos metadados.
+   - Criado schema `ActivityCreate` em `services/social-service/app/schemas/activity.py` e rotas `POST /activities`, `GET /activities` e `GET /feed` em `services/social-service/app/api/routes.py`.
+   - Implementada persistência de atividades sociais no modelo `Activity` em `services/social-service/app/services/social_service.py`.
+   - Implementados testes de integração em `services/social-service/tests/test_social.py`.
+
+3. Implementação Frontend E-06 (Conexão do Download e DownloadBar):
+   - Atualizado `frontend/src/api/client.ts` com o método `downloadGamePackage(gameId)` obtendo blob `.zip` real da rota `/store/games/{id}/download`.
+   - Atualizado `frontend/src/pages/Library.tsx`:
+     - O botão "Baixar" dispara o download real do pacote e emite o evento `mist:start-download` com os metadados do jogo.
+     - Implementado listener reativo para `mist:game-installed` que atualiza o estado local do jogo para `is_installed: true`, exibindo status "Instalado" e o botão "Jogar".
+     - O botão "Jogar" aciona `libraryApi.startSession` e registra a sessão ativa.
+   - Atualizado `frontend/src/components/DownloadBar.tsx`:
+     - Gerencia download ativo com progresso simulado e fluido (0% a 100%), suporte a pausar/retomar e cancelamento.
+     - Ao concluir, emite `mist:game-installed` e `mist:toast` informando a conclusão da instalação.
+   - Adicionada suíte de testes em `frontend/src/components/DownloadBar.test.tsx` e atualizado `frontend/src/pages/Library.test.tsx`.
+
+4. Implementação Frontend E-07 (Notificações Toast para Conquistas):
+   - Adicionados endpoints no `library-service`: `GET /achievements/recent` e `GET /achievements/stream` (SSE).
+   - Atualizado `frontend/src/App.tsx`:
+     - Adicionado polling leve (`libraryApi.getRecentAchievements`) a cada 6s quando o usuário estiver autenticado, além de listener global para o evento `mist:achievement-unlocked`.
+     - Implementado banner flutuante Toast estilizado de conquista desbloqueada (ícone de troféu dourado, gradiente âmbar/dourado e botão de fechar).
+   - Adicionada suíte de testes em `frontend/src/components/AchievementToast.test.tsx`.
+
+5. Curadoria e Registro de Testes via `qa_writer` & Validação Dry-run:
+   - Adicionados 9 novos testes no [`TESTS.md`](./TESTS.md):
+     - `LIB-UNIT-03`: Cálculo e acúmulo de playtime e status de sessão ativa.
+     - `FRONT-UNIT-14`: Renderização e barra de progresso simulado no `DownloadBar`.
+     - `FRONT-UNIT-15`: Pausa e retomada no `DownloadBar`.
+     - `FRONT-UNIT-16`: Notificação Toast de conquista desbloqueada com estilo troféu dourado.
+     - `FRONT-UNIT-17`: Acionamento de download e atualização para "Instalado" / "Jogar" na `Library`.
+     - `LIB-INT-07`: Ciclo de vida completo de sessão de jogo (`/session/start`, `/session/ping`, `/session/end`).
+     - `LIB-INT-08`: Desbloqueio de conquista e disparo resiliente de atividade social.
+     - `LIB-INT-09`: Consulta de conquistas recentes e stream SSE.
+     - `SOCIAL-INT-01`: Registro e recuperação de feed de atividades sociais.
+   - Executada a validação dry-run de todos os 9 novos testes via `.agents/skills/qa_tester/scripts/runner_adapter.py --origem validacao`, com todos registrando `PASS` no [`resultados.json`](./resultados.json).
+
+**Resumo das saídas:**
+
+- Arquivos Backend criados/modificados:
+  - `services/library-service/app/models/game_session.py` (novo)
+  - `services/library-service/app/schemas/session.py` (novo)
+  - `services/library-service/app/services/library_service.py` (atualizado)
+  - `services/library-service/app/api/routes.py` (atualizado)
+  - `services/library-service/app/db/database.py` (atualizado)
+  - `services/library-service/tests/test_sessions.py` (novo)
+  - `services/social-service/app/schemas/activity.py` (novo)
+  - `services/social-service/app/services/social_service.py` (atualizado)
+  - `services/social-service/app/api/routes.py` (atualizado)
+  - `services/social-service/tests/test_social.py` (atualizado)
+  - `services/store-service/app/data/mist_sdk.py` (atualizado)
+- Arquivos Frontend criados/modificados:
+  - `frontend/src/api/client.ts` (atualizado)
+  - `frontend/src/pages/Library.tsx` (atualizado)
+  - `frontend/src/pages/Library.test.tsx` (atualizado)
+  - `frontend/src/components/DownloadBar.tsx` (atualizado)
+  - `frontend/src/components/DownloadBar.test.tsx` (novo)
+  - `frontend/src/components/AchievementToast.test.tsx` (novo)
+  - `frontend/src/App.tsx` (atualizado)
+- Documentação e Catálogo de Testes:
+  - `TESTS.md` (atualizado com 9 novos testes)
+  - `resultados.json` (atualizado com 9 validações dry-run `PASS`)
+  - `prompts.md` (atualizado incrementalmente)
+  - `walkthrough.md` (atualizado com detalhes da entrega)
+- Resultados de testes:
+  - Backend: 13/13 testes em `library-service`, 8/8 em `social-service`, 28/28 em `store-service` aprovados.
+  - Frontend: 40/40 testes aprovados em vitest.
+  - Build Frontend: 0 erros de compilação TypeScript.
+
+---
+
+## 2026-09-25 — Prompt 38
+
+**Prompt do usuário:**
+
+> Planeje a implementação de todos os tickets ainda pendentes do bloco F (F-03 até F-08) descritos no arquivo development_schedule.md.
+
+**Decisões arquiteturais e técnicas:**
+
+1. Levantamento e Análise dos Tickets Pendentes do Bloco F:
+   - **F-03**: Endpoint WebSocket `WS /ws/chat/{room_id}` para chat 1:1 e salas de amigos com difusão em tempo real e indicador de digitação (*typing indicator*), além de endpoints REST para histórico de mensagens e confirmação de leitura.
+   - **F-04**: Endpoint WebSocket de presença `WS /ws/presence` para rastreamento em tempo real de status (*Online* / *Ausente* / *Jogando* / *Offline*), snapshot inicial de contatos conectados e difusão de atualizações.
+   - **F-05**: Atualização reativa de status do usuário para *"Jogando [Título do Jogo]"* ao iniciar sessão (disparado via SDK em `mist_sdk.py` e via interface em `Library.tsx` através de notificação do `library-service` para o `social-service`).
+   - **F-06**: Feed de atividades `GET /feed` no `social-service` integrado com disparo de eventos ao comprar jogos (`store-service`), desbloquear conquistas (`library-service`) e subir de nível (`auth-service`).
+   - **F-07**: Componente interativo de janela de chat `ChatWindow.tsx` integrado à `Social.tsx` com histórico, auto-scroll, balões estilizados, timestamps e indicador animado de digitação.
+   - **F-08**: Exibição reativa de status de presença em tempo real na lista de amigos da `Social.tsx`, com ordenação dinâmica (jogando > online > ausente > offline).
+
+2. Arquitetura de Roteamento WebSocket:
+   - API Gateway (`gateway`) atuará como proxy reverso de WebSockets com validação centralizada de JWT via query param e repasse bidirecional de frames para o `social-service`.
+   - O frontend implementará fallback gracioso para polling REST caso o ambiente do cliente interrompa o WebSocket.
+
+3. Criação do Artefato de Planejamento:
+   - Gerado artefato [`implementation_plan.md`](./implementation_plan.md) com `RequestFeedback: true`, detalhando a divisão de arquivos, diagramas de comunicação, dependências e plano de verificação automatizada e manual.
+
+**Resumo das saídas:**
+
+- Criado o plano detalhado de implementação no artefato [`implementation_plan.md`](./implementation_plan.md).
+- Registrado histórico incremental no [`prompts.md`](./prompts.md).
+
+---
+
+## 2026-09-25 — Prompt 39
+
+**Prompt do usuário:**
+
+> Autorizado. Ao final da implementação, chamar o qa_writer para escrever os novos testes do sistema
+
+**Decisões arquiteturais e técnicas:**
+
+1. Implementação dos Tickets F-03 até F-08:
+   - **F-03 (Chat WebSocket & Histórico)**:
+     - Criado `ChatConnectionManager` (`services/social-service/app/services/chat_manager.py`) para gerenciamento de salas WebSocket (`direct_X_Y`), difusão de mensagens e indicador de digitação (*typing indicator*).
+     - Criados endpoints `WS /ws/chat/{room_id}`, `GET /chat/{room_id}/messages` e `POST /chat/{room_id}/read`.
+     - Criado seed de mensagens e atividades sociais em `services/social-service/app/db/seed_social.py`.
+   - **F-04 (Presença em Tempo Real)**:
+     - Criado `PresenceManager` (`services/social-service/app/services/presence_manager.py`) para rastreamento em memória de usuários conectados, envio de snapshot inicial no handshake e broadcast de mudanças de status.
+     - Criados endpoints `WS /ws/presence`, `GET /presence` e `POST /presence/status`.
+   - **F-05 (Status Dinâmico "Jogando [Título]")**:
+     - Atualizado `services/library-service/app/services/library_service.py` para notificar o `social-service` com `status="playing"` e título do jogo no `start_session`, e restaurar para `status="online"` no `end_session`.
+     - Atualizado `services/store-service/app/services/store_service.py` para disparar evento `game_purchased` ao `social-service/activities` após checkout bem-sucedido.
+     - Atualizado `services/auth-service/app/api/routes.py` com `GET /users/{user_id}` para resolução de perfis.
+     - Atualizado `gateway/app/main.py` com suporte a proxies reversos de WebSockets bidirecionais para `/ws/chat/{room_id}` e `/ws/presence`.
+   - **F-06 (Feed Enriquecido)**:
+     - Atualizado `services/social-service/app/api/routes.py` (`GET /feed`) para retornar feed cronológico contendo conquistas desbloqueadas, compras de jogos e progressão.
+   - **F-07 (Componente ChatWindow)**:
+     - Criado componente `frontend/src/components/ChatWindow.tsx` com WebSocket, polling de histórico de mensagens, formulário de envio com `Enter`, balões de mensagem estilizados e indicador animado de digitação.
+   - **F-08 (Lista de Amigos por Presença no Social.tsx)**:
+     - Atualizado `frontend/src/pages/Social.tsx` com WebSocket de presença em tempo real.
+     - Amigos agrupados reativamente em seções: *Jogando Agora* (com tag verde e nome do jogo), *Online* e *Offline*.
+     - Modal de envio de solicitação de amizade e abertura instantânea de `ChatWindow` ao clicar em qualquer amigo.
+
+2. Execução da Skill `qa_writer`:
+   - Escaneados todos os IDs existentes em `TESTS.md` para evitar colisões e manter numeração estritamente sequencial.
+   - Adicionados 10 novos testes no [`TESTS.md`](./TESTS.md) distribuídos entre Unitários e Integração:
+     - `SOCIAL-UNIT-04`: Conexão WebSocket de chat, envio/recebimento de mensagens e indicador de digitação (F-03).
+     - `SOCIAL-UNIT-05`: Conexão WebSocket de presença, snapshot inicial e transição para status de jogo (F-04 & F-05).
+     - `FRONT-UNIT-18`: Renderização da janela de chat (ChatWindow), histórico e indicador de digitação (F-07).
+     - `FRONT-UNIT-19`: Exibição do feed de atividades com conquistas e compras na página Social (F-06).
+     - `FRONT-UNIT-20`: Agrupamento e atualização reativa de presença em tempo real via WebSocket na página Social (F-08).
+     - `SOCIAL-INT-02`: Comunicação bidirecional via WebSocket no Chat de amigos com persistência de histórico (F-03).
+     - `SOCIAL-INT-03`: WebSocket de presença em tempo real e atualização de status de jogo (F-04 & F-05).
+     - `SOCIAL-INT-04`: Enriquecimento do Feed de Atividades com eventos multi-domínio de compras e conquistas (F-06).
+     - `LIB-SOC-INT-01`: Integração de presença: início e encerramento de sessão de jogo notificando Social Service (F-05).
+     - `STORE-SOC-INT-01`: Integração de feed: disparo automático de atividade game_purchased na conclusão do checkout (F-06).
+   - Executada validação pontual dry-run (`runner_adapter.py --origem validacao`) para cada um dos 10 testes, registrando os resultados no [`resultados.json`](./resultados.json) e promovendo todos os testes para `Status: aprovado`.
+
+**Resumo das saídas:**
+
+- Microsserviços e Gateway:
+  - `services/social-service/app/services/chat_manager.py` (novo)
+  - `services/social-service/app/services/presence_manager.py` (novo)
+  - `services/social-service/app/schemas/presence.py` (novo)
+  - `services/social-service/app/schemas/friend.py` (atualizado)
+  - `services/social-service/app/db/seed_social.py` (novo)
+  - `services/social-service/app/services/social_service.py` (atualizado)
+  - `services/social-service/app/api/routes.py` (atualizado)
+  - `services/social-service/app/main.py` (atualizado)
+  - `services/social-service/requirements.txt` (atualizado com websockets)
+  - `services/social-service/tests/test_social.py` (atualizado, 15 testes passando)
+  - `services/library-service/app/services/library_service.py` (atualizado com dispatch de presença)
+  - `services/library-service/tests/test_sessions.py` (atualizado com test_session_dispatches_presence_events)
+  - `services/store-service/app/services/store_service.py` (atualizado com dispatch de compra para feed)
+  - `services/store-service/tests/test_checkout.py` (atualizado com test_checkout_dispatches_activity_to_social_service)
+  - `services/auth-service/app/api/routes.py` (atualizado com GET /users/{user_id})
+  - `gateway/app/main.py` (atualizado com proxy WebSocket)
+  - `gateway/requirements.txt` (atualizado com websockets)
+- Frontend:
+  - `frontend/src/api/client.ts` (atualizado com socialApi)
+  - `frontend/src/components/ChatWindow.tsx` (novo)
+  - `frontend/src/components/ChatWindow.test.tsx` (novo, 4 testes passando)
+  - `frontend/src/pages/Social.tsx` (atualizado com presença WebSocket e ChatWindow)
+  - `frontend/src/pages/Social.test.tsx` (novo, 4 testes passando)
+- Catálogo de Testes e Documentação:
+  - `TESTS.md` (atualizado com 10 novos testes catalogados e aprovados)
+  - `resultados.json` (atualizado atomicamente com os 10 resultados de validação dry-run)
+  - `walkthrough.md` (atualizado com sumário das implementações)
+  - `prompts.md` (atualizado incrementalmente)
+- Status dos Testes:
+  - Pytest `social-service`: **15/15 aprovados (100%)**
+  - Pytest `library-service`: **14/14 aprovados (100%)**
+  - Pytest `store-service`: **29/29 aprovados (100%)**
+  - Vitest Frontend: **48/48 aprovados (100%)**
+  - Build Frontend: **0 erros de compilação TypeScript**
+
+
+
