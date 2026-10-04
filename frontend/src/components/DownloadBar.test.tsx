@@ -66,4 +66,26 @@ describe('DownloadBar Component (E-06)', () => {
     window.removeEventListener('mist:toast', toastListener as any);
     vi.useRealTimers();
   });
+
+  it('deve ocultar o overlay quando o download concluído for clicado', () => {
+    render(
+      <DownloadBar
+        initialDownload={{
+          gameTitle: 'MIST Quiz',
+          progressPercentage: 100,
+          isPaused: true,
+          statusText: 'Concluído (Instalado)'
+        }}
+      />
+    );
+
+    const bar = screen.getByTestId('download-bar');
+    expect(bar).toBeInTheDocument();
+
+    // Clica no overlay de download concluído
+    fireEvent.click(bar);
+
+    // O overlay deve sumir
+    expect(screen.queryByTestId('download-bar')).toBeNull();
+  });
 });

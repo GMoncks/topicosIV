@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { DownloadBar } from './components/DownloadBar';
 import { AuthModal } from './components/AuthModal';
 import { CartDrawer } from './components/CartDrawer';
+import { AcademicDisclaimer } from './components/AcademicDisclaimer';
 import { SystemNoticeModal, SystemNoticeData } from './components/SystemNoticeModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -58,6 +59,7 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showAcademicDisclaimer, setShowAcademicDisclaimer] = useState<boolean>(true);
   const [systemNotice, setSystemNotice] = useState<SystemNoticeData | null>(null);
   const [viewedUsername, setViewedUsername] = useState<string | null>(null);
   const [achievementToast, setAchievementToast] = useState<{
@@ -281,6 +283,11 @@ function AppContent() {
       {/* Área Principal Scrollável */}
       <div className="flex-1 overflow-y-auto relative flex flex-col justify-between">
         <div>
+          {/* Disclaimer Acadêmico Obrigatório (removível após 5s) */}
+          {showAcademicDisclaimer && (
+            <AcademicDisclaimer onClose={() => setShowAcademicDisclaimer(false)} />
+          )}
+
           {/* Header Superior Global (Loja, Notificações, Carteira, Carrinho) */}
           <Header
             wishlistCount={wishlistCount}

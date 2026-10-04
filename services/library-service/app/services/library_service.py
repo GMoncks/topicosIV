@@ -67,6 +67,20 @@ class LibraryService:
         return item.playtime_minutes if item else 0
 
     @staticmethod
+    def mark_installed(db: Session, user_id: int, game_id: int) -> LibraryItem:
+        """
+        Marca um jogo na biblioteca do usuário como instalado (is_installed = True).
+        Garante posse prévia caso o item ainda não exista.
+        """
+        item = db.query(LibraryItem).filter_by(user_id=user_id, game_id=game_id).first()
+        if not item:
+            item, _ = LibraryService.grant_game(db, user_id=user_id, game_id=game_id)
+        item.is_installed = True
+        db.commit()
+        db.refresh(item)
+        return item
+
+    @staticmethod
     async def enrich_library_items(
         items: List[LibraryItem],
         store_service_url: str,

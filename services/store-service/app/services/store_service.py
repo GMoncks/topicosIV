@@ -139,19 +139,135 @@ class StoreService:
         with open(sdk_src_path, "r", encoding="utf-8") as f:
             sdk_code = f.read()
 
+        public_api_url = os.getenv("MIST_PUBLIC_API_URL") or os.getenv("LIBRARY_API_URL") or "https://mist.biomimetics.com.br/api/library"
         session_data = {
             "session_token": user_token or "offline_dev_token",
             "user_id": user_id,
             "game_id": game.id,
             "game_title": game.title,
-            "library_api_url": os.getenv("LIBRARY_API_URL", "http://localhost:8003"),
+            "library_api_url": public_api_url,
         }
+
+        # 1. Launcher nativo para Windows
+        launcher_bat = (
+            "@echo off\r\n"
+            "chcp 65001 >nul\r\n"
+            f"title MIST Launcher - {game.title}\r\n"
+            "echo ========================================================\r\n"
+            "echo               MIST STUDIOS - LAUNCHER\r\n"
+            "echo ========================================================\r\n"
+            "echo.\r\n"
+            f"echo Iniciando {game.title}...\r\n"
+            "echo Conectando a plataforma MIST (telemetria e conquistas)...\r\n"
+            "echo.\r\n"
+            "where python >nul 2>nul\r\n"
+            "if %ERRORLEVEL% equ 0 (\r\n"
+            "    python game.py\r\n"
+            "    goto end\r\n"
+            ")\r\n"
+            "where py >nul 2>nul\r\n"
+            "if %ERRORLEVEL% equ 0 (\r\n"
+            "    py game.py\r\n"
+            "    goto end\r\n"
+            ")\r\n"
+            "echo [ERRO] Python nao foi encontrado no seu computador!\r\n"
+            "echo Para jogar, instale o Python 3 (versao 3.8 ou superior):\r\n"
+            "echo https://www.python.org/downloads/\r\n"
+            "echo.\r\n"
+            "echo Certifique-se de marcar a opcao 'Add Python to PATH' na instalacao.\r\n"
+            "echo.\r\n"
+            "pause\r\n"
+            "exit /b 1\r\n"
+            ":end\r\n"
+            "echo.\r\n"
+            "echo Obrigado por jogar na MIST!\r\n"
+            "echo.\r\n"
+            "pause\r\n"
+        )
+
+        # 2. Launcher nativo para Linux e macOS
+        launcher_sh = (
+            "#!/usr/bin/env bash\n"
+            f"# MIST Studios Launcher - {game.title}\n\n"
+            "echo \"========================================================\"\n"
+            "echo \"              MIST STUDIOS - LAUNCHER\"\n"
+            "echo \"========================================================\"\n"
+            "echo \"\"\n"
+            f"echo \"Iniciando {game.title}...\"\n"
+            "echo \"Conectando a plataforma MIST (telemetria e conquistas)...\"\n"
+            "echo \"\"\n"
+            "if command -v python3 >/dev/null 2>&1; then\n"
+            "    python3 game.py\n"
+            "    exit 0\n"
+            "elif command -v python >/dev/null 2>&1; then\n"
+            "    python game.py\n"
+            "    exit 0\n"
+            "else\n"
+            "    echo \"[ERRO] Python 3 não foi encontrado no seu sistema!\"\n"
+            "    echo \"Para jogar este jogo, instale o Python (3.8+):\"\n"
+            "    echo \" - Ubuntu/Debian: sudo apt update && sudo apt install python3\"\n"
+            "    echo \" - Fedora:        sudo dnf install python3\"\n"
+            "    echo \" - Arch Linux:    sudo pacman -S python\"\n"
+            "    echo \" - macOS:         brew install python3 ou baixe em https://www.python.org/downloads/\"\n"
+            "    echo \"\"\n"
+            "    read -p \"Pressione Enter para fechar...\"\n"
+            "    exit 1\n"
+            "fi\n"
+        )
+
+        # 3. Documentação passo a passo (LEIAME.txt)
+        readme_txt = (
+            "========================================================================\r\n"
+            f"                     MIST STUDIOS - JOGO STANDALONE\r\n"
+            f"                             {game.title}\r\n"
+            "========================================================================\r\n\r\n"
+            "Bem-vindo ao pacote oficial de jogo da plataforma MIST!\r\n"
+            "Este jogo foi desenvolvido pela MIST Studios e sincroniza automaticamente\r\n"
+            "seu tempo de jogo e conquistas desbloqueadas diretamente com a sua conta.\r\n\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "COMO JOGAR:\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "1. Extraia todos os arquivos deste arquivo .zip para uma pasta de sua escolha.\r\n"
+            "   (IMPORTANTE: mantenha todos os arquivos juntos na mesma pasta)\r\n\r\n"
+            "2. Para iniciar o jogo:\r\n"
+            "   - No Windows:\r\n"
+            "     Dê um duplo clique no arquivo 'jogar.bat'.\r\n"
+            "     (Ou abra o Prompt/PowerShell na pasta e digite: python game.py)\r\n\r\n"
+            "   - No Linux ou macOS:\r\n"
+            "     Abra o terminal na pasta extraída e execute:\r\n"
+            "     chmod +x jogar.sh\r\n"
+            "     ./jogar.sh\r\n"
+            "     (Ou simplesmente digite: python3 game.py)\r\n\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "REQUISITOS DO SISTEMA:\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "- Python 3.8 ou superior instalado (não requer nenhuma biblioteca externa;\r\n"
+            "  utiliza apenas a biblioteca padrão do Python).\r\n"
+            "- Conexão com a internet para sincronização com sua conta MIST\r\n"
+            "  (https://mist.biomimetics.com.br/).\r\n"
+            "- Caso esteja offline, o jogo funcionará normalmente no modo local e\r\n"
+            "  registrará o progresso quando a conexão for reestabelecida.\r\n\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "ESTRUTURA DE ARQUIVOS:\r\n"
+            "------------------------------------------------------------------------\r\n"
+            "- game.py       : Código principal do jogo.\r\n"
+            "- mist_sdk.py   : SDK de integração e telemetria da plataforma MIST.\r\n"
+            "- session.json  : Suas credenciais de sessão e configurações de conexão.\r\n"
+            "- jogar.bat     : Inicializador automático para Windows.\r\n"
+            "- jogar.sh      : Inicializador automático para Linux e macOS.\r\n"
+            "- LEIAME.txt    : Este arquivo de instruções.\r\n\r\n"
+            "Divirta-se jogando na MIST!\r\n"
+            "========================================================================\r\n"
+        )
 
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr("game.py", game_code)
             zf.writestr("mist_sdk.py", sdk_code)
             zf.writestr("session.json", json.dumps(session_data, indent=2, ensure_ascii=False))
+            zf.writestr("jogar.bat", launcher_bat)
+            zf.writestr("jogar.sh", launcher_sh)
+            zf.writestr("LEIAME.txt", readme_txt)
 
         zip_buffer.seek(0)
         slug = re.sub(r"[^a-zA-Z0-9_\-]", "_", game.title.lower()).strip("_")
@@ -371,6 +487,20 @@ class StoreService:
                 except Exception:
                     pass
 
+            # Concessão de Pontos MIST: 100 pontos por R$ 1,00 creditados no auth-service
+            points_earned = int(total_amount * 100)
+            if points_earned > 0:
+                try:
+                    await client.post(
+                        f"{auth_url.rstrip('/')}/users/{user_id}/points/credit",
+                        json={
+                            "amount": points_earned,
+                            "reason": f"Checkout MIST: {[g.title for g in games]}"
+                        }
+                    )
+                except Exception:
+                    pass
+
             # Registra o lançamento no extrato da carteira (T-02) — best-effort,
             # não bloqueia o checkout se o market-service estiver indisponível.
             # Jogos gratuitos (total_amount == 0) não geram lançamento de carteira.
@@ -395,8 +525,10 @@ class StoreService:
                 "items": items_response,
                 "total_paid": total_amount,
                 "new_wallet_balance": new_wallet_balance,
+                "points_earned": points_earned,
                 "purchased_at": now
             }
+
         finally:
             if owns_client:
                 await client.aclose()

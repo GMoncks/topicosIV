@@ -7,6 +7,31 @@ interface LibraryProps {
   onNavigateToStore?: () => void;
 }
 
+const LOCAL_STORAGE_INSTALLED_KEY = 'mist_installed_game_ids';
+
+function getLocalInstalledGameIds(): number[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_INSTALLED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalInstalledGameId(gameId: number): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const current = getLocalInstalledGameIds();
+    if (!current.includes(gameId)) {
+      current.push(gameId);
+      localStorage.setItem(LOCAL_STORAGE_INSTALLED_KEY, JSON.stringify(current));
+    }
+  } catch (err) {
+    console.error('Falha ao salvar jogo instalado no localStorage:', err);
+  }
+}
+
 export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [items, setItems] = useState<LibraryItemResponse[]>([]);
@@ -16,9 +41,12 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
   const [expandedGameId, setExpandedGameId] = useState<number | null>(null);
   const [installFilter, setInstallFilter] = useState<'all' | 'installed' | 'ready'>('all');
   const [downloadingGameIds, setDownloadingGameIds] = useState<Set<number>>(new Set());
+  const [playModalItem, setPlayModalItem] = useState<LibraryItemResponse | null>(null);
 
   const fetchMyGames = useCallback(async () => {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const localInstalled = getLocalInstalledGameIds();
+
     if (!token && !isAuthenticated) {
       setItems([]);
       setLoading(false);
@@ -29,7 +57,14 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
       setLoading(true);
       setError(null);
       const data = await libraryApi.getMyGames();
-      const validItems = Array.isArray(data) ? data.filter(item => item && Number(item.game_id) > 0) : [];
+      const validItems = Array.isArray(data)
+        ? data
+            .filter(item => item && Number(item.game_id) > 0)
+            .map(item => ({
+              ...item,
+              is_installed: item.is_installed || localInstalled.includes(item.game_id),
+            }))
+        : [];
       setItems(validItems);
     } catch (err: unknown) {
       console.error('Erro ao carregar biblioteca:', err);
@@ -45,8 +80,10 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
 
   // Listener para sincronizar em tempo real quando um download for concluído pela DownloadBar (E-06)
   useEffect(() => {
-    const handleGameInstalled = (e: CustomEvent<{ gameId: number; gameTitle?: string }>) => {
+    const handleGameInstalled = async (e: CustomEvent<{ gameId: number; gameTitle?: string }>) => {
       const { gameId } = e.detail;
+      saveLocalInstalledGameId(gameId);
+
       setItems(prevItems =>
         prevItems.map(item => (item.game_id === gameId ? { ...item, is_installed: true } : item))
       );
@@ -55,6 +92,13 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
         next.delete(gameId);
         return next;
       });
+
+      // Persiste o status de instalação no backend (library-service)
+      try {
+        await libraryApi.markGameInstalled(gameId);
+      } catch (err) {
+        console.warn('Não foi possível persistir status de instalação no backend:', err);
+      }
     };
 
     window.addEventListener('mist:game-installed' as any, handleGameInstalled);
@@ -79,17 +123,17 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
 
   const handleDownload = async (item: LibraryItemResponse) => {
     const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
+    setDownloadingGameIds(prev => new Set(prev).add(item.game_id));
+
+    // 1. Notifica o início de download para acionar o DownloadBar (E-06)
+    window.dispatchEvent(
+      new CustomEvent('mist:start-download', {
+        detail: { gameId: item.game_id, gameTitle }
+      })
+    );
+
+    // 2. Tenta baixar o pacote .zip real do servidor (disponível para títulos MIST Studios)
     try {
-      setDownloadingGameIds(prev => new Set(prev).add(item.game_id));
-
-      // 1. Notifica o início de download para acionar o DownloadBar (E-06)
-      window.dispatchEvent(
-        new CustomEvent('mist:start-download', {
-          detail: { gameId: item.game_id, gameTitle }
-        })
-      );
-
-      // 2. Dispara requisição real para o endpoint de download do pacote .zip
       const blob = await storeApi.downloadGamePackage(item.game_id);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -100,25 +144,17 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Erro ao baixar pacote do jogo:', err);
-      window.dispatchEvent(
-        new CustomEvent('mist:toast', {
-          detail: `Erro ao iniciar download de ${gameTitle}. Tente novamente.`
-        })
-      );
-      setDownloadingGameIds(prev => {
-        const next = new Set(prev);
-        next.delete(item.game_id);
-        return next;
-      });
+    } catch {
+      // Jogos do catálogo geral (não-MIST) são itens simulados no ecossistema acadêmico
+      // e não possuem pacote binário físico no backend. O download segue de forma
+      // simulada via DownloadBar sem emitir toast de erro espúrio.
+      console.info(`Jogo '${gameTitle}' não possui pacote binário no backend; download simulado mantido.`);
     }
   };
 
   const handlePlay = async (item: LibraryItemResponse) => {
     const gameTitle = item.game?.title || `Jogo #${item.game_id}`;
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
-    const userId = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_user_id') : null;
+    const isMistExclusive = item.game?.publisher === 'MIST Studios';
 
     try {
       // 1. Inicia sessão oficial no library-service (E-04)
@@ -127,35 +163,16 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
       // Falha de rede no backend não impede tentativa local
     }
 
-    // 2. Tenta disparar o jogo nativamente via MIST Local Daemon (127.0.0.1:39090)
-    try {
-      const daemonRes = await fetch('http://127.0.0.1:39090/launch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          game_id: item.game_id,
-          session_token: token || 'local_token',
-          user_id: Number(userId) || 1,
-          library_api_url: 'http://localhost:8003'
-        }),
-      });
-
-      if (daemonRes.ok) {
-        window.dispatchEvent(
-          new CustomEvent('mist:toast', {
-            detail: `🎮 "${gameTitle}" aberto no seu computador pelo MIST Daemon!`
-          })
-        );
-        return;
-      }
-    } catch {
-      // Daemon não está em execução em segundo plano
+    // 2. Se for jogo da MIST Studios, abre o modal instrutivo multiplataforma (Windows e Linux/Mac)
+    if (isMistExclusive) {
+      setPlayModalItem(item);
+      return;
     }
 
-    // 3. Fallback amigável caso o daemon esteja offline
+    // 3. Notificação amigável para jogos simulados do catálogo geral
     window.dispatchEvent(
       new CustomEvent('mist:toast', {
-        detail: `🎮 Sessão de "${gameTitle}" iniciada! Para abrir o jogo em janela nativa, execute o iniciar_mist_daemon.bat.`
+        detail: `🎮 Sessão de "${gameTitle}" iniciada na plataforma MIST!`
       })
     );
   };
@@ -523,6 +540,92 @@ export const Library: React.FC<LibraryProps> = ({ onNavigateToStore }) => {
               </div>
             );
           })}
+        </div>
+      )}
+      {/* Modal de Instruções de Execução (Standalone Multiplataforma) */}
+      {playModalItem && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="play-modal-title"
+        >
+          <div className="bg-brand-card border border-brand-purple/40 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setPlayModalItem(null)}
+              aria-label="Fechar"
+              className="absolute top-5 right-5 text-gray-400 hover:text-white transition p-2 rounded-xl hover:bg-white/10 cursor-pointer"
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-brand-purple/20 border border-brand-purple/40 flex items-center justify-center text-brand-purple text-2xl">
+                <i className="fa-solid fa-gamepad"></i>
+              </div>
+              <div>
+                <h3 id="play-modal-title" className="text-xl font-display font-black text-white">
+                  Jogando {playModalItem.game?.title}
+                </h3>
+                <span className="text-xs text-brand-purple font-semibold flex items-center gap-1.5">
+                  <i className="fa-solid fa-circle-check text-[10px]"></i>
+                  Sessão iniciada na MIST
+                </span>
+              </div>
+            </div>
+
+            <p className="text-gray-300 text-sm leading-relaxed mb-5">
+              Este é um jogo standalone da <strong>MIST Studios</strong>. Suas conquistas e tempo de jogo serão sincronizados diretamente com sua conta online!
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <div className="bg-brand-surface/70 border border-gray-800 rounded-2xl p-4">
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <i className="fa-brands fa-windows text-blue-400 text-sm"></i>
+                  No Windows
+                </div>
+                <p className="text-xs text-gray-300">
+                  Extraia o arquivo baixado e dê um duplo clique no <code className="bg-black/60 px-1.5 py-0.5 rounded text-purple-300 border border-purple-500/30">jogar.bat</code>.
+                </p>
+              </div>
+
+              <div className="bg-brand-surface/70 border border-gray-800 rounded-2xl p-4">
+                <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <i className="fa-brands fa-linux text-yellow-400 text-sm"></i>
+                  <i className="fa-brands fa-apple text-gray-300 text-sm"></i>
+                  No Linux ou macOS
+                </div>
+                <p className="text-xs text-gray-300">
+                  Abra o terminal na pasta extraída e execute:
+                  <code className="block mt-1 bg-black/60 px-2 py-1 rounded text-purple-300 border border-purple-500/30 font-mono text-[11px]">
+                    chmod +x jogar.sh && ./jogar.sh
+                  </code>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  handleDownload(playModalItem);
+                }}
+                className="flex-1 bg-brand-surface hover:bg-gray-800 border border-gray-700 hover:border-brand-purple text-gray-200 hover:text-white py-3 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <i className="fa-solid fa-download"></i>
+                Baixar Pacote Novamente
+              </button>
+              <button
+                type="button"
+                onClick={() => setPlayModalItem(null)}
+                className="flex-1 bg-brand-purple hover:bg-brand-purpleDark text-white py-3 px-4 rounded-xl text-xs font-bold transition shadow-lg shadow-brand-purple/30 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <i className="fa-solid fa-check"></i>
+                Entendi, vamos jogar!
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

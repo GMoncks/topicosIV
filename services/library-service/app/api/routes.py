@@ -74,6 +74,45 @@ def check_user_has_game(
     return {"user_id": user_id, "game_id": game_id, "owned": owned, "playtime_minutes": playtime_minutes}
 
 
+@router.post(
+    "/library/games/{game_id}/install",
+    status_code=status.HTTP_200_OK,
+    summary="Marca um jogo como instalado na biblioteca do usuário autenticado"
+)
+@router.post(
+    "/games/{game_id}/install",
+    status_code=status.HTTP_200_OK,
+    summary="Alias para marcar um jogo como instalado"
+)
+def mark_game_installed(
+    game_id: int,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    db: Session = Depends(get_db)
+):
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Identificação de usuário necessária para registrar instalação."
+        )
+    try:
+        user_id = int(x_user_id)
+        if user_id <= 0:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID de usuário inválido."
+        )
+
+    item = LibraryService.mark_installed(db=db, user_id=user_id, game_id=game_id)
+    return {
+        "status": "installed",
+        "user_id": item.user_id,
+        "game_id": item.game_id,
+        "is_installed": item.is_installed
+    }
+
+
 @router.get(
     "/library/my-games",
     response_model=List[LibraryItemResponse],

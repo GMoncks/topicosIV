@@ -203,3 +203,17 @@ def test_lib_int_05_get_my_games_empty_for_user_without_games(client):
     data = response.json()
     assert isinstance(data, list)
     assert len(data) == 0
+
+
+def test_lib_int_06_mark_game_installed(client, db_session):
+    """
+    [LIB-INT-06] Verifica que POST /library/games/{game_id}/install marca
+    o jogo como instalado (is_installed = True) no banco de dados.
+    """
+    res = client.post("/library/games/77/install", headers={"X-User-Id": "10"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "installed"
+    assert data["game_id"] == 77
+    assert data["is_installed"] is True
+

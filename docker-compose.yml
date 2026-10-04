@@ -4,9 +4,11 @@ services:
       context: ./services/auth-service
       dockerfile: Dockerfile
     container_name: mist-auth-service
-    ports:
-      # Expõe apenas para localhost do host em desenvolvimento (não expõe na rede externa/LAN)
-      - "127.0.0.1:${AUTH_SERVICE_PORT:-8001}:8001"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8001
@@ -26,8 +28,11 @@ services:
       context: ./services/store-service
       dockerfile: Dockerfile
     container_name: mist-store-service
-    ports:
-      - "127.0.0.1:${STORE_SERVICE_PORT:-8002}:8002"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8002
@@ -51,8 +56,11 @@ services:
       context: ./services/library-service
       dockerfile: Dockerfile
     container_name: mist-library-service
-    ports:
-      - "127.0.0.1:${LIBRARY_SERVICE_PORT:-8003}:8003"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8003
@@ -72,8 +80,11 @@ services:
       context: ./services/social-service
       dockerfile: Dockerfile
     container_name: mist-social-service
-    ports:
-      - "127.0.0.1:${SOCIAL_SERVICE_PORT:-8004}:8004"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8004
@@ -95,8 +106,11 @@ services:
       context: ./services/market-service
       dockerfile: Dockerfile
     container_name: mist-market-service
-    ports:
-      - "127.0.0.1:${MARKET_SERVICE_PORT:-8005}:8005"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8005
@@ -116,8 +130,11 @@ services:
       context: ./services/ugc-service
       dockerfile: Dockerfile
     container_name: mist-ugc-service
-    ports:
-      - "127.0.0.1:${UGC_SERVICE_PORT:-8006}:8006"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8006
@@ -135,8 +152,11 @@ services:
       context: ./gateway
       dockerfile: Dockerfile
     container_name: mist-gateway
-    ports:
-      - "${GATEWAY_PORT:-8000}:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     environment:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PORT=8000
@@ -165,13 +185,34 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: mist-frontend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      # Exposto apenas localmente caso deseje testar no home-server. O túnel acessará diretamente a porta 80 interna.
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
     depends_on:
       - gateway
     networks:
       - mist-network
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: mist-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    networks:
+      - mist-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   auth_data:

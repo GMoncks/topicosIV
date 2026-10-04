@@ -5,6 +5,14 @@
 - vitest → comando-base: `npm --prefix frontend run test:unit`, diretório: `.`
 - playwright → comando-base: `npm --prefix frontend run test:e2e`, diretório: `.`
 
+### Contagem de Testes por Runner
+| Runner | Quantidade de Testes | Percentual |
+| :--- | :---: | :---: |
+| `pytest` | 119 | 60,71% |
+| `vitest` | 73 | 37,24% |
+| `playwright` | 4 | 2,04% |
+| **Total** | **196** | **100%** |
+
 ## Unitários
 
 ### Autenticação (Auth Service)
@@ -297,18 +305,18 @@
 - Resultado esperado: Catálogo populado com jogos com dados realistas e idempotência preservada.
 - Rastreabilidade: `services/store-service/app/db/seed.py`
 
-#### STORE-UNIT-03 — Download dinâmico do pacote de jogo (.zip com game.py, mist_sdk.py e session.json)
+#### STORE-UNIT-03 — Download dinâmico do pacote de jogo standalone multiplataforma (.zip com game.py, mist_sdk.py, session.json, jogar.bat, jogar.sh e LEIAME.txt)
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
 - Comando: `pytest services/store-service/tests/test_download.py`
-- Pré-condições: Endpoints `/games/{id}/download` implementados no `store-service` com os 3 mini-jogos disponíveis.
+- Pré-condições: Endpoints `/games/{id}/download` implementados no `store-service` com os 3 mini-jogos da MIST Studios disponíveis.
 - Passos:
-  - Dado uma requisição de download para um jogo executável autenticada com headers `X-User-Id` e `X-User-Token`
+  - Dado uma requisição de download para um jogo executável autenticada com headers `X-User-Id`, `X-User-Token` ou `Authorization: Bearer <token>`
   - Quando o endpoint GET `/games/{id}/download` for acionado
-  - Então o servidor responde com HTTP 200, Content-Type `application/zip` e o arquivo contém `game.py`, `mist_sdk.py` e `session.json` com os dados do usuário
-- Resultado esperado: Pacote zip íntegro e executável gerado dinamicamente para o jogador.
-- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`
+  - Então o servidor responde com HTTP 200, Content-Type `application/zip` e o arquivo contém `game.py`, `mist_sdk.py`, `session.json` (com `library_api_url` apontando para a API pública `https://mist.biomimetics.com.br/api/library`), `jogar.bat` (Windows), `jogar.sh` (Linux/macOS) e `LEIAME.txt`
+- Resultado esperado: Pacote zip autocontido, multiplataforma e executável gerado dinamicamente para o jogador.
+- Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/api/routes.py`, `services/store-service/tests/test_download.py`
 
 #### STORE-UNIT-04 — Validação do SDK client-side (mist_sdk.py) e compilação dos mini-jogos
 - Prioridade: P0
@@ -457,7 +465,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `.venv/bin/pytest services/store-service/tests/test_promotional_games_and_persistence.py`
+- Comando: `pytest services/store-service/tests/test_promotional_games_and_persistence.py`
 - Pré-condições: Módulo `seed.py` e `database.py` com esquema de persistência idempotente e jogos promocionais configurados.
 - Passos:
   - Dado o catálogo de 25 jogos com múltiplos títulos em promoção ativa (descontos de 15% a 75%)
@@ -579,7 +587,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_notification_model_creation or test_create_and_list_notifications"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_notification_model_creation or test_create_and_list_notifications"`
 - Pré-condições: Modelo `Notification` e rotas `/notifications` implementadas no `social-service`.
 - Passos:
   - Dado notificações criadas para um usuário (pedidos de amizade, ofertas de desconto na wishlist, etc.)
@@ -592,7 +600,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_mark_notification_as_read or test_mark_all_notifications_as_read or test_notification_user_isolation"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_mark_notification_as_read or test_mark_all_notifications_as_read or test_notification_user_isolation"`
 - Pré-condições: Endpoints `/notifications/{id}/read` e `/notifications/read-all` implementados.
 - Passos:
   - Dado notificações não lidas associadas a um usuário
@@ -606,7 +614,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `./.venv/bin/pytest services/social-service/tests/test_notifications.py -k "test_websocket_notifications_broadcast"`
+- Comando: `pytest services/social-service/tests/test_notifications.py -k "test_websocket_notifications_broadcast"`
 - Pré-condições: `NotificationManager` e endpoint `WS /ws/notifications` ativos no `social-service`.
 - Passos:
   - Dado um usuário conectado ao WebSocket de notificações com seu ID
@@ -923,7 +931,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_list_screenshots_default or test_list_screenshots_filter_by_game_and_user or test_list_screenshots_sort_popular"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_list_and_filter_screenshots"`
 - Pré-condições: Capturas de múltiplos jogos e autores cadastradas.
 - Passos:
   - Dado capturas salvas com diferentes contagens de likes e datas
@@ -936,7 +944,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_like_and_unlike_screenshot_lifecycle"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_like_and_unlike_screenshot"`
 - Pré-condições: Captura cadastrada e usuário autenticado.
 - Passos:
   - Dado uma captura com likes_count inicial 0
@@ -949,7 +957,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_delete_screenshot_owner_only"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_delete_screenshot_authorization"`
 - Pré-condições: Captura cadastrada pelo usuário A.
 - Passos:
   - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo usuário A (autor)
@@ -962,7 +970,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_sdk_take_screenshot_offline_fallback"`
+- Comando: `pytest services/ugc-service/tests/test_screenshots.py -k "test_mist_sdk_take_screenshot_resilience"`
 - Pré-condições: SDK MIST em ambiente isolado sem conexão com o servidor UGC.
 - Passos:
   - Dado a chamada `mist_sdk.take_screenshot("Minha jogada")` durante a execução de um jogo
@@ -988,7 +996,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_upload_workshop_item_success or test_upload_workshop_item_requires_auth or test_upload_workshop_item_invalid_extension"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_upload_workshop_item_success or test_upload_workshop_item_requires_auth or test_upload_workshop_item_invalid_extension"`
 - Pré-condições: Microsserviço UGC inicializado e diretório de uploads montado.
 - Passos:
   - Dado um arquivo de mod compactado (.zip, .pak, .rar) com metadados (jogo, título, categoria, versão, tags)
@@ -1001,7 +1009,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_list_workshop_items_filters_and_search"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_list_workshop_items_and_search"`
 - Pré-condições: Itens do Workshop de múltiplos jogos e categorias cadastrados.
 - Passos:
   - Dado múltiplos itens de mods e skins
@@ -1014,7 +1022,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_subscribe_and_unsubscribe_workshop_item"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_subscribe_and_unsubscribe_workshop_item"`
 - Pré-condições: Mod publicado e usuário autenticado.
 - Passos:
   - Dado um mod existente
@@ -1027,7 +1035,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_download_workshop_item_increments_count"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_increment_mod_download"`
 - Pré-condições: Item de mod registrado com arquivo físico no disco.
 - Passos:
   - Dado um mod publicado na Oficina
@@ -1040,7 +1048,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=services/ugc-service pytest services/ugc-service/tests/test_workshop.py -k "test_delete_workshop_item_authorization"`
+- Comando: `pytest services/ugc-service/tests/test_workshop.py -k "test_delete_workshop_item_author_only"`
 - Pré-condições: Mod criado pelo autor A.
 - Passos:
   - Dado uma tentativa de exclusão pelo usuário B (não autor) e posteriormente pelo autor A
@@ -1053,7 +1061,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `PYTHONPATH=gateway pytest gateway/tests/test_ugc_proxy.py -k "test_proxy_workshop_items_public_list or test_proxy_workshop_upload_injects_auth"`
+- Comando: `pytest gateway/tests/test_ugc_proxy.py -k "test_ugc_proxy_allows_public_workshop_items_list or test_ugc_proxy_blocks_workshop_upload_without_token"`
 - Pré-condições: Gateway MIST ativo.
 - Passos:
   - Dado requisições GET públicas e POST/DELETE autenticadas para `/api/ugc/workshop/*`
@@ -1801,6 +1809,84 @@
 - Resultado esperado: Seção `section-pending-requests` visível com botões de ação e integração de rede.
 - Rastreabilidade: `frontend/src/pages/Social.tsx`, `frontend/src/pages/Social.test.tsx`
 
+#### FRONT-UNIT-57 — Banner de Disclaimer Acadêmico com exibição condicional e liberação do botão de fechar após 5 segundos
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/AcademicDisclaimer.test.tsx`
+- Pré-condições: Componente `AcademicDisclaimer.tsx` renderizado.
+- Passos:
+  - Dado a montagem do banner de disclaimer acadêmico
+  - Quando o componente é inicializado, o botão de fechar ('x') não está presente no DOM
+  - Então após o avanço de 5 segundos no temporizador, o botão de fechar é exibido e seu acionamento dispara o callback `onClose`
+- Resultado esperado: Banner com estilo em vermelho (`bg-red-600`), texto acadêmico oficial e botão liberado após 5 segundos.
+- Rastreabilidade: `frontend/src/components/AcademicDisclaimer.tsx`, `frontend/src/components/AcademicDisclaimer.test.tsx`
+
+#### FRONT-UNIT-58 — Estado vazio de atividade recente e ausência de jogos mockados para novos usuários no Profile
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Profile.test.tsx -t "FRONT-UNIT-58"`
+- Pré-condições: Usuário recém-criado sem histórico de jogos ou feed de atividades.
+- Passos:
+  - Dado um usuário novo acessando a aba de atividade do perfil
+  - Quando a consulta de atividades e progresso retorna listas vazias
+  - Então o sistema renderiza o componente de estado vazio (`empty-recent-activity`) e nenhum jogo mockado (como Marvel Rivals ou Subnautica) é exibido
+- Resultado esperado: Ausência total de dados mockados estáticos e apresentação de orientação ao usuário.
+- Rastreabilidade: `frontend/src/pages/Profile.tsx`, `frontend/src/pages/Profile.test.tsx`
+
+#### FRONT-UNIT-59 — Fechamento do overlay de download concluído ao ser clicado na barra inferior (DownloadBar)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/DownloadBar.test.tsx -t "deve ocultar o overlay quando o download concluído for clicado"`
+- Pré-condições: Componente `DownloadBar.tsx` renderizado com download atingindo 100% de conclusão.
+- Passos:
+  - Dado uma barra de download ativa com progresso igual a 100%
+  - Quando o usuário clica sobre o corpo do overlay ou no botão de fechar
+  - Então o componente oculta o elemento e limpa o estado de download
+- Resultado esperado: Desmontagem imediata da barra flutuante sem reter bloqueios de tela.
+- Rastreabilidade: `frontend/src/components/DownloadBar.tsx`, `frontend/src/components/DownloadBar.test.tsx`
+
+#### FRONT-UNIT-60 — Persistência do status de jogo instalado entre reloads e sincronização com o backend na Library
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "persiste o status de jogo instalado"`
+- Pré-condições: Usuário autenticado na tela da Biblioteca recebendo evento `mist:game-installed`.
+- Passos:
+  - Dado a conclusão do download de um jogo na biblioteca
+  - Quando o evento de instalação é disparado
+  - Então o ID do jogo é salvo no `localStorage`, o status muda para "Jogar", o backend `POST /library/games/{game_id}/install` é notificado e em montagens subsequentes o estado "Jogar" permanece preservado
+- Resultado esperado: Permanência ininterrupta do botão "Jogar" entre trocas de páginas e reloads.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Library.test.tsx`, `frontend/src/api/client.ts`
+
+#### FRONT-UNIT-61 — Download simulado resiliente para jogos do catálogo sem pacote binário (não-MIST)
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "prossegue com download simulado no frontend sem emitir toast de erro"`
+- Pré-condições: Usuário acionando o download de título do catálogo geral sem binário físico no backend.
+- Passos:
+  - Dado o clique em "Baixar" para um título não desenvolvido pela MIST Studios
+  - Quando a rota física de download `/games/{id}/download` retorna ausência de pacote (HTTP 400)
+  - Então o frontend suprime o toast espúrio de erro e mantém o download simulado ativo no DownloadBar até a conclusão
+- Resultado esperado: Experiência contínua de download sem mensagens de erro conflitantes com o progresso visual.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Library.test.tsx`
+
+#### FRONT-UNIT-62 — Modal com instruções de execução multiplataforma (jogar.bat e jogar.sh) na Biblioteca
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "exibe modal instrutivo com orientações multiplataforma"`
+- Pré-condições: Usuário com jogo instalado desenvolvido pela MIST Studios (ex: *MIST Forca*) na tela da Biblioteca.
+- Passos:
+  - Dado um jogo instalado da MIST Studios na biblioteca do usuário
+  - Quando o usuário clica no botão "Jogar"
+  - Então a API de sessão `POST /library/session/start` é acionada e um modal interativo é exibido detalhando como executar em Windows (`jogar.bat`) e em Linux/macOS (`chmod +x jogar.sh && ./jogar.sh`), além de disponibilizar a opção de baixar novamente o pacote caso necessário
+- Resultado esperado: Orientação clara, acessível e multiplataforma garantindo a execução do jogo em qualquer sistema operacional conectado ao domínio público.
+- Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Library.test.tsx`
+
 ## Integração
 
 
@@ -2222,7 +2308,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: pytest
-- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_forum_topic_and_replies or test_forum_pin_and_lock_topic"`
+- Comando: `pytest services/social-service/tests/test_groups_forum.py -k "test_forum_posts_lifecycle or test_forum_replies_and_lock"`
 - Pré-condições: Grupo existente e membro autenticado.
 - Passos:
   - Dado a criação de um tópico de discussão via `POST /groups/{id}/posts`
@@ -2295,7 +2381,7 @@
 - Prioridade: P1
 - Status: aprovado
 - Runner: playwright
-- Comando: `npm --prefix frontend run test:e2e -- e2e/navigation.spec.ts`
+- Comando: `npm --prefix frontend run test:e2e -- navigation.spec.ts`
 - Pré-condições: Frontend MIST em execução com usuário autenticado e saldo inicial carregado.
 - Passos:
   - Dado que o usuário está com contexto ativo na tela da Loja (com termo de busca digitado) ou na Biblioteca
@@ -2310,7 +2396,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: playwright
-- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts`
+- Comando: `npm --prefix frontend run test:e2e -- auth.spec.ts`
 - Pré-condições: Frontend MIST em execução com servidor de desenvolvimento Playwright.
 - Passos:
   - Dado que o visitante acessa a página inicial do MIST
@@ -2318,6 +2404,20 @@
   - Então a interface autentica o usuário, exibe o saldo de R$ 200,00 no Header, exibe o nome de usuário na Sidebar e permite encerrar a sessão
 - Resultado esperado: Fluxo visual completo de onboarding e encerramento de sessão sem falhas no navegador.
 - Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/context/AuthContext.tsx`
+
+### Disclaimer Acadêmico e Avisos Regulatórios
+#### E2E-DISCLAIMER-01 — Exibição, persistência de 5 segundos do botão fechar e remoção do banner acadêmico na Home-page
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- academic-disclaimer.spec.ts`
+- Pré-condições: Frontend MIST em execução.
+- Passos:
+  - Dado o carregamento da página inicial (home-page)
+  - Quando a página é renderizada, o banner vermelho de disclaimer acadêmico é exibido no topo sem botão de fechar nos primeiros segundos
+  - Então após decorridos 5 segundos o botão de fechar surge, e ao ser clicado remove a div restaurando o layout padrão da aplicação
+- Resultado esperado: Banner acadêmico exibido com fidelidade visual, temporizador funcional e remoção graciosa.
+- Rastreabilidade: `frontend/e2e/academic-disclaimer.spec.ts`, `frontend/src/components/AcademicDisclaimer.tsx`, `frontend/src/App.tsx`
 
 
 ## Regressão
@@ -2421,7 +2521,7 @@
 - Prioridade: P0
 - Status: aprovado
 - Runner: vitest
-- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "filtra e não exibe jogo inexistente ou corrompido com game_id 0"`
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Library.test.tsx -t "game_id 0"`
 - Causa raiz: Registros com `game_id: 0` geravam cards de título com fallback "Jogo #0" e imagem genérica tanto na Biblioteca quanto na listagem de jogos do Perfil.
 - Reprodução original: Acessar Minha Biblioteca ou aba Jogos do Perfil e notar a presença de "Jogo #0".
 - PR/Commit relacionado: Prompt 59

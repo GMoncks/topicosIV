@@ -3,14 +3,32 @@ import { test, expect } from '@playwright/test';
 test.describe('Autenticação e Gestão de Sessão (E2E-AUTH-01)', () => {
   test('deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout', async ({ page }) => {
     // Mock dos endpoints de autenticação e rotas autenticadas do Gateway
-    await page.route('**/api/auth/register', async (route) => {
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          access_token: 'fake_jwt_token_e2e_123',
-          token_type: 'bearer',
-          user: {
+    await page.route('**/api/**', async (route) => {
+      const url = route.request().url();
+      if (url.includes('/api/auth/register')) {
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            access_token: 'fake_jwt_token_e2e_123',
+            token_type: 'bearer',
+            user: {
+              id: 99,
+              username: 'gamer_e2e',
+              email: 'gamer@mist.com',
+              wallet_balance: 200.0,
+              points_balance: 500,
+              level: 1,
+              avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80',
+              created_at: new Date().toISOString(),
+            },
+          }),
+        });
+      } else if (url.includes('/api/auth/me')) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
             id: 99,
             username: 'gamer_e2e',
             email: 'gamer@mist.com',
@@ -19,9 +37,20 @@ test.describe('Autenticação e Gestão de Sessão (E2E-AUTH-01)', () => {
             level: 1,
             avatar_url: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80',
             created_at: new Date().toISOString(),
-          },
-        }),
-      });
+          }),
+        });
+      } else {
+        const headers = route.request().headers();
+        if (headers['authorization']) {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([]),
+          });
+        } else {
+          await route.continue();
+        }
+      }
     });
 
     await page.route('**/api/auth/me', async (route) => {
@@ -89,10 +118,10 @@ test.describe('Autenticação e Gestão de Sessão (E2E-AUTH-01)', () => {
 
     // 6. Valida que o modal fechou e a UI refletiu os novos dados do usuário
     await expect(modal).not.toBeVisible();
-    await expect(page.locator('text=gamer_e2e').first()).toBeVisible();
+    await expect(page.getByText('gamer_e2e').first()).toBeVisible();
 
     // Valida que o saldo da carteira de R$ 200,00 está visível no Header
-    await expect(page.locator('text=R$ 200,00').first()).toBeVisible();
+    await expect(page.getByText(/200,00/).first()).toBeVisible();
 
     // 7. Realiza logout
     const logoutBtn = page.locator('button[title="Encerrar Sessão"]');

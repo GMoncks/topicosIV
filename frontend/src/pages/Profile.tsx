@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, GameActivity, InventoryItem, LevelProgress } from '../types';
+import { UserProfile, InventoryItem, LevelProgress } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { profileApi, libraryApi, socialApi, LibraryItemResponse, ActivityItem, ugcApi, WorkshopItem, getUgcImageUrl, cardsApi } from '../api/client';
 import { PrivacySettingsModal } from '../components/PrivacySettingsModal';
@@ -21,40 +21,6 @@ interface GameProgressItem {
   achievementsTotal: number;
   unlockedList: { id: string; name: string; iconUrl?: string }[];
 }
-
-const defaultFallbackRecentGames: GameActivity[] = [
-  {
-    id: 'g1',
-    title: 'Librarian: Tidy Up the Arcane Library!',
-    banner: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?auto=format&fit=crop&w=600&q=80',
-    hoursPlayed: 15.7,
-    lastPlayed: '30 de ago.',
-    achievementsEarned: 4,
-    achievementsTotal: 12,
-    achievementIcons: ['fa-book', 'fa-wand-magic-sparkles', 'fa-scroll', 'fa-feather']
-  },
-  {
-    id: 'g2',
-    title: 'Marvel Rivals',
-    banner: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=600&q=80',
-    hoursPlayed: 368,
-    lastPlayed: '30 de ago.',
-    achievementsEarned: 28,
-    achievementsTotal: 49,
-    achievementIcons: ['fa-shield-halved', 'fa-bolt', 'fa-fist-raised', 'fa-mask'],
-    extraAchievementsCount: 23
-  },
-  {
-    id: 'g3',
-    title: 'Subnautica',
-    banner: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
-    hoursPlayed: 84.2,
-    lastPlayed: '24 de ago.',
-    achievementsEarned: 17,
-    achievementsTotal: 17,
-    achievementIcons: ['fa-water', 'fa-compass', 'fa-anchor', 'fa-fish']
-  }
-];
 
 export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) => {
   const { user: authUser, updateUserCosmetics, updateUserProfile, isAuthenticated } = useAuth();
@@ -112,8 +78,8 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
       xp: 190,
       icon: 'fa-certificate'
     },
-    recentPlaytimeWeeks: 8.7,
-    recentGames: defaultFallbackRecentGames,
+    recentPlaytimeWeeks: 0,
+    recentGames: [],
     badges: [],
     stats: {
       gamesCount: 0,
@@ -921,64 +887,29 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
                     </div>
                   ))
                 ) : (
-                  /* Fallback padrão estático caso nenhuma atividade ou jogo ainda tenha sido registrado */
-                  defaultFallbackRecentGames.map(game => (
-                    <div
-                      key={game.id}
-                      className="bg-brand-surface/90 border border-gray-800/80 hover:border-purple-900/60 rounded-2xl p-5 transition-all duration-300 shadow-lg"
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <img
-                            src={game.banner}
-                            alt={game.title}
-                            className="w-28 h-16 object-cover rounded-xl border border-gray-700 shadow"
-                          />
-                          <div>
-                            <h3 className="font-bold text-white text-base hover:text-brand-purple transition cursor-pointer">
-                              {game.title}
-                            </h3>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {game.hoursPlayed} horas registradas
-                            </p>
-                            <p className="text-[11px] text-gray-500">
-                              jogado pela última vez em {game.lastPlayed}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Barra de Conquistas */}
-                      <div className="mt-4 pt-3 border-t border-gray-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-brand-card/60 p-3 rounded-xl">
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                          <span className="text-xs font-semibold text-gray-300 whitespace-nowrap">
-                            Conquistas <span className="text-white">{game.achievementsEarned}</span> de {game.achievementsTotal}
-                          </span>
-                          <div className="w-32 bg-gray-800 h-2.5 rounded-full overflow-hidden border border-gray-700">
-                            <div
-                              className="h-full bg-gradient-to-r from-brand-purple to-purple-400 rounded-full"
-                              style={{
-                                width: `${(game.achievementsEarned / game.achievementsTotal) * 100}%`
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-
-                        {/* Ícones de Conquistas */}
-                        <div className="flex items-center gap-2">
-                          {game.achievementIcons.map((icon, idx) => (
-                            <div
-                              key={idx}
-                              className="w-7 h-7 rounded-lg bg-gray-800 border border-purple-700/50 flex items-center justify-center text-purple-300 text-xs shadow-inner"
-                              title="Conquista desbloqueada"
-                            >
-                              <i className={`fa-solid ${icon}`}></i>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                  /* Estado vazio quando nenhuma atividade ou jogo ainda foi registrado */
+                  <div
+                    data-testid="empty-recent-activity"
+                    className="bg-brand-surface/70 border border-gray-800/80 rounded-2xl p-8 text-center space-y-3"
+                  >
+                    <div className="w-14 h-14 rounded-full bg-brand-card border border-gray-700/80 flex items-center justify-center text-gray-500 text-xl mx-auto shadow-inner">
+                      <i className="fa-solid fa-gamepad"></i>
                     </div>
-                  ))
+                    <h3 className="text-base font-bold text-white">Nenhuma atividade recente</h3>
+                    <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                      Você ainda não jogou ou desbloqueou conquistas recentemente. Jogue seus títulos na Biblioteca para registrar atividades no perfil!
+                    </p>
+                    {onNavigate && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigate('store')}
+                        className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-purple/20 hover:bg-brand-purple/30 border border-purple-500/40 text-purple-300 text-xs font-semibold transition cursor-pointer shadow"
+                      >
+                        <i className="fa-solid fa-compass"></i>
+                        Explorar Loja MIST
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
