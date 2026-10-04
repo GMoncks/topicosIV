@@ -149,6 +149,7 @@ def download_game_package(
     game_id: int,
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     x_user_token: Optional[str] = Header(None, alias="X-User-Token"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
     db: Session = Depends(get_db)
 ):
     """
@@ -156,8 +157,19 @@ def download_game_package(
     - game.py (código do jogo Python)
     - mist_sdk.py (SDK MIST)
     - session.json (credenciais de sessão pré-configuradas)
+    - jogar.bat (Launcher nativo para Windows)
+    - jogar.sh (Launcher nativo para Linux e macOS)
+    - LEIAME.txt (Instruções completas de execução)
     """
     from fastapi.responses import StreamingResponse
+
+    # Extrai o token de autenticação a partir de X-User-Token ou Authorization Bearer
+    token = x_user_token
+    if not token and authorization:
+        if authorization.lower().startswith("bearer "):
+            token = authorization[7:].strip()
+        else:
+            token = authorization.strip()
 
     # Se x_user_id for fornecido, converte para int; caso contrário, usa ID padrão sandbox (1)
     user_id = 1
@@ -174,7 +186,7 @@ def download_game_package(
         db=db,
         game_id=game_id,
         user_id=user_id,
-        user_token=x_user_token
+        user_token=token
     )
 
     return StreamingResponse(

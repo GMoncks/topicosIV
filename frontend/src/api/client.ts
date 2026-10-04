@@ -279,9 +279,14 @@ export const storeApi = {
 
   async downloadGamePackage(gameId: number): Promise<Blob> {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const userId = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_user_id') : null;
     const headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      headers['X-User-Token'] = token;
+    }
+    if (userId) {
+      headers['X-User-Id'] = userId;
     }
     const response = await fetch(`${API_GATEWAY_URL}/api/games/${gameId}/download`, {
       method: 'GET',
@@ -603,6 +608,12 @@ export interface LibraryItemResponse {
 export const libraryApi = {
   async getMyGames(): Promise<LibraryItemResponse[]> {
     return fetchApi<LibraryItemResponse[]>('/api/library/my-games', { method: 'GET' });
+  },
+
+  async markGameInstalled(gameId: number): Promise<{ status: string; is_installed: boolean }> {
+    return fetchApi<{ status: string; is_installed: boolean }>(`/api/library/games/${gameId}/install`, {
+      method: 'POST',
+    });
   },
 
   async getGameAchievements(gameId: number): Promise<any[]> {

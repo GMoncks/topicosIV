@@ -71,8 +71,13 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => 
     };
   }, []);
 
-  const togglePause = () => {
-    if (!download || download.progressPercentage >= 100) return;
+  const handleClick = () => {
+    if (!download) return;
+    if (download.progressPercentage >= 100) {
+      setIsVisible(false);
+      setDownload(null);
+      return;
+    }
     setDownload(prev => prev ? ({
       ...prev,
       isPaused: !prev.isPaused,
@@ -80,15 +85,26 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => 
     }) : null);
   };
 
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsVisible(false);
+    setDownload(null);
+  };
+
   if (!isVisible || !download) return null;
+
+  const isCompleted = download.progressPercentage >= 100;
 
   return (
     <div
-      onClick={togglePause}
-      className="fixed bottom-6 right-8 bg-brand-surface border border-brand-purple p-3 rounded-2xl shadow-[0_0_20px_rgba(160,32,240,0.2)] flex items-center gap-4 z-50 cursor-pointer hover:bg-brand-card transition-all select-none animate-fade-in"
-      title={download.progressPercentage < 100 ? "Clique para pausar ou continuar o download" : "Jogo instalado"}
+      data-testid="download-bar"
+      onClick={handleClick}
+      className={`fixed bottom-6 right-8 bg-brand-surface border ${
+        isCompleted ? 'border-emerald-500/80 shadow-[0_0_20px_rgba(16,185,129,0.25)]' : 'border-brand-purple shadow-[0_0_20px_rgba(160,32,240,0.2)]'
+      } p-3 rounded-2xl flex items-center gap-4 z-50 cursor-pointer hover:bg-brand-card transition-all select-none animate-fade-in`}
+      title={isCompleted ? "Download concluído. Clique para fechar" : "Clique para pausar ou continuar o download"}
     >
-      <div className="relative w-10 h-10 flex items-center justify-center">
+      <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
         {/* Círculo de progresso SVG */}
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
           <path
@@ -99,7 +115,7 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => 
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
           />
           <path
-            className={download.progressPercentage >= 100 ? "text-emerald-400" : "text-brand-purple"}
+            className={isCompleted ? "text-emerald-400" : "text-brand-purple"}
             strokeDasharray={`${download.progressPercentage}, 100`}
             strokeWidth="3"
             strokeLinecap="round"
@@ -110,7 +126,7 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => 
         </svg>
         <i
           className={`fa-solid ${
-            download.progressPercentage >= 100
+            isCompleted
               ? 'fa-check text-emerald-400 text-xs'
               : download.isPaused
               ? 'fa-play text-[10px] ml-0.5 text-white'
@@ -118,10 +134,22 @@ export const DownloadBar: React.FC<DownloadBarProps> = ({ initialDownload }) => 
           } absolute`}
         ></i>
       </div>
-      <div>
-        <p className="text-xs text-gray-400 font-medium">{download.statusText}</p>
+      <div className="flex-1 min-w-0 pr-1">
+        <p className={`text-xs font-medium ${isCompleted ? 'text-emerald-400' : 'text-gray-400'}`}>{download.statusText}</p>
         <p className="text-sm font-bold text-white line-clamp-1 max-w-[180px]">{download.gameTitle}</p>
       </div>
+      {isCompleted && (
+        <button
+          type="button"
+          data-testid="download-bar-close"
+          onClick={handleClose}
+          className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800/60 transition ml-1"
+          title="Fechar aviso de download"
+          aria-label="Fechar aviso de download"
+        >
+          <i className="fa-solid fa-xmark text-sm"></i>
+        </button>
+      )}
     </div>
   );
 };

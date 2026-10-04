@@ -558,5 +558,46 @@ describe('Profile Page Workshop Integration (Ticket O-06)', () => {
       expect(screen.getByText('Perfil atualizado com sucesso!')).toBeInTheDocument();
     });
   });
+
+  it('exibe estado vazio de atividade recente e não exibe jogos mockados (Marvel Rivals, Subnautica) para novo usuário (FRONT-UNIT-58)', async () => {
+    vi.spyOn(socialApi, 'getFeed').mockResolvedValue([]);
+    vi.spyOn(libraryApi, 'getMyGames').mockResolvedValue([]);
+    vi.spyOn(profileApi, 'getInventory').mockResolvedValue({ total: 0, items: [] });
+
+    const newUser: any = {
+      id: 99,
+      username: 'novato123',
+      realName: 'Novato MIST',
+      location: 'Brasil',
+      level: 1,
+      avatarText: 'NO',
+      status: 'Online',
+      walletBalance: 200.0,
+      pointsBalance: 500,
+      recentPlaytimeWeeks: 0,
+      recentGames: [],
+      badges: [],
+      stats: {
+        gamesCount: 0,
+        inventoryCount: 0,
+        screenshotsCount: 0,
+        videosCount: 0,
+        workshopCount: 0,
+        reviewsCount: 0,
+      },
+    };
+
+    render(<Profile user={newUser} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('empty-recent-activity')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Nenhuma atividade recente')).toBeInTheDocument();
+    expect(screen.queryByText('Marvel Rivals')).toBeNull();
+    expect(screen.queryByText('Subnautica')).toBeNull();
+    expect(screen.queryByText('Librarian: Tidy Up the Arcane Library!')).toBeNull();
+  });
 });
+
 
