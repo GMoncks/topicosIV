@@ -195,3 +195,11 @@ A seguir, faça merge da branch com a dev. Caso haja conflitos, a nova branch é a
 1. Adicionado e comitado todos os arquivos alterados na branch inal (TESTS.md, componentes de UI, disclaimer acadêmico, rotas e testes nos serviços de store/library).
 2. Mudança para a branch dev.
 3. Merge da branch inal na dev utilizando a estratégia -X theirs para que as mudanças da branch inal sejam a fonte da verdade em caso de conflitos.
+
+## Prompt: 2026-10-03
+**Usuário:** Gabriel_T
+**Prompt:** Faça o push agora do dev
+
+**Decisões e Modificações:**
+1. Atualizado o registro de prompts para contemplar a ordem de push.
+2. Executado comando git push origin dev para subir o branch para o repositório remoto.
