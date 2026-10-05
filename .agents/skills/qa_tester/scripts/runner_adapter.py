@@ -103,6 +103,15 @@ def run_command(command, runner_name, cwd=ROOT_DIR):
     if venv_bin.exists():
         env["PATH"] = str(venv_bin) + os.pathsep + env.get("PATH", "")
 
+    fnm_dir = Path.home() / ".local/share/fnm/node-versions"
+    if fnm_dir.exists():
+        for bin_dir in fnm_dir.glob("*/installation/bin"):
+            env["PATH"] = str(bin_dir) + os.pathsep + env.get("PATH", "")
+            break
+    local_bin = Path.home() / ".local/bin"
+    if local_bin.exists():
+        env["PATH"] = str(local_bin) + os.pathsep + env.get("PATH", "")
+
     try:
         proc = subprocess.run(
             command,

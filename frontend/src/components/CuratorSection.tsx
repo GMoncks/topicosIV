@@ -77,7 +77,8 @@ export const CuratorSection: React.FC<CuratorSectionProps> = ({
       {primaryAlert && (
         <div
           data-testid="wishlist-smart-banner"
-          className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-r from-amber-950/70 via-brand-card to-brand-surface border border-amber-500/40 shadow-[0_0_25px_rgba(245,158,11,0.15)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-300"
+          onClick={() => onSelectGame(primaryAlert.game_id)}
+          className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-r from-amber-950/70 via-brand-card to-brand-surface border border-amber-500/40 hover:border-amber-500/80 shadow-[0_0_25px_rgba(245,158,11,0.15)] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all duration-300 cursor-pointer"
         >
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl flex-shrink-0 animate-bounce">
@@ -100,15 +101,21 @@ export const CuratorSection: React.FC<CuratorSectionProps> = ({
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             <button
-              onClick={() => onSelectGame(primaryAlert.game_id)}
-              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center gap-2 whitespace-nowrap"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectGame(primaryAlert.game_id);
+              }}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-xl transition shadow-lg shadow-amber-500/20 flex items-center gap-2 whitespace-nowrap cursor-pointer"
             >
               <i className="fa-solid fa-cart-shopping text-xs"></i>
               Aproveitar Oferta (R$ {primaryAlert.current_price.toFixed(2)})
             </button>
             <button
-              onClick={() => setDismissedAlerts(true)}
-              className="text-gray-400 hover:text-white p-2 rounded-lg transition"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDismissedAlerts(true);
+              }}
+              className="text-gray-400 hover:text-white p-2 rounded-lg transition cursor-pointer"
               title="Dispensar alerta"
               aria-label="Dispensar"
             >

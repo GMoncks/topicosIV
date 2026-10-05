@@ -3,13 +3,6 @@
     "runner": "playwright",
     "historico": [
       {
-        "run_id": "2026-09-19T20:07:23.957Z",
-        "status": "pass",
-        "duracao_ms": 16445,
-        "erro": null,
-        "origem": "execucao"
-      },
-      {
         "run_id": "2026-09-19T21:54:06.730Z",
         "status": "pass",
         "duracao_ms": 11548,
@@ -57,20 +50,6 @@
         "duracao_ms": 17542,
         "erro": null,
         "origem": "execucao"
-      },
-      {
-        "run_id": "2026-10-02T12:09:36.662286+00:00",
-        "status": "fail",
-        "duracao_ms": 1042,
-        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/navigation.spec.ts\n\nError: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
-        "origem": "execucao"
-      },
-      {
-        "run_id": "2026-10-02T12:38:36.542983+00:00",
-        "status": "pass",
-        "duracao_ms": 6045,
-        "erro": null,
-        "origem": "validacao"
       }
     ]
   },
@@ -639,20 +618,6 @@
         "duracao_ms": 28074,
         "erro": null,
         "origem": "execucao"
-      },
-      {
-        "run_id": "2026-10-02T12:09:36.662286+00:00",
-        "status": "fail",
-        "duracao_ms": 902,
-        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts\n\nError: No tests found.\nMake sure that arguments are regular expressions matching test files.\nYou may need to escape symbols like \"$\" or \"*\" and quote the arguments.",
-        "origem": "execucao"
-      },
-      {
-        "run_id": "2026-10-02T12:38:42.598806+00:00",
-        "status": "pass",
-        "duracao_ms": 5941,
-        "erro": null,
-        "origem": "validacao"
       }
     ]
   },
@@ -4194,6 +4159,454 @@
         "run_id": "2026-10-02T12:09:36.662286+00:00",
         "status": "pass",
         "duracao_ms": 1415,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-AUTH-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7051,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PROF-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7430,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-WALLET-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6098,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-STORE-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6358,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-STORE-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6754,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-REV-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "fail",
+        "duracao_ms": 10883,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 1 test using 1 worker\n\n  ✘  1 [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (7.6s)\n\n\n  1) [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=/Avaliações da Comunidade|Avaliações/i').first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=/Avaliações da Comunidade|Avaliações/i').first() with timeout 5000ms\n      - waiting for locator('text=/Avaliações da Comunidade|Avaliações/i').first()\n\n\n      201 |     } else {\n      202 |       // Valida que a seção de avaliações existe\n    > 203 |       await expect(page.locator('text=/Avaliações da Comunidade|Avaliações/i').first()).toBeVisible();\n          |                                                                                         ^\n      204 |     }\n      205 |   });\n      206 |\n        at /home/mkritli/Workspace/Git/topicosIV/frontend/e2e/store.spec.ts:203:89\n\n    Error Context: test-results/store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-chromium/error-context.md\n\n  1 failed\n    [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\nTo open last HTML report run:\n\n  npx playwright show-report",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-03T03:47:46.891555+00:00",
+        "status": "fail",
+        "duracao_ms": 11948,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 1 test using 1 worker\n\n  ✘  1 [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (8.0s)\n\n\n  1) [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=/Avaliações da Comunidade|Avaliações/i').first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=/Avaliações da Comunidade|Avaliações/i').first() with timeout 5000ms\n      - waiting for locator('text=/Avaliações da Comunidade|Avaliações/i').first()\n\n\n      201 |     } else {\n      202 |       // Valida que a seção de avaliações existe\n    > 203 |       await expect(page.locator('text=/Avaliações da Comunidade|Avaliações/i').first()).toBeVisible();\n          |                                                                                         ^\n      204 |     }\n      205 |   });\n      206 |\n        at /home/mkritli/Workspace/Git/topicosIV/frontend/e2e/store.spec.ts:203:89\n\n    Error Context: test-results/store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-chromium/error-context.md\n\n  1 failed\n    [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\nTo open last HTML report run:\n\n  npx playwright show-report",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-03T03:50:52.561327+00:00",
+        "status": "fail",
+        "duracao_ms": 13177,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 1 test using 1 worker\n\n  ✘  1 [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (7.6s)\n\n\n  1) [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: getByText(/Avaliações/i).first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" getByText(/Avaliações/i).first() with timeout 5000ms\n      - waiting for getByText(/Avaliações/i).first()\n\n\n      201 |     } else {\n      202 |       // Valida que a seção de avaliações existe\n    > 203 |       await expect(page.getByText(/Avaliações/i).first()).toBeVisible();\n          |                                                           ^\n      204 |     }\n      205 |   });\n      206 |\n        at /home/mkritli/Workspace/Git/topicosIV/frontend/e2e/store.spec.ts:203:59\n\n    Error Context: test-results/store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-chromium/error-context.md\n\n  1 failed\n    [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\nTo open last HTML report run:\n\n  npx playwright show-report",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-03T03:53:30.675161+00:00",
+        "status": "fail",
+        "duracao_ms": 13956,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 1 test using 1 worker\n\n  ✘  1 [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (8.7s)\n\n\n  1) [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: getByRole('button', { name: /^Sim$/i }).first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" getByRole('button', { name: /^Sim$/i }).first() with timeout 5000ms\n      - waiting for getByRole('button', { name: /^Sim$/i }).first()\n\n\n      207 |     // Preenche recomendação positiva e texto da avaliação\n      208 |     const yesBtn = page.getByRole('button', { name: /^Sim$/i }).first();\n    > 209 |     await expect(yesBtn).toBeVisible();\n          |                          ^\n      210 |     await yesBtn.click();\n      211 |\n      212 |     const textarea = page.locator('#review-text');\n        at /home/mkritli/Workspace/Git/topicosIV/frontend/e2e/store.spec.ts:209:26\n\n    Error Context: test-results/store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-chromium/error-context.md\n\n  1 failed\n    [chromium] › e2e/store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\nTo open last HTML report run:\n\n  npx playwright show-report",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-03T03:55:24.110699+00:00",
+        "status": "pass",
+        "duracao_ms": 8447,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-REV-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 9133,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-CUR-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6365,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-CUR-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7606,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-LIB-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 9390,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-WAL-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 10981,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PTS-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7645,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PTS-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7631,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-INV-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7359,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-INV-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 8584,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-XP-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6905,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-CRF-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6236,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-MKT-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6177,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-MKT-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6278,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-TRD-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6094,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-GRP-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5645,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-FRM-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5889,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-GCHT-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5737,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-UGC-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6132,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-UGC-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5978,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-WKS-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6022,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-WKS-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6884,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PUB-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5712,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PRV-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6297,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-NOT-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5886,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-NOT-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 5841,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-SCH-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7347,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-SOC-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 7870,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-SOC-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 6179,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-INTEG-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-03T03:42:26.674686+00:00",
+        "status": "pass",
+        "duracao_ms": 8788,
         "erro": null,
         "origem": "execucao"
       }
