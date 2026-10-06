@@ -1,0 +1,429 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { FriendItem, ChatMessage, socialApi, API_GATEWAY_URL } from '../api/client';
+
+interface ChatWindowProps {
+  friend: FriendItem;
+  currentUserId?: number;
+  onClose: () => void;
+}
+
+export const ChatWindow: React.FC<ChatWindowProps> = ({
+  friend,
+  currentUserId = 1,
+  onClose,
+}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputText, setInputText] = useState('');
+  const [isFriendTyping, setIsFriendTyping] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sendTypingDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const roomId = socialApi.getChatRoomId(currentUserId, friend.friend_user_id);
+
+  // Auto-scroll para a última mensagem
+  const scrollToBottom = () => {
+    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isFriendTyping]);
+
+  // Carrega histórico inicial e conecta WebSocket
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Carrega histórico de mensagens da sala
+    socialApi
+      .getChatHistory(roomId)
+      .then((history) => {
+        if (isMounted) {
+          setMessages(history);
+          socialApi.markChatRead(roomId).catch(() => {});
+        }
+      })
+      .catch((err) => console.warn('Erro ao carregar histórico de chat:', err));
+
+    // 2. Conecta ao WebSocket do chat via Gateway
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsBase = API_GATEWAY_URL ? API_GATEWAY_URL.replace(/^http/, 'ws') : `${wsProtocol}//${window.location.host}`;
+    const wsUrl = `${wsBase}/ws/chat/${roomId}?user_id=${currentUserId}${token ? `&token=${token}` : ''}`;
+
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        if (isMounted) setIsConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        if (!isMounted) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'message') {
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === data.id)) return prev;
+              return [...prev, data];
+            });
+            socialApi.markChatRead(roomId).catch(() => {});
+          } else if (data.type === 'typing') {
+            if (data.user_id === friend.friend_user_id) {
+              setIsFriendTyping(Boolean(data.is_typing));
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+              if (data.is_typing) {
+                typingTimeoutRef.current = setTimeout(() => {
+                  if (isMounted) setIsFriendTyping(false);
+                }, 3000);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Falha ao processar mensagem WebSocket do chat:', err);
+        }
+      };
+
+      ws.onerror = () => {
+        if (isMounted) setIsConnected(false);
+      };
+
+      ws.onclose = () => {
+        if (isMounted) setIsConnected(false);
+      };
+    } catch (err) {
+      console.warn('WebSocket indisponível, operando via histórico REST:', err);
+    }
+
+    return () => {
+      isMounted = false;
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (sendTypingDebounceRef.current) clearTimeout(sendTypingDebounceRef.current);
+    };
+  }, [roomId, currentUserId, friend.friend_user_id]);
+
+  // Envio de mensagem
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const content = inputText.trim();
+    if (!content) return;
+
+    const payload = {
+      type: 'message',
+      room_id: roomId,
+      sender_id: currentUserId,
+      content,
+    };
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
+    } else {
+      // Fallback otimista se WebSocket estiver reconectando
+      const tempMsg: ChatMessage = {
+        id: Date.now(),
+        room_id: roomId,
+        sender_id: currentUserId,
+        content,
+        created_at: new Date().toISOString(),
+        is_read: false,
+      };
+      setMessages((prev) => [...prev, tempMsg]);
+    }
+
+    // Avisa que parou de digitar
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'typing', is_typing: false }));
+    }
+
+    setInputText('');
+  };
+
+  // Notificação de digitação com debounce
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value);
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'typing', is_typing: true }));
+
+      if (sendTypingDebounceRef.current) clearTimeout(sendTypingDebounceRef.current);
+      sendTypingDebounceRef.current = setTimeout(() => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'typing', is_typing: false }));
+        }
+      }, 1500);
+    }
+  };
+
+  const formatTime = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
+  const isBot = Boolean(friend.is_bot || friend.friend_user_id === 0);
+  const [showEmoticons, setShowEmoticons] = useState(false);
+
+  const availableEmoticons = [
+    { code: ':chicken_cry:', label: 'Frango Chorando', img: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=100&auto=format&fit=crop&q=60' },
+    { code: ':pixel_sword:', label: 'Espada Pixel', img: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=100&auto=format&fit=crop&q=60' },
+    { code: ':mist_fire:', label: 'Fogo MIST', img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=100&auto=format&fit=crop&q=60' },
+  ];
+
+  const handleSelectEmoticon = (code: string) => {
+    setInputText((prev) => (prev ? `${prev} ${code} ` : `${code} `));
+    setShowEmoticons(false);
+  };
+
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(:chicken_cry:|:pixel_sword:|:mist_fire:)/g);
+    return parts.map((part, idx) => {
+      const match = availableEmoticons.find((e) => e.code === part);
+      if (match) {
+        return (
+          <img
+            key={idx}
+            src={match.img}
+            alt={match.code}
+            title={match.label}
+            className="inline-block w-6 h-6 object-cover rounded-md mx-1 align-middle border border-brand-purple/40 shadow-sm"
+          />
+        );
+      }
+      return <span key={idx}>{part}</span>;
+    });
+  };
+
+  return (
+    <div
+      data-testid="chat-window"
+      className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] h-[520px] bg-brand-card border border-brand-purple/40 rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden backdrop-blur-xl animate-fade-in"
+    >
+      {/* Cabeçalho do Chat */}
+      <div className="p-4 bg-brand-surface border-b border-gray-800 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <img
+              src={friend.avatar_url || `https://picsum.photos/seed/user${friend.friend_user_id}/100/100`}
+              alt={friend.username || 'Amigo'}
+              className="w-10 h-10 rounded-xl object-cover border border-gray-700"
+            />
+            <span
+              className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-brand-surface ${
+                friend.presence_status === 'playing'
+                  ? 'bg-brand-purple animate-pulse'
+                  : friend.presence_status === 'online'
+                  ? 'bg-emerald-500'
+                  : friend.presence_status === 'away'
+                  ? 'bg-amber-500'
+                  : 'bg-gray-500'
+              }`}
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBot && friend.username) {
+                    window.dispatchEvent(new CustomEvent('mist:visit-profile', { detail: friend.username }));
+                  }
+                }}
+                className={`font-bold text-white text-sm leading-tight text-left ${!isBot ? 'hover:underline cursor-pointer hover:text-brand-purple' : ''}`}
+                title={!isBot ? 'Ver Perfil Público' : undefined}
+              >
+                {friend.username || `Jogador #${friend.friend_user_id}`}
+              </button>
+              {isBot && (
+                <span className="text-[9px] font-extrabold bg-gradient-to-r from-brand-purple to-cyan-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                  BOT IA
+                </span>
+              )}
+            </div>
+            <div className="text-xs flex items-center gap-1.5 mt-0.5">
+              {friend.presence_status === 'playing' ? (
+                <span className="text-brand-purple font-semibold flex items-center gap-1">
+                  <i className="fa-solid fa-gamepad text-[10px]"></i>
+                  Jogando {friend.current_game || 'um jogo'}
+                </span>
+              ) : friend.presence_status === 'online' ? (
+                <span className="text-emerald-400 font-medium">Online</span>
+              ) : friend.presence_status === 'away' ? (
+                <span className="text-amber-400 font-medium">Ausente</span>
+              ) : (
+                <span className="text-gray-400">Offline</span>
+              )}
+              {isConnected && (
+                <span className="text-[10px] text-gray-500" title="WebSocket Conectado">
+                  • ao vivo
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          aria-label="Fechar Chat"
+          className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-800 transition"
+        >
+          <i className="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      {/* Área de Mensagens */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-brand-dark/40">
+        {messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-gray-500 text-xs text-center px-4">
+            <i className="fa-regular fa-comments text-3xl mb-2 text-gray-600"></i>
+            <p>Nenhuma mensagem ainda.</p>
+            <p className="mt-1 text-gray-400">Envie um "olá" para iniciar a conversa!</p>
+          </div>
+        ) : (
+          messages.map((msg) => {
+            const isMe = msg.sender_id === currentUserId;
+            return (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
+                    isMe
+                      ? 'bg-gradient-to-r from-brand-purple to-purple-600 text-white rounded-br-none shadow-md'
+                      : 'bg-brand-surface text-gray-200 border border-gray-800 rounded-bl-none'
+                  }`}
+                >
+                  <div className="break-words">{renderMessageContent(msg.content)}</div>
+                  <div
+                    className={`text-[10px] mt-1 flex items-center justify-end gap-1 ${
+                      isMe ? 'text-purple-200' : 'text-gray-400'
+                    }`}
+                  >
+                    <span>{formatTime(msg.created_at)}</span>
+                    {isMe && (
+                      <i
+                        className={`fa-solid ${
+                          msg.is_read ? 'fa-check-double text-cyan-300' : 'fa-check'
+                        }`}
+                      ></i>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Indicador de Digitação */}
+        {isFriendTyping && (
+          <div
+            data-testid="typing-indicator"
+            className="flex items-center gap-2 text-xs text-brand-purple bg-brand-purple/10 border border-brand-purple/20 px-3 py-1.5 rounded-full w-max animate-pulse"
+          >
+            <span className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-brand-purple rounded-full animate-bounce"></span>
+              <span className="w-1.5 h-1.5 bg-brand-purple rounded-full animate-bounce [animation-delay:0.2s]"></span>
+              <span className="w-1.5 h-1.5 bg-brand-purple rounded-full animate-bounce [animation-delay:0.4s]"></span>
+            </span>
+            <span className="font-medium text-[11px]">
+              {isBot ? 'MIST Bot está formulando resposta...' : `${friend.username || 'Amigo'} está digitando...`}
+            </span>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Sugestões Rápidas (Quick Prompts) para o Bot IA */}
+      {isBot && (
+        <div className="px-3 py-2 bg-brand-surface/90 border-t border-gray-800/80 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+          <span className="text-gray-400 flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider pl-1 flex-shrink-0">
+            <i className="fa-solid fa-lightbulb text-amber-400"></i> Sugestões:
+          </span>
+          {[
+            'Recomende um jogo do catálogo',
+            'Como funcionam as conquistas?',
+            'Quais são os jogos mais jogados?',
+          ].map((promptText, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setInputText(promptText);
+              }}
+              className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-brand-card hover:bg-brand-purple/20 border border-gray-700/80 hover:border-brand-purple text-gray-300 hover:text-white transition cursor-pointer flex-shrink-0"
+            >
+              {promptText}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Popover de Emoticons */}
+      {showEmoticons && (
+        <div className="p-3 bg-brand-card border-t border-brand-purple/30 flex items-center gap-2">
+          <span className="text-xs text-gray-400 font-medium">Emoticons:</span>
+          {availableEmoticons.map((emoticon) => (
+            <button
+              key={emoticon.code}
+              type="button"
+              onClick={() => handleSelectEmoticon(emoticon.code)}
+              className="p-1 hover:bg-brand-purple/20 border border-transparent hover:border-brand-purple/50 rounded-lg transition group flex items-center gap-1"
+              title={`${emoticon.label} (${emoticon.code})`}
+            >
+              <img
+                src={emoticon.img}
+                alt={emoticon.label}
+                className="w-7 h-7 rounded object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Caixa de Entrada */}
+      <form onSubmit={handleSendMessage} className="p-3 bg-brand-surface border-t border-gray-800 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowEmoticons((prev) => !prev)}
+          className={`p-2.5 rounded-xl border transition ${
+            showEmoticons
+              ? 'bg-brand-purple text-white border-brand-purple'
+              : 'bg-brand-card text-gray-400 hover:text-white border-gray-700 hover:border-gray-600'
+          }`}
+          title="Inserir Emoticon"
+        >
+          <i className="fa-regular fa-face-smile text-base"></i>
+        </button>
+        <input
+          type="text"
+          value={inputText}
+          onChange={handleInputChange}
+          placeholder="Escreva uma mensagem..."
+          className="flex-1 bg-brand-card text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition"
+        />
+        <button
+          type="submit"
+          disabled={!inputText.trim()}
+          className="px-4 py-2.5 bg-brand-purple hover:bg-brand-purple-hover disabled:opacity-40 disabled:hover:bg-brand-purple text-white rounded-xl transition flex items-center justify-center font-medium shadow-lg"
+          aria-label="Enviar Mensagem"
+        >
+          <i className="fa-solid fa-paper-plane text-sm"></i>
+        </button>
+      </form>
+    </div>
+  );
+};

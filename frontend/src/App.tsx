@@ -1,22 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { DownloadBar } from './components/DownloadBar';
 import { AuthModal } from './components/AuthModal';
 import { CartDrawer } from './components/CartDrawer';
+import { AcademicDisclaimer } from './components/AcademicDisclaimer';
+import { SystemNoticeModal, SystemNoticeData } from './components/SystemNoticeModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Store } from './pages/Store';
+import { Market } from './pages/Market';
+import { Inventory } from './pages/Inventory';
 import { Library } from './pages/Library';
 import { Social } from './pages/Social';
+import { Groups } from './pages/Groups';
 import { News } from './pages/News';
 import { PointsShop } from './pages/PointsShop';
 import { Profile } from './pages/Profile';
+import { PublicProfile } from './pages/PublicProfile';
 import { Login } from './pages/Login';
+import { Workshop } from './pages/Workshop';
 import { NavigationTab, UserProfile } from './types';
-import { storeApi } from './api/client';
+import { storeApi, libraryApi } from './api/client';
+
 
 const defaultGuestUser: UserProfile = {
+  id: 0,
   username: 'ggtorres2001',
   realName: 'Gabriel Torres',
   location: 'Rio Grande do Sul, Brazil',
@@ -50,8 +59,46 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showAcademicDisclaimer, setShowAcademicDisclaimer] = useState<boolean>(true);
+  const [systemNotice, setSystemNotice] = useState<SystemNoticeData | null>(null);
+  const [viewedUsername, setViewedUsername] = useState<string | null>(null);
+  const [achievementToast, setAchievementToast] = useState<{
+    achievement_id: string;
+    name: string;
+    description?: string;
+    rarity?: string;
+  } | null>(null);
+  const seenAchievementsRef = useRef<Set<string>>(new Set());
+  const lastAchievementCheckRef = useRef<string>(new Date().toISOString());
 
   const { user, logout, openAuthModal, updateUserBalance, isAuthenticated } = useAuth();
+
+  // Listener para navegação ao perfil público de usuários ao clicar em seus nomes
+  useEffect(() => {
+    const handleVisitProfile = (e: CustomEvent<string>) => {
+      if (e.detail) {
+        setViewedUsername(e.detail);
+        setActiveTab('public_profile');
+      }
+    };
+    window.addEventListener('mist:visit-profile' as any, handleVisitProfile);
+    return () => {
+      window.removeEventListener('mist:visit-profile' as any, handleVisitProfile);
+    };
+  }, []);
+
+  // Listener para abertura de comunicados oficiais do sistema via notificações (ex: jogos deixando catálogo)
+  useEffect(() => {
+    const handleOpenNotice = (e: CustomEvent<SystemNoticeData>) => {
+      if (e.detail) {
+        setSystemNotice(e.detail);
+      }
+    };
+    window.addEventListener('mist:open-system-notice' as any, handleOpenNotice);
+    return () => {
+      window.removeEventListener('mist:open-system-notice' as any, handleOpenNotice);
+    };
+  }, []);
 
   const fetchWishlistCount = useCallback(async () => {
     const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -79,12 +126,15 @@ function AppContent() {
   // Listener para toasts globais (ex: 'Usuário não autenticado. Realize o login') com auto-dismiss em 5s
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    const handleToast = (e: CustomEvent<string>) => {
-      setToastMessage(e.detail);
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setToastMessage(null);
-      }, 5000);
+    const handleToast = (e: CustomEvent<any>) => {
+      const msg = typeof e.detail === 'string' ? e.detail : e.detail?.message || String(e.detail || '');
+      if (msg) {
+        setToastMessage(msg);
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          setToastMessage(null);
+        }, 5000);
+      }
     };
 
     window.addEventListener('mist:toast' as any, handleToast);
@@ -93,6 +143,57 @@ function AppContent() {
       clearTimeout(timer);
     };
   }, []);
+
+  // Polling leve e listener para Conquistas Desbloqueadas (E-07)
+  useEffect(() => {
+    let dismissTimer: NodeJS.Timeout;
+    const showAchievementToast = (ach: { achievement_id: string; name: string; description?: string; rarity?: string }) => {
+      setAchievementToast(ach);
+      clearTimeout(dismissTimer);
+      dismissTimer = setTimeout(() => {
+        setAchievementToast(null);
+      }, 6000);
+    };
+
+    // Escuta evento customizado de conquista desbloqueada disparado no frontend
+    const handleLocalUnlock = (e: CustomEvent<{ achievement_id: string; name: string; description?: string; rarity?: string }>) => {
+      if (e.detail && e.detail.achievement_id) {
+        seenAchievementsRef.current.add(e.detail.achievement_id);
+        showAchievementToast(e.detail);
+      }
+    };
+    window.addEventListener('mist:achievement-unlocked' as any, handleLocalUnlock);
+
+    // Polling leve a cada 6 segundos se o usuário estiver autenticado
+    const interval = setInterval(async () => {
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
+      if (!token && !isAuthenticated) return;
+
+      try {
+        const recent = await libraryApi.getRecentAchievements(lastAchievementCheckRef.current);
+        if (Array.isArray(recent) && recent.length > 0) {
+          for (const ach of recent) {
+            if (!seenAchievementsRef.current.has(ach.achievement_id)) {
+              seenAchievementsRef.current.add(ach.achievement_id);
+              showAchievementToast(ach);
+              window.dispatchEvent(
+                new CustomEvent('mist:achievement-unlocked', { detail: ach })
+              );
+            }
+          }
+        }
+        lastAchievementCheckRef.current = new Date().toISOString();
+      } catch {
+        // Degradação graciosa e silenciosa de rede
+      }
+    }, 6000);
+
+    return () => {
+      window.removeEventListener('mist:achievement-unlocked' as any, handleLocalUnlock);
+      clearInterval(interval);
+      clearTimeout(dismissTimer);
+    };
+  }, [isAuthenticated]);
 
   // Se autenticado, usa os dados reais do usuário; se visitante, usa perfil de demonstração com saldos zerados
   const currentUser: UserProfile = user || defaultGuestUser;
@@ -125,6 +226,48 @@ function AppContent() {
         </div>
       )}
 
+      {/* Toast exclusivo de Conquista Desbloqueada (E-07) */}
+      {achievementToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-20 right-6 z-[200] max-w-md bg-brand-surface/95 border-2 border-yellow-500/70 text-yellow-100 px-4 py-3.5 rounded-2xl shadow-[0_0_30px_rgba(234,179,8,0.35)] backdrop-blur-md flex items-center gap-3.5 animate-fade-in transition-all duration-300"
+        >
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-500/30 to-amber-600/30 border border-yellow-400/40 text-yellow-300 flex items-center justify-center shrink-0 shadow-inner text-xl">
+            <i className="fa-solid fa-trophy"></i>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] tracking-wider font-extrabold uppercase bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full border border-yellow-500/30">
+                Conquista Desbloqueada
+              </span>
+              {achievementToast.rarity && (
+                <span className="text-[10px] text-gray-400 font-semibold">
+                  • {achievementToast.rarity}
+                </span>
+              )}
+            </div>
+            <h4 className="text-sm font-bold text-white truncate mt-0.5">
+              {achievementToast.name}
+            </h4>
+            {achievementToast.description && (
+              <p className="text-xs text-gray-300 truncate">
+                {achievementToast.description}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAchievementToast(null)}
+            className="text-yellow-400/60 hover:text-white transition ml-auto p-1 cursor-pointer"
+            aria-label="Fechar notificação de conquista"
+          >
+            <i className="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      )}
+
+
       {/* Modal global de autenticação (Login e Cadastro com R$ 200 de boas-vindas) */}
       <AuthModal />
 
@@ -140,18 +283,25 @@ function AppContent() {
       {/* Área Principal Scrollável */}
       <div className="flex-1 overflow-y-auto relative flex flex-col justify-between">
         <div>
-          {/* Header Superior da Loja */}
-          {activeTab === 'store' && (
-            <Header
-              wishlistCount={wishlistCount}
-              walletBalance={currentUser.walletBalance}
-              onSearch={setSearchQuery}
-              activeSubTab={activeSubTab}
-              onSelectSubTab={setActiveSubTab}
-              isGuest={!isAuthenticated}
-              onOpenAuth={() => openAuthModal('login')}
-            />
+          {/* Disclaimer Acadêmico Obrigatório (removível após 5s) */}
+          {showAcademicDisclaimer && (
+            <AcademicDisclaimer onClose={() => setShowAcademicDisclaimer(false)} />
           )}
+
+          {/* Header Superior Global (Loja, Notificações, Carteira, Carrinho) */}
+          <Header
+            wishlistCount={wishlistCount}
+            walletBalance={currentUser.walletBalance}
+            onSearch={setSearchQuery}
+            activeSubTab={activeSubTab}
+            onSelectSubTab={(sub) => {
+              setActiveSubTab(sub);
+              if (activeTab !== 'store') setActiveTab('store');
+            }}
+            isGuest={!isAuthenticated}
+            onOpenAuth={() => openAuthModal('login')}
+            onNavigate={(tab) => setActiveTab(tab as NavigationTab)}
+          />
 
           {/* Renderização das Telas MIST */}
           {activeTab === 'store' && (
@@ -166,7 +316,18 @@ function AppContent() {
             <Library onNavigateToStore={() => setActiveTab('store')} />
           )}
 
+          {activeTab === 'market' && <Market />}
+
+          {activeTab === 'inventory' && (
+            <Inventory
+              onNavigateToMarket={() => setActiveTab('market')}
+              onNavigateToPointsShop={() => setActiveTab('points')}
+            />
+          )}
+
           {activeTab === 'social' && <Social />}
+
+          {activeTab === 'groups' && <Groups />}
 
           {activeTab === 'news' && <News />}
 
@@ -177,7 +338,22 @@ function AppContent() {
             />
           )}
 
-          {activeTab === 'profile' && <Profile user={currentUser} />}
+          {activeTab === 'profile' && (
+            <Profile
+              user={currentUser}
+              onNavigate={(tab) => setActiveTab(tab as NavigationTab)}
+            />
+          )}
+
+          {activeTab === 'public_profile' && (
+            <PublicProfile
+              username={viewedUsername || currentUser.username}
+              onBack={() => setActiveTab('profile')}
+              onNavigateToSocial={() => setActiveTab('social')}
+            />
+          )}
+
+          {activeTab === 'workshop' && <Workshop />}
 
           {activeTab === 'login' && (
             <Login onLoginSuccess={() => setActiveTab('store')} />
@@ -189,6 +365,24 @@ function AppContent() {
 
         {/* Gaveta do Carrinho de Compras */}
         <CartDrawer onNavigateToLibrary={() => setActiveTab('library')} />
+
+        {/* Modal de Comunicados e Notícias do Sistema */}
+        <SystemNoticeModal
+          isOpen={!!systemNotice}
+          notice={systemNotice}
+          onClose={() => setSystemNotice(null)}
+          onNavigate={(route) => setActiveTab(route as NavigationTab)}
+          onOpenGame={(gameId, relevantInfo) => {
+            setActiveTab('store');
+            setTimeout(() => {
+              window.dispatchEvent(
+                new CustomEvent('mist:open-game-detail', {
+                  detail: { gameId, relevantInfo },
+                })
+              );
+            }, 60);
+          }}
+        />
       </div>
     </div>
   );

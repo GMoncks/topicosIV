@@ -86,6 +86,9 @@ def test_download_forca_game_zip(client):
         assert "game.py" in namelist
         assert "mist_sdk.py" in namelist
         assert "session.json" in namelist
+        assert "jogar.bat" in namelist
+        assert "jogar.sh" in namelist
+        assert "LEIAME.txt" in namelist
 
         # Verifica conteúdo do session.json
         session_content = json.loads(zf.read("session.json").decode("utf-8"))
@@ -93,11 +96,49 @@ def test_download_forca_game_zip(client):
         assert session_content["session_token"] == "jwt_real_teste_token_xyz"
         assert session_content["game_id"] == game.id
         assert session_content["game_title"] == "MIST Forca"
+        assert "https://mist.biomimetics.com.br/api/library" in session_content["library_api_url"]
 
         # Verifica que o game.py contém código do jogo
         game_code = zf.read("game.py").decode("utf-8")
         assert "MIST FORCA" in game_code
         assert "import mist_sdk" in game_code
+
+        # Verifica que jogar.bat é o launcher do Windows
+        bat_code = zf.read("jogar.bat").decode("utf-8")
+        assert "MIST STUDIOS - LAUNCHER" in bat_code
+        assert "python game.py" in bat_code
+
+        # Verifica que jogar.sh é o launcher Linux/Mac
+        sh_code = zf.read("jogar.sh").decode("utf-8")
+        assert "#!/usr/bin/env bash" in sh_code
+        assert "python3 game.py" in sh_code
+
+        # Verifica documentação de execução
+        readme = zf.read("LEIAME.txt").decode("utf-8")
+        assert "MIST STUDIOS - JOGO STANDALONE" in readme
+        assert "jogar.bat" in readme
+        assert "jogar.sh" in readme
+
+
+def test_download_with_authorization_bearer_header(client):
+    db = TestingSessionLocal()
+    game = db.query(Game).filter(Game.title == "MIST Forca").first()
+    db.close()
+    assert game is not None
+
+    response = client.get(
+        f"/games/{game.id}/download",
+        headers={
+            "X-User-Id": "99",
+            "Authorization": "Bearer jwt_bearer_token_abc"
+        }
+    )
+    assert response.status_code == 200
+    zip_bytes = io.BytesIO(response.content)
+    with zipfile.ZipFile(zip_bytes, "r") as zf:
+        session_content = json.loads(zf.read("session.json").decode("utf-8"))
+        assert session_content["user_id"] == 99
+        assert session_content["session_token"] == "jwt_bearer_token_abc"
 
 
 def test_download_labirinto_game_zip(client):

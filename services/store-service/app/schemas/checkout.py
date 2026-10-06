@@ -21,4 +21,6 @@ class CheckoutResponse(BaseModel):
     items: List[CheckoutItem]
     total_paid: float
     new_wallet_balance: float
+    points_earned: int = 0
     purchased_at: datetime
+

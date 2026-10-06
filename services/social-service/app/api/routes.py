@@ -8,6 +8,7 @@ from app.schemas.friend import (
     FriendActionResponse,
     FriendshipResponse,
     FriendListItem,
+    FriendPendingRequestItem,
 )
 from app.services.social_service import SocialService
 
@@ -99,3 +100,319 @@ def list_friends(
     Lista todos os amigos confirmados (status accepted) do usuário autenticado.
     """
     return SocialService.list_friends(db=db, user_id=user_id)
+
+
+@router.get("/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+@router.get("/social/friends/requests", response_model=List[FriendPendingRequestItem], status_code=status.HTTP_200_OK)
+def list_friend_requests(
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista todas as solicitações de amizade pendentes recebidas pelo usuário logado.
+    """
+    return SocialService.list_friend_requests(db=db, user_id=user_id)
+
+
+@router.get("/relationship/{user_id_a}/{user_id_b}")
+@router.get("/social/relationship/{user_id_a}/{user_id_b}")
+def get_relationship(
+    user_id_a: int,
+    user_id_b: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Verifica a relação social entre dois usuários (self, friend, group_member, none).
+    """
+    rel = SocialService.check_relationship(db=db, user_id_a=user_id_a, user_id_b=user_id_b)
+    return {"relationship": rel, "user_id_a": user_id_a, "user_id_b": user_id_b}
+
+
+from app.schemas.activity import ActivityCreate, ActivityResponse
+
+
+@router.post("/activities", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/social/activities", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+def create_activity(
+    payload: ActivityCreate,
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Registra um novo evento de atividade (desbloqueio de conquista, compra, etc.).
+    Pode ser acionado internamente por outros microsserviços (ex: library-service).
+    """
+    user_id = payload.user_id
+    if x_user_id:
+        try:
+            user_id = int(x_user_id)
+        except ValueError:
+            pass
+
+    activity = SocialService.record_activity(
+        db=db,
+        user_id=user_id,
+        activity_type=payload.type,
+        payload=payload.payload
+    )
+    return activity
+
+
+@router.get("/activities", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/activities", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/feed", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/feed", response_model=List[ActivityResponse], status_code=status.HTTP_200_OK)
+def get_activities(
+    user_id: Optional[int] = None,
+    x_user_id: Optional[str] = Header(None),
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    Retorna o feed de atividades recentes. Se user_id for especificado (ou via X-User-Id),
+    filtra por esse usuário; caso contrário, retorna as atividades globais.
+    """
+    effective_user_id = user_id
+    if effective_user_id is None and x_user_id:
+        try:
+            effective_user_id = int(x_user_id)
+        except ValueError:
+            pass
+
+    return SocialService.list_activities(db=db, user_id=effective_user_id, limit=limit)
+
+
+# ==============================================================================
+# WEBSOCKET & REST CHAT (F-03 & F-07)
+# ==============================================================================
+from fastapi import WebSocket, WebSocketDisconnect, Query
+from app.services.chat_manager import chat_manager
+from app.services.presence_manager import presence_manager
+from app.schemas.presence import PresenceUpdateRequest, PresenceResponse
+from app.schemas.message import MessageResponse
+
+
+def resolve_ws_user_id(token: Optional[str] = None, user_id: Optional[int] = None) -> int:
+    if user_id:
+        return user_id
+    if token:
+        try:
+            import jwt
+            payload = jwt.decode(token, "mist_super_secret_jwt_key_development_secret_32bytes", algorithms=["HS256"])
+            return int(payload.get("sub", 1))
+        except Exception:
+            pass
+    return 1
+
+
+@router.websocket("/ws/chat/{room_id}")
+async def websocket_chat_endpoint(
+    websocket: WebSocket,
+    room_id: str,
+    token: Optional[str] = Query(None),
+    user_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint WebSocket de chat em tempo real por sala/amigo (F-03).
+    Suporta mensagens e indicador de digitação (typing indicator).
+    """
+    current_user_id = resolve_ws_user_id(token=token, user_id=user_id)
+    await chat_manager.connect(room_id, websocket, current_user_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type", "message")
+            if msg_type == "message":
+                content = (data.get("content") or "").strip()
+                if content:
+                    sender_id = data.get("sender_id", current_user_id)
+                    saved_msg = SocialService.save_message(db, room_id, sender_id, content)
+                    broadcast_payload = {
+                        "type": "message",
+                        **saved_msg
+                    }
+                    await chat_manager.broadcast_message(room_id, broadcast_payload)
+
+                    # Notificação em tempo real para o destinatário via NotificationManager se for chat direto
+                    if room_id.startswith("direct_"):
+                        parts = room_id.split("_")
+                        if len(parts) >= 3:
+                            try:
+                                u1, u2 = int(parts[1]), int(parts[2])
+                                recipient_id = u2 if sender_id == u1 else u1
+                                if recipient_id != 0:
+                                    await notification_manager.notify_user(recipient_id, {
+                                        "type": "new_chat_message",
+                                        "room_id": room_id,
+                                        "sender_id": sender_id,
+                                        "content": content[:100],
+                                    })
+                            except Exception:
+                                pass
+
+                    # MIST Companion Bot (G-04): Se a sala for do bot e a mensagem partiu do usuário
+                    is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"
+                    if is_bot_room and sender_id != 0:
+                        # 1. Dispara typing indicator do bot
+                        await chat_manager.broadcast_typing(room_id, user_id=0, is_typing=True)
+                        # 2. Carrega histórico recente para contexto
+                        history_msgs = SocialService.list_messages(db, room_id, limit=6)
+                        chat_history = [
+                            {"sender": ("MIST Bot" if m["sender_id"] == 0 else "Gamer"), "text": m["content"]}
+                            for m in history_msgs
+                        ]
+                        # 3. Invoca AI Client (com fallback determinístico resiliente)
+                        from app.services.ai_client import AIClient
+                        ai_client = AIClient()
+                        bot_reply = await ai_client.companion_chat_reply(
+                            user_message=content,
+                            chat_history=chat_history,
+                            user_profile={"username": f"Gamer_{current_user_id}"}
+                        )
+                        # 4. Salva a resposta do bot
+                        bot_saved = SocialService.save_message(db, room_id, sender_id=0, content=bot_reply)
+                        # 5. Remove typing indicator e transmite resposta via WebSocket
+                        await chat_manager.broadcast_typing(room_id, user_id=0, is_typing=False)
+                        await chat_manager.broadcast_message(room_id, {
+                            "type": "message",
+                            **bot_saved
+                        })
+            elif msg_type == "typing":
+                is_typing = bool(data.get("is_typing", False))
+                await chat_manager.broadcast_typing(room_id, current_user_id, is_typing, exclude=websocket)
+            elif msg_type == "read":
+                SocialService.mark_messages_as_read(db, room_id, current_user_id)
+    except WebSocketDisconnect:
+        chat_manager.disconnect(room_id, websocket)
+
+
+@router.get("/chat/{room_id}/messages", response_model=List[MessageResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/chat/{room_id}/messages", response_model=List[MessageResponse], status_code=status.HTTP_200_OK)
+def get_chat_messages(
+    room_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """
+    Recupera o histórico paginado de mensagens de uma sala de chat (F-07).
+    """
+    return SocialService.list_messages(db=db, room_id=room_id, limit=limit, offset=offset)
+
+
+from pydantic import BaseModel as PyBaseModel
+
+class ChatSendPayload(PyBaseModel):
+    content: str
+
+
+@router.post("/chat/{room_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/social/chat/{room_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def send_chat_message(
+    room_id: str,
+    payload: ChatSendPayload,
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Envia uma mensagem para uma sala de chat via REST com auto-resposta se a sala for do MIST Bot.
+    """
+    user_id = int(x_user_id) if x_user_id else 1
+    content = payload.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Conteúdo da mensagem não pode ser vazio.")
+
+    saved_msg = SocialService.save_message(db=db, room_id=room_id, sender_id=user_id, content=content)
+    await chat_manager.broadcast_message(room_id, {"type": "message", **saved_msg})
+
+    is_bot_room = room_id.startswith("direct_0_") or room_id.endswith("_0") or "_0_" in room_id or room_id == "direct_0"
+    if is_bot_room and user_id != 0:
+        history_msgs = SocialService.list_messages(db, room_id, limit=6)
+        chat_history = [
+            {"sender": ("MIST Bot" if m["sender_id"] == 0 else "Gamer"), "text": m["content"]}
+            for m in history_msgs
+        ]
+        from app.services.ai_client import AIClient
+        ai_client = AIClient()
+        bot_reply = await ai_client.companion_chat_reply(
+            user_message=content,
+            chat_history=chat_history,
+            user_profile={"username": f"Gamer_{user_id}"}
+        )
+        bot_saved = SocialService.save_message(db, room_id, sender_id=0, content=bot_reply)
+        await chat_manager.broadcast_message(room_id, {"type": "message", **bot_saved})
+
+    return saved_msg
+
+
+
+@router.post("/chat/{room_id}/read", status_code=status.HTTP_200_OK)
+@router.post("/social/chat/{room_id}/read", status_code=status.HTTP_200_OK)
+def mark_chat_read(
+    room_id: str,
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Marca como lidas as mensagens recebidas na sala de conversa especificada.
+    """
+    user_id = int(x_user_id) if x_user_id else 1
+    updated = SocialService.mark_messages_as_read(db=db, room_id=room_id, current_user_id=user_id)
+    return {"success": True, "marked_read": updated}
+
+
+# ==============================================================================
+# WEBSOCKET & REST PRESENÇA (F-04, F-05 & F-08)
+# ==============================================================================
+@router.websocket("/ws/presence")
+async def websocket_presence_endpoint(
+    websocket: WebSocket,
+    token: Optional[str] = Query(None),
+    user_id: Optional[int] = Query(None),
+):
+    """
+    Endpoint WebSocket de presença (F-04).
+    Notifica status Online / Ausente / Jogando em tempo real.
+    """
+    current_user_id = resolve_ws_user_id(token=token, user_id=user_id)
+    await presence_manager.connect(websocket, current_user_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            req_type = data.get("type")
+            if req_type == "set_status":
+                new_status = data.get("status", "online")
+                game_id = data.get("game_id")
+                game_title = data.get("game_title")
+                await presence_manager.update_status(current_user_id, new_status, game_id, game_title)
+            elif req_type == "ping":
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        await presence_manager.disconnect(websocket)
+
+
+@router.get("/presence", response_model=List[PresenceResponse], status_code=status.HTTP_200_OK)
+@router.get("/social/presence", response_model=List[PresenceResponse], status_code=status.HTTP_200_OK)
+def get_presence_snapshot():
+    """
+    Retorna o snapshot de presença de todos os usuários rastreados atualmente.
+    """
+    return presence_manager.get_snapshot()
+
+
+@router.post("/presence/status", status_code=status.HTTP_200_OK)
+@router.post("/social/presence/status", status_code=status.HTTP_200_OK)
+async def update_presence_status(payload: PresenceUpdateRequest):
+    """
+    Endpoint REST interno para atualização de presença.
+    Acionado pelo library-service quando o usuário inicia ou finaliza sessão de jogo (F-05).
+    """
+    await presence_manager.update_status(
+        user_id=payload.user_id,
+        status=payload.status,
+        game_id=payload.game_id,
+        game_title=payload.game_title
+    )
+    return {"success": True, "presence": presence_manager.get_user_status(payload.user_id)}
+

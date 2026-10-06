@@ -68,4 +68,47 @@ describe('CheckoutModal Component', () => {
     const confirmButton = screen.getByRole('button', { name: /Confirmar Compra/i });
     expect(confirmButton).toBeDisabled();
   });
+
+  it('deve creditar pontos e atualizar saldo da carteira imediatamente após confirmar compra', async () => {
+    const mockUpdateBalance = vi.fn();
+    mockUseAuth.mockReturnValueOnce({
+      user: { walletBalance: 200.0, pointsBalance: 500, username: 'testuser' } as any,
+      isAuthenticated: true,
+      openAuthModal: vi.fn(),
+      updateUserBalance: mockUpdateBalance,
+    });
+
+    const { storeApi } = await import('../api/client');
+    vi.spyOn(storeApi, 'checkout').mockResolvedValueOnce({
+      status: 'success',
+      order_id: 'ord_123',
+      items: [{ game_id: 1, title: 'Dead Cells', price_paid: 47.49 }],
+      total_paid: 47.49,
+      new_wallet_balance: 152.51,
+      points_earned: 4749,
+      purchased_at: new Date().toISOString(),
+    });
+
+    render(
+      <CheckoutModal
+        game={mockGame}
+        isOpen={true}
+        onClose={vi.fn()}
+      />
+    );
+
+    const confirmButton = screen.getByRole('button', { name: /Confirmar Compra/i });
+    const { fireEvent } = await import('@testing-library/react');
+    fireEvent.click(confirmButton);
+
+    const { waitFor } = await import('@testing-library/react');
+    await waitFor(() => {
+      // 500 inicial + 4749 pontos ganhos = 5249
+      expect(mockUpdateBalance).toHaveBeenCalledWith(152.51, 5249);
+    });
+
+    // Deve exibir o novo saldo autoritativo retornado pelo backend na tela de sucesso
+    expect(screen.getByText('Compra Realizada!')).toBeInTheDocument();
+    expect(screen.getByText(/152,51/)).toBeInTheDocument();
+  });
 });

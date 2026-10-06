@@ -18,21 +18,28 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   clearSessionNotice: () => void;
   updateUserBalance: (wallet?: number, points?: number) => void;
+  updateUserCosmetics: (avatarFrameUrl?: string | null, profileBackgroundUrl?: string | null) => void;
+  updateUserProfile: (profileData: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapAuthUserToProfile(authUser: AuthUserResponse): UserProfile {
   return {
+    id: authUser.id,
     username: authUser.username,
-    realName: authUser.username,
-    location: 'Brasil',
+    realName: authUser.real_name || authUser.username,
+    bio: authUser.bio,
+    location: authUser.location || 'Brasil',
     level: authUser.level || 1,
     avatarText: authUser.username.slice(0, 2).toUpperCase(),
     avatarUrl: authUser.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${authUser.username}`,
+    avatarFrameUrl: authUser.avatar_frame_url,
+    profileBackgroundUrl: authUser.profile_background_url,
     status: 'Online',
     walletBalance: authUser.wallet_balance ?? 200.0,
     pointsBalance: authUser.points_balance ?? 500,
+
     featuredBadge: {
       title: 'Pioneiro MIST',
       xp: 100,
@@ -85,6 +92,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     });
   }, []);
+
+  const updateUserCosmetics = useCallback((avatarFrameUrl?: string | null, profileBackgroundUrl?: string | null) => {
+    setUser(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        avatarFrameUrl: avatarFrameUrl !== undefined ? (avatarFrameUrl || undefined) : prev.avatarFrameUrl,
+        profileBackgroundUrl: profileBackgroundUrl !== undefined ? (profileBackgroundUrl || undefined) : prev.profileBackgroundUrl,
+      };
+    });
+  }, []);
+
+  const updateUserProfile = useCallback((profileData: Partial<UserProfile>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        ...profileData,
+        avatarText: (profileData.username || prev.username).slice(0, 2).toUpperCase(),
+      };
+    });
+  }, []);
+
 
   const refreshProfile = useCallback(async () => {
     const currentToken = typeof localStorage !== 'undefined' ? localStorage.getItem('mist_token') : null;
@@ -181,7 +211,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     refreshProfile,
     clearSessionNotice,
     updateUserBalance,
+    updateUserCosmetics,
+    updateUserProfile,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
@@ -189,7 +222,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth deve ser utilizado dentro de um AuthProvider');
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      sessionNotice: null,
+      isAuthModalOpen: false,
+      authModalMode: 'login',
+      openAuthModal: () => {},
+      closeAuthModal: () => {},
+      login: async () => {},
+      register: async () => {},
+      logout: () => {},
+      refreshProfile: async () => {},
+      clearSessionNotice: () => {},
+      updateUserBalance: () => {},
+      updateUserCosmetics: () => {},
+      updateUserProfile: () => {},
+    };
   }
   return context;
 };
+
