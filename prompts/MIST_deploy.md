@@ -331,5 +331,122 @@ Arquivo dedicado ao rastreamento de prompts e decisões técnicas relacionadas a
 - Nenhuma modificação de código no repositório. Resolução de erro conceitual sobre a ordem de execução do fluxo de CI/CD.
 - Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
 
+---
+
+## 2026-10-07 — Prompt 14
+
+**Prompt do usuário:**
+
+> Agora os packages estão publicados, mas ainda assim obtive um erro no CasaOS. Se houve como verificar de forma mais verbosa o log de erro, me informe pois não sei como fazer. Segue também o comando do próprio Github para o auth [...] *(Acompanhado de screenshot com erro "denied denied")*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico do Erro de Pull (`denied denied`):**
+   - A screenshot revelou o erro padrão do Docker daemon ao tentar fazer pull anônimo de uma imagem restrita (Privada) em um registry.
+   - Confirmado que a formatação da URL da imagem (`ghcr.io/gmoncks/topicosiv/...`) gerada pelo workflow está perfeitamente correta.
+   - Concluído que a causa raiz é a visibilidade padrão do GHCR (pacotes nascem privados, mesmo em repositórios públicos), e o proprietário do repositório não alterou a visibilidade para Público conforme instruído em prompts anteriores.
+
+2. **Plano de Resolução:**
+   - Reiterado o passo a passo exato na interface web do GitHub (Packages -> Package Settings -> Change visibility -> Public) que o proprietário (`gmoncks`) deve executar para os 8 pacotes.
+   - Fornecido o método de teste verboso/direto via SSH no host (`docker pull ...`) para isolar o CasaOS da equação e validar a autorização diretamente no daemon do Docker.
+   - Oferecida a alternativa de manter as imagens privadas caso o usuário prefira configurar a autenticação (`docker login`) manualmente no SO host usando um PAT (Personal Access Token).
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Resolução de bloqueio de infraestrutura / permissões IAM no GitHub.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 15
+
+**Prompt do usuário:**
+
+> Pelo que eu vejo no github, a visualização já foi feita em modo public, assim como o repositorio também é publico. Segue o comando + retorno no terminal do casaOS: docker pull ghcr.io/gmoncks/topicosiv/mist-auth-service:latest
+> permission denied while trying to connect to the docker API at unix:///var/run/docker.sock
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico do Erro no Socket do Docker:**
+   - Explicado ao usuário que a mensagem `permission denied [...] docker.sock` não está relacionada à autorização do GHCR, mas sim a privilégios do SO local (Linux).
+   - O usuário rodou o cliente do Docker via SSH com uma conta sem privilégios (não pertencente ao grupo `docker`).
+2. **Resolução:**
+   - Orientada a execução do comando antecedido por `sudo` (`sudo docker pull ...`).
+   - Mapeados os cenários de saída após a elevação de privilégios: se houver sucesso no pull, confirma-se a visibilidade pública; se houver reincidência do `denied denied`, as políticas do GHCR não foram aplicadas corretamente na fonte.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Troubleshoot de SO Linux.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 16
+
+**Prompt do usuário:**
+
+> Parece que está funcionando sim o comando, mas apesar disso sabemos que dá o erro que lhe passei antes ao tentar rodar a criação do docker. Como dará um certo trabalho repetir a instalação novamente do docker, gostaria que você antes confirmasse se de fato esse esquema das permissões é a única possibilidade de erro ao tentar criar o container. Não pode ser algo com a configuração do watchtower por exemplo? *(Acompanhado de screenshot comprovando pull com sucesso do auth-service)*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Validação do Sucesso do Pull:**
+   - A screenshot atestou `Status: Image is up to date`, provando categoricamente que o pacote `mist-auth-service` está Público e acessível sem autenticação pelo host local, eliminando as hipóteses de problema de permissão no GHCR para esta imagem em específico.
+2. **Análise de Causa Raiz Alternativa:**
+   - Esclarecido que o Watchtower não tem responsabilidade no erro de `denied`, pois o erro ocorre na camada de *Pull* (antes dos containers serem criados/iniciados), e o Watchtower atua apenas em tempo de execução (*runtime*).
+   - Levantada a hipótese mais provável para a falha do CasaOS: a instalação no CasaOS tenta realizar o pull em massa (bulk) de todas as 10 imagens (8 MIST + cloudflared + watchtower). Se **apenas um** dos pacotes remanescentes (ex: `frontend` ou `gateway`) tiver sido esquecido como *Private* pelo proprietário no GitHub, a orquestração inteira falha com `denied`.
+3. **Plano de Validação Eficiente:**
+   - Fornecido um script de comandos de CLI sequenciais (`sudo docker pull ...` para os 7 serviços restantes) para validar individualmente a visibilidade de cada pacote.
+   - Orientado que, ao realizar os pulls via CLI primeiro, as imagens ficam em cache no daemon. Isso tornará a subsequente tentativa de instalação na UI do CasaOS instantânea e imune a gargalos de pull remoto, otimizando o esforço do usuário.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Consultoria de infraestrutura focada na orquestração de imagens do Docker.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 17
+
+**Prompt do usuário:**
+
+> Entendi o problema. Não existe esse mist-frontend na lista de packages (sejam elas privadas ou públicas)
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Confirmação da Causa Raiz:**
+   - A ausência do pacote `mist-frontend` confirmou a hipótese do Prompt 16. O docker daemon lança `denied` ou `manifest unknown` quando tenta fazer pull de um artefato inexistente em um registry, o que causou a falha total no CasaOS.
+2. **Plano de Ação (Troubleshooting de CI):**
+   - Orientado o usuário a acessar a aba **Actions** do repositório no GitHub para inspecionar o job específico da matriz referente ao `frontend`.
+   - Explicado que a falha na publicação indica um erro de build (ex: falhas de tipagem estrita no `tsc` ou gargalos de performance/timeout durante a compilação cruzada ARM64 via QEMU).
+   - Definido o fluxo de correção: identificar o erro no log, corrigir o código, publicar uma nova tag semântica (ex: `v1.0.1`), aguardar o sucesso do workflow, alterar a visibilidade do novo pacote para Public, e então retomar a instalação no CasaOS.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Direcionamento técnico para debugging de esteira de CI/CD (GitHub Actions).
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 18
+
+**Prompt do usuário:**
+
+> Acabei de ver que o job do frontend está rodando a 6h. Segue os últimos logs emitidos na etapa de Build and push Docker image: [...] qemu: uncaught target signal 4 (Illegal instruction) - core dumped
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico do Crash em QEMU:**
+   - O log fornecido revelou um erro fatal de instrução ilegal (`qemu: uncaught target signal 4`) durante o comando `npm install` no estágio do emulador ARM64. 
+   - A causa é comum no ecossistema Node.js/Vite: pacotes contendo dependências binárias nativas pesadas (como o compilador `esbuild`) perdem compatibilidade e causam stack overflow / core dumps quando virtualizados pelo QEMU em hosts AMD64.
+2. **Solução Arquitetural de Cross-Build:**
+   - Em vez de emular a compilação inteira, a infraestrutura foi ajustada para compilar nativamente. Como as saídas do Vite são HTML/JS/CSS genéricos, eles não dependem da arquitetura destino, apenas o Nginx final depende.
+   - Adicionado o parâmetro `--platform=$BUILDPLATFORM` no Estágio 1 do `frontend/Dockerfile` (`FROM --platform=$BUILDPLATFORM node:20-alpine AS builder`). 
+   - Isso orienta o Docker Buildx a rodar o Node sempre na arquitetura nativa veloz do GitHub (AMD64), enquanto o Estágio 2 (`FROM nginx:alpine`) utiliza a arquitetura final (`linux/arm64`) para montar os assets no SO de produção.
+
+**Resumo das saídas:**
+
+- Modificado: `frontend/Dockerfile` (Linha 2, injeção de `$BUILDPLATFORM`).
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
 
 

@@ -1,5 +1,5 @@
-﻿# Estágio 1: Build da SPA Vite React
-FROM node:20-alpine AS builder
+# Estágio 1: Build da SPA Vite React
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 
 WORKDIR /app
 
