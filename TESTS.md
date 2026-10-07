@@ -2362,20 +2362,6 @@
 
 ## E2E / Sistema completo
 
-### Fluxo de Usuário e Loja
-#### E2E-FLOW-01 — Navegação da Loja e visualização de detalhes de jogo
-- Prioridade: P0
-- Status: planejado
-- Runner: playwright
-- Comando: 
-- Pré-condições: Frontend e Gateway em execução via Docker Compose.
-- Passos:
-  - Dado que o usuário acessa a página inicial da loja
-  - Quando clica em um card de jogo em destaque
-  - Então a aplicação exibe os detalhes do jogo, preço, capturas de tela e botão de compra
-- Resultado esperado: Interface responsiva renderizada sem erros no console do navegador.
-- Rastreabilidade: `docs/architecture.md` (Seções 1 e 2.3)
-
 ### Navegação e Ciclo de Vida da Aplicação
 #### E2E-NAV-01 — Alternância entre páginas sem corrupção de contexto ou lentidão
 - Prioridade: P1
@@ -2386,17 +2372,17 @@
 - Passos:
   - Dado que o usuário está com contexto ativo na tela da Loja (com termo de busca digitado) ou na Biblioteca
   - Quando aciona a alternância para a tela "Loja de Pontos" através da barra lateral de navegação
-  - Então a transição ocorre de forma fluida (< 500ms), desmontando os elementos exclusivos da página de origem (ex: Header da Loja) sem reter filtros residuais, e exibindo a Loja de Pontos com saldo íntegro de pontos
-- Resultado esperado: Migração de tela instantânea, sem retenção de estado orfão incompatível entre fluxos e renderização completa da Loja de Pontos.
+  - Então a transição ocorre de forma fluida (< 500ms), desmontando os elementos exclusivos da página de origem sem reter filtros residuais, e exibindo a Loja de Pontos com saldo íntegro de pontos
+- Resultado esperado: Migração de tela instantânea, sem retenção de estado órfão incompatível entre fluxos e renderização completa da Loja de Pontos.
 - Rastreabilidade: `frontend/src/App.tsx`, `frontend/src/components/Sidebar.tsx`, `frontend/src/pages/PointsShop.tsx`
 - Observações: Previne degradação de performance por acúmulo de contexto residual e garante isolamento do ciclo de vida de cada tela na SPA.
 
-### Autenticação e Gestão de Sessão
+### Autenticação e Gestão de Sessão (Bloco B)
 #### E2E-AUTH-01 — Fluxo de cadastro, autenticação com bônus de R$ 200,00 e logout
 - Prioridade: P0
 - Status: aprovado
 - Runner: playwright
-- Comando: `npm --prefix frontend run test:e2e -- auth.spec.ts`
+- Comando: `npm --prefix frontend run test:e2e -- auth.spec.ts -g "E2E-AUTH-01"`
 - Pré-condições: Frontend MIST em execução com servidor de desenvolvimento Playwright.
 - Passos:
   - Dado que o visitante acessa a página inicial do MIST
@@ -2418,6 +2404,474 @@
   - Então após decorridos 5 segundos o botão de fechar surge, e ao ser clicado remove a div restaurando o layout padrão da aplicação
 - Resultado esperado: Banner acadêmico exibido com fidelidade visual, temporizador funcional e remoção graciosa.
 - Rastreabilidade: `frontend/e2e/academic-disclaimer.spec.ts`, `frontend/src/components/AcademicDisclaimer.tsx`, `frontend/src/App.tsx`
+
+#### E2E-AUTH-02 — Validação de erro ao tentar login com credenciais inválidas
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts -g "E2E-AUTH-02"`
+- Pré-condições: Modal de autenticação aberto no modo login.
+- Passos:
+  - Dado que o usuário abre o modal de autenticação
+  - Quando insere identificador e senha inexistentes e submete o formulário
+  - Então a aplicação exibe mensagem de alerta informando credenciais inválidas sem autenticar
+- Resultado esperado: Feedback visual claro de falha de autenticação mantendo o modal ativo.
+- Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/components/AuthModal.tsx`
+
+#### E2E-PROF-01 — Edição de perfil e atualização de dados cadastrais
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts -g "E2E-PROF-01"`
+- Pré-condições: Usuário autenticado na aplicação.
+- Passos:
+  - Dado que o usuário navega até a tela de Perfil através da barra lateral
+  - Quando clica em "Editar perfil", altera a biografia e aciona o salvamento
+  - Então o perfil é atualizado com sucesso e feedback de confirmação é exibido
+- Resultado esperado: Persistência reativa das alterações do perfil do jogador.
+- Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/pages/Profile.tsx`
+
+#### E2E-WALLET-01 — Abertura de AddFundsModal, recarga e crédito de saldo instantâneo
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts -g "E2E-WALLET-01"`
+- Pré-condições: Usuário autenticado com saldo em carteira.
+- Passos:
+  - Dado que o usuário clica no botão de adicionar saldo no Header
+  - Quando escolhe um valor de recarga (R$ 50,00) e confirma a operação
+  - Então o saldo no Header é atualizado imediatamente refletindo o acréscimo
+- Resultado esperado: Atualização reativa e sem reload do saldo da carteira MIST.
+- Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/components/AddFundsModal.tsx`
+
+### Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S)
+#### E2E-STORE-01 — Busca de jogos em tempo real com debounce e modal de detalhes
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-STORE-01"`
+- Pré-condições: Catálogo da loja com jogos disponíveis.
+- Passos:
+  - Dado que o usuário acessa a página inicial da loja
+  - Quando clica no card de um jogo específico no catálogo
+  - Então a modal detalhada do jogo é aberta exibindo preço, descrição e mídias
+- Resultado esperado: Abertura suave e completa da modal de detalhes do jogo.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/components/GameDetailModal.tsx`
+
+#### E2E-STORE-02 — Checkout unitário de jogo com saldo da carteira e crédito de pontos MIST
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-STORE-02"`
+- Pré-condições: Usuário autenticado com saldo suficiente na carteira.
+- Passos:
+  - Dado que o usuário abre a modal de detalhes de um jogo
+  - Quando clica em comprar e confirma a transação
+  - Então o saldo da carteira é debitado e pontos MIST são creditados na conta
+- Resultado esperado: Transação concluída com sucesso com baixa contábil e recompensa de pontos.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/pages/Store.tsx`
+
+#### E2E-REV-01 — Submissão de avaliação comunitária com recomendação e horas jogadas
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-REV-01"`
+- Pré-condições: Usuário autenticado na modal de detalhes do jogo.
+- Passos:
+  - Dado que o usuário aciona o botão de avaliar o jogo
+  - Quando preenche a recomendação positiva e o texto da review e envia
+  - Então a avaliação é salva e exibida na listagem comunitária
+- Resultado esperado: Feedback avaliativo persistido e renderizado.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/components/ReviewFormModal.tsx`
+
+#### E2E-REV-02 — Renderização de percentual de aprovação comunitária e contagem de reviews
+- Prioridade: P2
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-REV-02"`
+- Pré-condições: Jogo com avaliações comunitárias cadastradas.
+- Passos:
+  - Dado que o usuário visualiza a página/modal do jogo
+  - Quando a seção de detalhes e avaliações é inspecionada
+  - Então exibe o selo de aprovação agregada (ex: Muito Positivas)
+- Resultado esperado: Indicador de sentimento comunitário visível e fiel aos dados.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/components/ReviewsList.tsx`
+
+#### E2E-CUR-01 — Navegação pelas abas de tendências do MIST AI Curator
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-CUR-01"`
+- Pré-condições: Sessão na página inicial da loja.
+- Passos:
+  - Dado o componente MIST AI Curator montado na loja
+  - Quando o usuário alterna entre as abas de Destaques, Mais Vendidos e Em Alta
+  - Então os jogos correspondentes a cada algoritmo de curadoria são exibidos
+- Resultado esperado: Alternância reativa das listagens de tendências e curadoria inteligente.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/components/CuratorSection.tsx`
+
+#### E2E-CUR-02 — Exibição do banner inteligente de oportunidade da Wishlist
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/store.spec.ts -g "E2E-CUR-02"`
+- Pré-condições: Usuário autenticado com item da wishlist em promoção.
+- Passos:
+  - Dado que existe uma oportunidade promocional em título salvo na lista de desejos
+  - Quando a página principal da loja é carregada
+  - Então o banner inteligente destaca o desconto, economia em reais e atalho de compra
+- Resultado esperado: Banner de alerta promocional de alta conversão renderizado.
+- Rastreabilidade: `frontend/e2e/store.spec.ts`, `frontend/src/components/CuratorSection.tsx`
+
+### Biblioteca e Licenças de Jogos (Bloco D)
+#### E2E-LIB-01 — Listagem de jogos da biblioteca, tempo de jogo e conquistas
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/library.spec.ts -g "E2E-LIB-01"`
+- Pré-condições: Usuário autenticado com títulos associados na biblioteca.
+- Passos:
+  - Dado que o usuário navega para a tela da Biblioteca
+  - Quando seleciona um título na barra lateral
+  - Então a tela exibe estatísticas de tempo de jogo, botão de jogar e lista de conquistas
+- Resultado esperado: Hub do jogo renderizado com dados consolidados de engajamento.
+- Rastreabilidade: `frontend/e2e/library.spec.ts`, `frontend/src/pages/Library.tsx`
+
+### Histórico Financeiro da Carteira (Bloco T)
+#### E2E-WAL-02 — Extrato detalhado da carteira e listagem contábil de transações
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/wallet_history.spec.ts -g "E2E-WAL-02"`
+- Pré-condições: Usuário autenticado com histórico contábil na carteira.
+- Passos:
+  - Dado que o usuário clica no saldo no Header
+  - Quando o modal de extrato financeiro é aberto
+  - Então exibe lançamentos cronológicos de créditos, débitos, recargas e compras
+- Resultado esperado: Extrato contábil discriminado e transparente para o jogador.
+- Rastreabilidade: `frontend/e2e/wallet_history.spec.ts`, `frontend/src/components/WalletHistoryModal.tsx`
+
+### Loja de Pontos e Cosméticos (Bloco I)
+#### E2E-PTS-01 — Catálogo de cosméticos e resgate de item com saldo de pontos
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/points_shop.spec.ts -g "E2E-PTS-01"`
+- Pré-condições: Usuário autenticado com saldo suficiente de Pontos MIST.
+- Passos:
+  - Dado que o usuário acessa a Loja de Pontos
+  - Quando localiza uma moldura e aciona o resgate
+  - Então o saldo de pontos é atualizado e o cosmético é concedido
+- Resultado esperado: Concessão imediata do item e dedução do saldo de pontos.
+- Rastreabilidade: `frontend/e2e/points_shop.spec.ts`, `frontend/src/pages/PointsShop.tsx`
+
+#### E2E-PTS-02 — Equipagem de moldura de avatar adquirida refletida no perfil
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/points_shop.spec.ts -g "E2E-PTS-02"`
+- Pré-condições: Cosmético disponível no inventário do usuário.
+- Passos:
+  - Dado que o jogador equipa uma moldura de avatar
+  - Quando navega para a página de perfil
+  - Então o avatar é renderizado com a respectiva moldura temática
+- Resultado esperado: Customização cosmética do avatar refletida visualmente.
+- Rastreabilidade: `frontend/e2e/points_shop.spec.ts`, `frontend/src/pages/Profile.tsx`
+
+### Inventário, Cards, Insígnias e XP (Blocos J, K)
+#### E2E-INV-01 — Listagem de itens no grid de inventário e filtros por categoria
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/inventory.spec.ts -g "E2E-INV-01"`
+- Pré-condições: Usuário autenticado com cartas e cosméticos no inventário.
+- Passos:
+  - Dado que o usuário acessa a página de Inventário
+  - Quando visualiza o grid e navega pelas abas de categorias
+  - Então os itens correspondentes são filtrados e exibidos dinamicamente
+- Resultado esperado: Organização fluida e categorização de colecionáveis.
+- Rastreabilidade: `frontend/e2e/inventory.spec.ts`, `frontend/src/pages/Inventory.tsx`
+
+#### E2E-INV-02 — Equipagem e desequipagem de cosmético diretamente do card
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/inventory.spec.ts -g "E2E-INV-02"`
+- Pré-condições: Item equipável presente no inventário.
+- Passos:
+  - Dado o card do item no inventário
+  - Quando o usuário aciona o botão de equipar
+  - Então o estado do item transita para equipado
+- Resultado esperado: Atualização reativa de status do item no inventário.
+- Rastreabilidade: `frontend/e2e/inventory.spec.ts`, `frontend/src/pages/Inventory.tsx`
+
+#### E2E-XP-01 — Barra de progresso de nível e acúmulo de XP na sidebar
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/inventory.spec.ts -g "E2E-XP-01"`
+- Pré-condições: Usuário autenticado com nível e XP computados.
+- Passos:
+  - Dado que a aplicação é carregada com sessão ativa
+  - Quando a barra lateral é renderizada
+  - Então exibe o nível atual do jogador e a barra de progresso para o próximo nível
+- Resultado esperado: Gamificação de XP e nível acessível em toda a navegação.
+- Rastreabilidade: `frontend/e2e/inventory.spec.ts`, `frontend/src/components/Sidebar.tsx`
+
+#### E2E-CRF-01 — Painel de forja de insígnias e evolução de nível
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/inventory.spec.ts -g "E2E-CRF-01"`
+- Pré-condições: Conjunto de cartas disponível para crafting de insígnia.
+- Passos:
+  - Dado a disponibilidade de forjar insígnia de jogo
+  - Quando o usuário aciona a fabricação
+  - Então o sistema concede a insígnia comemorativa e bonificação de XP
+- Resultado esperado: Crafting de insígnia bem-sucedido com aumento de XP e nível.
+- Rastreabilidade: `frontend/e2e/inventory.spec.ts`, `frontend/src/pages/Inventory.tsx`
+
+### Mercado da Comunidade e Trocas (Bloco L)
+#### E2E-MKT-01 — Listagem de ofertas no Mercado da Comunidade e compra direta
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/market_trade.spec.ts -g "E2E-MKT-01"`
+- Pré-condições: Ofertas de itens listadas por outros jogadores no mercado.
+- Passos:
+  - Dado que o usuário navega até a página de Mercado
+  - Quando localiza uma oferta e conclui a confirmação de compra
+  - Então a transação é finalizada com débito da carteira e recebimento do item
+- Resultado esperado: Compra direta P2P no mercado com liquidação financeira imediata.
+- Rastreabilidade: `frontend/e2e/market_trade.spec.ts`, `frontend/src/pages/Market.tsx`
+
+#### E2E-MKT-02 — Gestão de anúncios próprios e cancelamento de ofertas
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/market_trade.spec.ts -g "E2E-MKT-02"`
+- Pré-condições: Usuário autenticado com anúncio ativo na aba "Meus Anúncios".
+- Passos:
+  - Dado que o usuário acessa a aba "Meus Anúncios" no Mercado
+  - Quando aciona o cancelamento de uma oferta ativa
+  - Então a listagem é removida do mercado e o item retorna à disponibilidade
+- Resultado esperado: Cancelamento seguro de listagem com estorno do ativo.
+- Rastreabilidade: `frontend/e2e/market_trade.spec.ts`, `frontend/src/pages/Market.tsx`
+
+#### E2E-TRD-01 — Visualização e aceite de propostas de troca entre usuários
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/market_trade.spec.ts -g "E2E-TRD-01"`
+- Pré-condições: Proposta de troca pendente recebida de outro jogador.
+- Passos:
+  - Dado que o usuário navega até a aba "Trocas" no Mercado
+  - Quando inspeciona os itens oferecidos e solicitados e clica em "Aceitar"
+  - Então a troca é liquidada e o status da proposta transita para aceita
+- Resultado esperado: Resolução atômica de troca de itens entre jogadores.
+- Rastreabilidade: `frontend/e2e/market_trade.spec.ts`, `frontend/src/pages/Market.tsx`
+
+### Grupos e Fóruns da Comunidade (Bloco M)
+#### E2E-GRP-01 — Listagem de grupos da comunidade e adesão como membro
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/community_groups.spec.ts -g "E2E-GRP-01"`
+- Pré-condições: Grupos comunitários disponíveis na plataforma.
+- Passos:
+  - Dado que o usuário acessa a seção de Grupos
+  - Quando localiza uma comunidade e clica em participar
+  - Então sua adesão é registrada e o status de membro é confirmado
+- Resultado esperado: Entrada em comunidade com contagem de membros atualizada.
+- Rastreabilidade: `frontend/e2e/community_groups.spec.ts`, `frontend/src/pages/Groups.tsx`
+
+#### E2E-FRM-01 — Discussões de tópicos nos fóruns da comunidade
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/community_groups.spec.ts -g "E2E-FRM-01"`
+- Pré-condições: Grupo comunitário com tópicos de discussão ativos.
+- Passos:
+  - Dado que o usuário visualiza os tópicos de fórum de um grupo
+  - Quando abre um tópico de discussão
+  - Então visualiza as postagens, autor e respostas dos membros
+- Resultado esperado: Estrutura de fóruns navegável e interativa.
+- Rastreabilidade: `frontend/e2e/community_groups.spec.ts`, `frontend/src/pages/Groups.tsx`
+
+#### E2E-GCHT-01 — Abertura e interface do chat de grupo comunitário
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/community_groups.spec.ts -g "E2E-GCHT-01"`
+- Pré-condições: Grupo comunitário com canal de chat ativo.
+- Passos:
+  - Dado que o usuário entra no chat de um grupo participante
+  - Quando visualiza a área de mensagens e o campo de envio
+  - Então a interface do chat é renderizada em tempo real
+- Resultado esperado: Painel de chat de grupo operacional e conectado.
+- Rastreabilidade: `frontend/e2e/community_groups.spec.ts`, `frontend/src/components/ChatWindow.tsx`
+
+### Showcase de Capturas de Tela — UGC (Bloco N)
+#### E2E-UGC-01 — Galeria comunitária de capturas de tela e curtidas
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/ugc_screenshots.spec.ts -g "E2E-UGC-01"`
+- Pré-condições: Screenshots comunitárias publicadas na plataforma.
+- Passos:
+  - Dado que o usuário acessa a galeria de capturas de tela no perfil
+  - Quando inspeciona uma imagem da comunidade
+  - Então visualiza título, autor e contagem de curtidas
+- Resultado esperado: Galeria visual comunitária interativa e responsiva.
+- Rastreabilidade: `frontend/e2e/ugc_screenshots.spec.ts`, `frontend/src/pages/Profile.tsx`
+
+#### E2E-UGC-02 — Abertura de modal de publicação de screenshot
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/ugc_screenshots.spec.ts -g "E2E-UGC-02"`
+- Pré-condições: Usuário autenticado na aba de capturas de tela.
+- Passos:
+  - Dado que o usuário aciona o envio de nova screenshot
+  - Quando seleciona o jogo e imagem para visualização prévia
+  - Então o preview é gerado permitindo publicação comunitária
+- Resultado esperado: Modal de upload com pré-visualização de imagem funcional.
+- Rastreabilidade: `frontend/e2e/ugc_screenshots.spec.ts`, `frontend/src/pages/Profile.tsx`
+
+### Oficina da Comunidade — Mods e Criações (Bloco O)
+#### E2E-WKS-01 — Catálogo da Oficina e inscrição em mods
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/workshop.spec.ts -g "E2E-WKS-01"`
+- Pré-condições: Mods e criações disponíveis no Workshop.
+- Passos:
+  - Dado que o usuário acessa a página da Oficina
+  - Quando localiza uma modificação e clica em "Inscrever-se"
+  - Então o estado do mod transita para inscrito e a contagem de inscritos é incrementada
+- Resultado esperado: Inscrição reativa com um clique em itens da comunidade.
+- Rastreabilidade: `frontend/e2e/workshop.spec.ts`, `frontend/src/pages/Workshop.tsx`
+
+#### E2E-WKS-02 — Exibição de criações publicadas no perfil do autor
+- Prioridade: P2
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/workshop.spec.ts -g "E2E-WKS-02"`
+- Pré-condições: Usuário com criações de mods associadas à sua conta.
+- Passos:
+  - Dado que o usuário acessa a página de Perfil
+  - Quando inspeciona a seção de estatísticas e criações
+  - Então visualiza a contagem e listagem das suas criações da oficina
+- Resultado esperado: Vitrine de mods e conteúdos criados vinculada ao perfil.
+- Rastreabilidade: `frontend/e2e/workshop.spec.ts`, `frontend/src/pages/Profile.tsx`
+
+### Perfil Público e Privacidade (Bloco P)
+#### E2E-PUB-01 — Visualização de perfil público de terceiros com badges
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/public_profile.spec.ts -g "E2E-PUB-01"`
+- Pré-condições: Perfil de jogador público existente no sistema.
+- Passos:
+  - Dado que o usuário navega para a rota de perfil público de outro jogador
+  - Quando a página é renderizada
+  - Então exibe avatar, nível, biografia, relação de amizade e estatísticas
+- Resultado esperado: Visão pública de jogador com badges e respeitando preferências.
+- Rastreabilidade: `frontend/e2e/public_profile.spec.ts`, `frontend/src/pages/PublicProfile.tsx`
+
+#### E2E-PRV-01 — Modal de configurações de privacidade e visibilidade de seções
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/public_profile.spec.ts -g "E2E-PRV-01"`
+- Pré-condições: Usuário autenticado na tela de Perfil.
+- Passos:
+  - Dado que o usuário clica no botão "Privacidade" no perfil
+  - Quando a modal de configuração é aberta e preferências são alteradas
+  - Então as definições de visibilidade (público, apenas amigos, privado) são salvas
+- Resultado esperado: Controle granular e seguro de privacidade do perfil do usuário.
+- Rastreabilidade: `frontend/e2e/public_profile.spec.ts`, `frontend/src/components/PrivacySettingsModal.tsx`
+
+### Notificações Globais e Busca Unificada (Blocos Q, R)
+#### E2E-NOT-01 — Badge de notificações não lidas e dropdown de alertas
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/notifications_search.spec.ts -g "E2E-NOT-01"`
+- Pré-condições: Usuário autenticado com alertas pendentes na conta.
+- Passos:
+  - Dado que o usuário visualiza o sino de notificações no Header com indicador numérico
+  - Quando clica para abrir o dropdown
+  - Então visualiza as notificações recentes (pedidos de amizade, comunicados do sistema)
+- Resultado esperado: Dropdown de notificações com badge reativo em tempo real.
+- Rastreabilidade: `frontend/e2e/notifications_search.spec.ts`, `frontend/src/components/NotificationsDropdown.tsx`
+
+#### E2E-NOT-02 — Leitura e baixa de notificações do usuário
+- Prioridade: P2
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/notifications_search.spec.ts -g "E2E-NOT-02"`
+- Pré-condições: Dropdown de notificações aberto com itens não lidos.
+- Passos:
+  - Dado que o usuário clica em uma notificação não lida
+  - Quando a ação é processada
+  - Então o status transita para lida e a contagem no badge é decrementada
+- Resultado esperado: Atualização reativa de leitura de alertas no sistema.
+- Rastreabilidade: `frontend/e2e/notifications_search.spec.ts`, `frontend/src/components/NotificationsDropdown.tsx`
+
+#### E2E-SCH-01 — Busca global agregada no Header com categorias
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/notifications_search.spec.ts -g "E2E-SCH-01"`
+- Pré-condições: Barra de busca no Header disponível.
+- Passos:
+  - Dado que o usuário digita um termo de pesquisa no campo do Header
+  - Quando o debounce de busca dispara
+  - Então o dropdown exibe resultados categorizados em Jogos da Loja, Jogadores e Grupos
+- Resultado esperado: Busca unificada rápida com atalhos diretos para conteúdo.
+- Rastreabilidade: `frontend/e2e/notifications_search.spec.ts`, `frontend/src/components/GlobalSearchDropdown.tsx`
+
+### Chat Social e Amigos (Bloco G)
+#### E2E-SOC-01 — Lista de amigos e gerenciamento de convites
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/social_chat.spec.ts -g "E2E-SOC-01"`
+- Pré-condições: Usuário autenticado na tela de Comunidade / Amigos.
+- Passos:
+  - Dado que o usuário acessa a lista de amigos
+  - Quando visualiza convites pendentes e aciona a aceitação
+  - Então o amigo é adicionado à lista com status de presença online
+- Resultado esperado: Gestão de amizades responsiva e integrada à presença social.
+- Rastreabilidade: `frontend/e2e/social_chat.spec.ts`, `frontend/src/pages/Social.tsx`
+
+#### E2E-SOC-02 — Janela de chat privado em tempo real entre amigos
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/social_chat.spec.ts -g "E2E-SOC-02"`
+- Pré-condições: Amizade estabelecida entre dois jogadores.
+- Passos:
+  - Dado que o usuário clica para abrir conversa com um amigo
+  - Quando digita uma mensagem e envia
+  - Então a mensagem é renderizada no painel de conversa com confirmação de entrega
+- Resultado esperado: Mensageria privada instantânea funcional e fluida.
+- Rastreabilidade: `frontend/e2e/social_chat.spec.ts`, `frontend/src/components/ChatWindow.tsx`
+
+### Fluxo Mestre Integrado — Fase 5 Dia 13
+#### E2E-INTEG-01 — Jornada mestre transversal completa pelo ecossistema MIST
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/master_flow.spec.ts -g "E2E-INTEG-01"`
+- Pré-condições: Todos os blocos da plataforma em funcionamento integrado.
+- Passos:
+  - Dado que o usuário inicia sua jornada na Loja
+  - Quando navega sequencialmente pela Biblioteca, Mercado da Comunidade e Oficina
+  - Então todos os módulos respondem com estado preservado, dados íntegros e performance estável
+- Resultado esperado: Coesão arquitetural e funcional em 100% da navegação do ecossistema.
+- Rastreabilidade: `development_schedule.md`, `frontend/e2e/master_flow.spec.ts`
 
 
 ## Regressão
