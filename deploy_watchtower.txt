@@ -1,0 +1,231 @@
+version: "3.8"
+
+services:
+  auth-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-auth-service:latest
+    container_name: mist-auth-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8001
+      - JWT_SECRET_KEY=19cf03a8914f545cbef45755391a21a1cf69e8914f3ffe08c5ebb1e8babd477f
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - AUTH_DATABASE_URL=sqlite:///app/data/auth.db
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    volumes:
+      - auth_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  store-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-store-service:latest
+    container_name: mist-store-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8002
+      - STORE_DATABASE_URL=sqlite:///app/data/store.db
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - LIBRARY_SERVICE_URL=http://library-service:8003
+      - SOCIAL_SERVICE_URL=http://social-service:8004
+      - MARKET_SERVICE_URL=http://market-service:8005
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    depends_on:
+      - auth-service
+      - market-service
+    volumes:
+      - store_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  library-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-library-service:latest
+    container_name: mist-library-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8003
+      - LIBRARY_DATABASE_URL=sqlite:///app/data/library.db
+      - STORE_SERVICE_URL=http://store-service:8002
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    volumes:
+      - library_data:/app/app/data
+    depends_on:
+      - store-service
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  social-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-social-service:latest
+    container_name: mist-social-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8004
+      - SOCIAL_DATABASE_URL=sqlite:///app/data/social.db
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - AI_PROVIDER=auto
+      - GEMINI_API_KEY=Ab8RN6JALfq98AHHeDDSkDC4LgN0EOV2OhqGYqkw6yv
+      - OPENAI_API_KEY=iCMNTYAqgrCYCQuJXLhAU8BGFkujZFumuSD7YWj0F2tWkyPQBuFMR94cwJJU3xCY9WYU6O22RgT3BlbkFJFESBa
+      - GROQ_API_KEY=""
+      - AI_TIMEOUT_SECONDS=8.0
+    volumes:
+      - social_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  market-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-market-service:latest
+    container_name: mist-market-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8005
+      - MARKET_DATABASE_URL=sqlite:///app/data/market.db
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    depends_on:
+      - auth-service
+    volumes:
+      - market_data:/app/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  ugc-service:
+    image: ghcr.io/gmoncks/topicosiv/mist-ugc-service:latest
+    container_name: mist-ugc-service
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8006
+      - UGC_DATABASE_URL=sqlite:///app/data/ugc.db
+      - UPLOADS_DIR=data/uploads
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    volumes:
+      - ugc_data:/app/data
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  gateway:
+    image: ghcr.io/gmoncks/topicosiv/mist-gateway:latest
+    container_name: mist-gateway
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8000
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - STORE_SERVICE_URL=http://store-service:8002
+      - LIBRARY_SERVICE_URL=http://library-service:8003
+      - SOCIAL_SERVICE_URL=http://social-service:8004
+      - MARKET_SERVICE_URL=http://market-service:8005
+      - UGC_SERVICE_URL=http://ugc-service:8006
+      - JWT_SECRET_KEY=19cf03a8914f545cbef45755391a21a1cf69e8914f3ffe08c5ebb1e8babd477f
+      - JWT_ALGORITHM=HS256
+      - CORS_ORIGINS=https://mist.biomimetics.com.br
+    depends_on:
+      - auth-service
+      - store-service
+      - library-service
+      - social-service
+      - market-service
+      - ugc-service
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/gmoncks/topicosiv/mist-frontend:latest
+    container_name: mist-frontend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      - gateway
+    networks:
+      - mist-network
+    restart: unless-stopped
+
+  # SERVIÇOS ADICIONAIS DE INFRAESTRUTURA (CLOUDFLARE E WATCHTOWER)
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: mist-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=eyJhIjoiNGY3YzYzNDkwNjc5YjgwMWM4ODI4Y2UwMDFkNThiNTciLCJ0IjoiOGVlMTMzYWEtNzY3NC00YzI5LWEzN2ItOGUwNWFhMDMzMTU3IiwicyI6Ik1UTm1ZbUV6WWprdE5XVmpOaTAwWm1ZMkxUZ3haakl0WWpjM05ERTJORGMxWWpoaCJ9
+    networks:
+      - mist-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: mist-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=900
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=false
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+    restart: unless-stopped
+
+volumes:
+  auth_data:
+    driver: local
+  store_data:
+    driver: local
+  library_data:
+    driver: local
+  social_data:
+    driver: local
+  market_data:
+    driver: local
+  ugc_data:
+    driver: local
+
+networks:
+  mist-network:
+    driver: bridge
