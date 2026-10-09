@@ -203,3 +203,61 @@ def test_gateway_market_proxy_unavailable_returns_503(client):
         assert "mercado" in response.json()["detail"].lower()
 
 
+@pytest.mark.security
+def test_gateway_security_headers_present(client):
+    """F4: Valida presença obrigatória de todos os cabeçalhos de segurança HTTP."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+    assert "geolocation" in response.headers.get("Permissions-Policy", "")
+    assert "max-age" in response.headers.get("Strict-Transport-Security", "")
+    assert "default-src" in response.headers.get("Content-Security-Policy", "")
+
+
+@pytest.mark.security
+def test_gateway_blocks_unauthenticated_library_writes(client):
+    """F1: Valida que chamadas de sessão e conquistas na biblioteca são barradas com 401 sem token."""
+    r1 = client.post("/api/library/session/start", json={"user_id": 999999, "game_id": 14})
+    assert r1.status_code == 401
+    assert "token" in r1.json()["detail"].lower()
+
+    r2 = client.post("/api/library/achievements/unlock", json={"user_id": 999999, "game_id": 14, "achievement_id": "test"})
+    assert r2.status_code == 401
+    assert "token" in r2.json()["detail"].lower()
+
+
+@pytest.mark.security
+def test_gateway_blocks_unauthenticated_game_download(client):
+    """F2: Valida que download de pacote de jogo sem token é barrado com 401."""
+    resp = client.get("/api/games/14/download")
+    assert resp.status_code == 401
+    assert "token" in resp.json()["detail"].lower()
+
+
+@pytest.mark.security
+def test_gateway_rate_limiting_register(client):
+    """F3: Valida que o 6º cadastro a partir do mesmo IP dentro da janela diária retorna 429."""
+    mock_resp = httpx.Response(201, json={"access_token": "ok", "token_type": "bearer"})
+    with patch.object(gateway_main.http_client, "request", new=AsyncMock(return_value=mock_resp)):
+        for i in range(5):
+            res = client.post(
+                "/api/auth/register",
+                json={"username": f"user_rl_{i}", "email": f"u{i}@test.com", "password": "123"},
+                headers={"X-Forwarded-For": "198.51.100.42"}
+            )
+            assert res.status_code == 201
+
+        # 6ª tentativa excede o limite diário de 5 cadastros por IP
+        res_blocked = client.post(
+            "/api/auth/register",
+            json={"username": "user_rl_blocked", "email": "ub@test.com", "password": "123"},
+            headers={"X-Forwarded-For": "198.51.100.42"}
+        )
+        assert res_blocked.status_code == 429
+        assert "Retry-After" in res_blocked.headers
+        assert "limite" in res_blocked.json()["detail"].lower()
+
+
+

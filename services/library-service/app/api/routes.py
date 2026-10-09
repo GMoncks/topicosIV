@@ -205,12 +205,16 @@ def unlock_achievement(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db)
 ):
-    user_id = payload.user_id
     if x_user_id:
         try:
             user_id = int(x_user_id)
         except ValueError:
-            pass
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-User-Id inválido.")
+    elif payload and getattr(payload, "user_id", None):
+        user_id = payload.user_id
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identificação de usuário obrigatória.")
+
 
     unlock, created = LibraryService.unlock_achievement(
         db=db,
@@ -255,12 +259,15 @@ def start_game_session(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db)
 ):
-    user_id = payload.user_id
     if x_user_id:
         try:
             user_id = int(x_user_id)
         except ValueError:
-            pass
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-User-Id inválido.")
+    elif payload and getattr(payload, "user_id", None):
+        user_id = payload.user_id
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identificação de usuário obrigatória.")
 
     session, item = LibraryService.start_session(
         db=db,
@@ -296,12 +303,15 @@ def ping_game_session(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db)
 ):
-    user_id = payload.user_id
     if x_user_id:
         try:
             user_id = int(x_user_id)
         except ValueError:
-            pass
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-User-Id inválido.")
+    elif payload and getattr(payload, "user_id", None):
+        user_id = payload.user_id
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identificação de usuário obrigatória.")
 
     session, playtime_minutes, dropped_card = LibraryService.ping_session(
         db=db,
@@ -339,12 +349,16 @@ def end_game_session(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db)
 ):
-    user_id = payload.user_id
     if x_user_id:
         try:
             user_id = int(x_user_id)
         except ValueError:
-            pass
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-User-Id inválido.")
+    elif payload and getattr(payload, "user_id", None):
+        user_id = payload.user_id
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Identificação de usuário obrigatória.")
+
 
     session, playtime_minutes = LibraryService.end_session(
         db=db,
@@ -527,17 +541,26 @@ def claim_quest_reward(
     x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
     db: Session = Depends(get_db)
 ):
-    user_id = 1
-    if x_user_id:
-        try:
-            user_id = int(x_user_id)
-        except ValueError:
-            pass
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Header X-User-Id obrigatório para resgatar recompensa de desafio."
+        )
+    try:
+        user_id = int(x_user_id)
+        if user_id <= 0:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-User-Id inválido."
+        )
     return LibraryService.claim_quest(
         db=db,
         user_id=user_id,
         game_id=game_id,
         quest_id=quest_id
     )
+
 
 

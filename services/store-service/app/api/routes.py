@@ -173,16 +173,21 @@ def download_game_package(
         else:
             token = authorization.strip()
 
-    # Se x_user_id for fornecido, converte para int; caso contrário, usa ID padrão sandbox (1)
-    user_id = 1
-    if x_user_id:
-        try:
-            user_id = int(x_user_id)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Header X-User-Id inválido."
-            )
+    if not x_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticação obrigatória para download de pacote de jogo."
+        )
+    try:
+        user_id = int(x_user_id)
+        if user_id <= 0:
+            raise ValueError()
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Header X-User-Id inválido."
+        )
+
 
     zip_buffer, filename = StoreService.build_game_package(
         db=db,

@@ -200,3 +200,15 @@ def test_download_nonexistent_game(client):
         headers={"X-User-Id": "1"}
     )
     assert response.status_code == 404
+
+
+def test_download_unauthorized_without_x_user_id(client):
+    db = TestingSessionLocal()
+    game = db.query(Game).filter(Game.title == "MIST Forca").first()
+    db.close()
+    assert game is not None
+
+    response = client.get(f"/games/{game.id}/download")
+    assert response.status_code == 401
+    assert "autenticação" in response.json()["detail"].lower()
+
