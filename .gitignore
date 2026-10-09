@@ -229,9 +229,11 @@ __marimo__/
 *.sqlite
 *.sqlite3
 *.sqlite3-journal
-app/data/
-**/app/data/
-services/*/app/data/
+app/data/*
+**/app/data/*
+!services/store-service/app/data/games/
+!services/store-service/app/data/games/**
+!services/store-service/app/data/mist_sdk.py
 auth_data/
 
 # Node.js & Frontend dependencies / caches / builds
@@ -264,14 +266,25 @@ playwright/.cache/
 *.key
 *.cert
 *.crt
+*.token
+*.tokens
+*.secret
+*.secrets
+*.credentials
+session.json
+**/session.json
+*.session
 
-# Docker local overrides
+# Docker local overrides & Deployment secrets
 docker-compose.override.yml
 docker-compose*.local.yml
+deploy_watchtower.local.txt
+deploy_watchtower*.local.*
 
 # Operating system artifacts
 .DS_Store
 Thumbs.db
 ehthumbs.db
 [Dd]esktop.ini
+
 

@@ -8,10 +8,10 @@
 ### Contagem de Testes por Runner
 | Runner | Quantidade de Testes | Percentual |
 | :--- | :---: | :---: |
-| `pytest` | 119 | 60,71% |
-| `vitest` | 73 | 37,24% |
-| `playwright` | 4 | 2,04% |
-| **Total** | **196** | **100%** |
+| `pytest` | 120 | 50,42% |
+| `vitest` | 76 | 31,93% |
+| `playwright` | 42 | 17,65% |
+| **Total** | **238** | **100%** |
 
 ## Unitários
 
@@ -488,6 +488,23 @@
   - Então 5.000 Pontos MIST (100 pts/R$ 1,00) são creditados no auth-service e points_earned=5000 é retornado no payload
 - Resultado esperado: Retorno HTTP 201 Created com cálculo autoritativo e envio assíncrono dos pontos para o auth-service.
 - Rastreabilidade: `services/store-service/app/services/store_service.py`, `services/store-service/app/schemas/checkout.py`
+
+#### STORE-UNIT-17 — Listagem e criação de reviews da plataforma MIST com limite de 500 caracteres
+- Prioridade: P0
+- Status: aprovado
+- Runner: pytest
+- Comando: `pytest services/store-service/tests/test_system_reviews.py`
+- Pré-condições: Tabela `system_reviews` persistida no SQLite do `store-service` e rota `/system-reviews` exposta.
+- Passos:
+  - Dado uma requisição desautenticada `GET /system-reviews`
+  - Quando a consulta for realizada
+  - Então a lista de avaliações do ecossistema é retornada ordenada descendentemente por data
+  - Quando um usuário autenticado com header verificado `X-User-Id` e `X-User-Username` submeter `POST /system-reviews` com texto de até 500 caracteres
+  - Então a avaliação é persistida com status 201 Created registrando `user_id`, `username`, `created_at` e recomendação
+  - Quando a submissão exceder 500 caracteres ou o payload for vazio
+  - Então o endpoint rejeita a requisição com código HTTP 422
+- Resultado esperado: Avaliações do sistema criadas e listadas com sucesso respeitando o limite e identidade do usuário.
+- Rastreabilidade: `services/store-service/app/models/system_review.py`, `services/store-service/app/schemas/system_review.py`, `services/store-service/app/api/routes.py`, `services/store-service/tests/test_system_reviews.py`
 
 ### Social e Amigos (Social Service)
 
@@ -1887,6 +1904,57 @@
 - Resultado esperado: Orientação clara, acessível e multiplataforma garantindo a execução do jogo em qualquer sistema operacional conectado ao domínio público.
 - Rastreabilidade: `frontend/src/pages/Library.tsx`, `frontend/src/pages/Library.test.tsx`
 
+#### FRONT-UNIT-63 — Renderização do rodapé global com links para Sobre, Reviews e GitHub público
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/components/Footer.test.tsx`
+- Pré-condições: Componente `Footer` montado com handler de navegação global.
+- Passos:
+  - Dado o rodapé renderizado na base das páginas do sistema
+  - Quando os elementos visuais forem inspecionados
+  - Então o nome MIST, versão v1.0.0, aviso acadêmico e hiperlinks "Sobre o MIST", "Reviews do MIST" e "GitHub Público" estão presentes
+  - Quando o usuário clica em "Sobre o MIST" ou "Reviews do MIST"
+  - Então o callback `onNavigate` é acionado com as respectivas rotas (`about` e `reviews`)
+  - Quando o link do GitHub for inspecionado
+  - Então aponta para `https://github.com/GMoncks/topicosIV` abrindo em nova aba com `target="_blank"` e `rel="noopener noreferrer"`
+- Resultado esperado: Rodapé renderizado de forma acessível e acionando corretamente as rotas e links externos.
+- Rastreabilidade: `frontend/src/components/Footer.tsx`, `frontend/src/components/Footer.test.tsx`
+
+#### FRONT-UNIT-64 — Exibição das seções do README e link público na página Sobre o MIST
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/About.test.tsx`
+- Pré-condições: Componente `About` montado no catálogo SPA.
+- Passos:
+  - Dado a página "Sobre o MIST" ativa
+  - Quando a interface é renderizada
+  - Então o título principal, badges arquiteturais e as seções estruturais do README (Comparação Funcional Steam vs MIST, Stack Tecnológica, Microsserviços e Guia de Execução Local / Deploy VPS) são exibidas
+  - Quando o botão de acesso ao repositório público for inspecionado
+  - Então contém o link direto para o repositório público no GitHub com target externo
+- Resultado esperado: Conteúdo do README do MIST e link do GitHub perfeitamente renderizados e estruturados.
+- Rastreabilidade: `frontend/src/pages/About.tsx`, `frontend/src/pages/About.test.tsx`
+
+#### FRONT-UNIT-65 — Página de Reviews com validação de limite de 500 caracteres e controle de autenticação
+- Prioridade: P0
+- Status: aprovado
+- Runner: vitest
+- Comando: `npm --prefix frontend run test:unit -- src/pages/Reviews.test.tsx`
+- Pré-condições: Componente `Reviews` com cliente `systemReviewsApi` mockado em testes unitários.
+- Passos:
+  - Dado um visitante não autenticado acessando a página de Reviews
+  - Quando a página carrega
+  - Então o feed exibe as avaliações com data/hora formatada em pt-BR e autor, e exibe banner convidando ao login
+  - Quando um usuário autenticado acessa a página
+  - Então o formulário de avaliação é exibido com o nome do usuário ativo e contador regressivo/progressivo de 500 caracteres
+  - Quando o texto ultrapassar 500 caracteres
+  - Então a digitação é travada ou bloqueada de envio com alerta de validação
+  - Quando uma avaliação válida é submetida
+  - Então o payload é enviado à API e a lista é recarregada exibindo mensagem de sucesso
+- Resultado esperado: Avaliações visualizadas e criadas com integridade, limite de 500 caracteres respeitado e bloqueio para visitantes.
+- Rastreabilidade: `frontend/src/pages/Reviews.tsx`, `frontend/src/pages/Reviews.test.tsx`
+
 ## Integração
 
 
@@ -2431,6 +2499,20 @@
 - Resultado esperado: Persistência reativa das alterações do perfil do jogador.
 - Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/pages/Profile.tsx`
 
+#### E2E-PROF-02 — Redirecionamento para a Loja ao deslogar no Perfil e eliminação de mock legado
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/auth.spec.ts -g "E2E-PROF-02"`
+- Pré-condições: Usuário autenticado na aplicação e navegando na tela de Perfil.
+- Passos:
+  - Dado que o usuário logado navega até a tela de Perfil (`activeTab = 'profile'`)
+  - Quando clica no botão de logout da barra lateral ("Encerrar Sessão")
+  - Então a aplicação encerra a sessão e redireciona reativamente para a tela da Loja (`activeTab = 'store'`)
+  - E nenhum dado ou elemento do mock estático legado (`ggtorres2001`, `Acumulador Adepto`, etc.) é renderizado na interface
+- Resultado esperado: Redirecionamento imediato para a Loja, exibição do botão de login e eliminação total do mock legado.
+- Rastreabilidade: `frontend/e2e/auth.spec.ts`, `frontend/src/App.tsx`, `frontend/src/pages/Profile.tsx`
+
 #### E2E-WALLET-01 — Abertura de AddFundsModal, recarga e crédito de saldo instantâneo
 - Prioridade: P0
 - Status: aprovado
@@ -2873,6 +2955,57 @@
 - Resultado esperado: Coesão arquitetural e funcional em 100% da navegação do ecossistema.
 - Rastreabilidade: `development_schedule.md`, `frontend/e2e/master_flow.spec.ts`
 
+### Sobre e Reviews do MIST
+#### E2E-ABT-01 — Navegação pelo rodapé até a página Sobre com validação do README e link público
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/about_reviews.spec.ts -g "E2E-ABT-01"`
+- Pré-condições: Frontend em execução no servidor de desenvolvimento e rotas mockadas.
+- Passos:
+  - Dado que o visitante ou usuário acessa a plataforma MIST na página inicial
+  - Quando rola até o rodapé e clica no hiperlink "Sobre o MIST"
+  - Então a aplicação transiciona para a página Sobre renderizando o título principal e subtítulo do projeto
+  - Quando os blocos da página forem verificados
+  - Então as seções estruturais do README (Comparação MIST vs Steam, Stack Tecnológica, Microsserviços e Execução Local / Deploy VPS) são visíveis
+  - Quando o link do repositório público for inspecionado
+  - Então o botão aponta diretamente para `https://github.com/GMoncks/topicosIV` com abertura em nova aba
+- Resultado esperado: Navegação íntegra até a página Sobre e conformidade dos dados institucionais do README e GitHub.
+- Rastreabilidade: `frontend/e2e/about_reviews.spec.ts`, `frontend/src/components/Footer.tsx`, `frontend/src/pages/About.tsx`
+
+#### E2E-SYSREV-01 — Acesso de visitante à página de Reviews do MIST com aviso e atalho de login
+- Prioridade: P1
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/about_reviews.spec.ts -g "E2E-SYSREV-01"`
+- Pré-condições: Usuário em sessão anônima (não autenticado).
+- Passos:
+  - Dado que o visitante navega até a página inicial
+  - Quando clica em "Reviews do MIST" no rodapé
+  - Então a página exibe a listagem pública de feedbacks e a porcentagem agregada de aprovação
+  - Quando o visitante inspeciona a área de submissão
+  - Então um aviso com instruções de autenticação é apresentado informando que é necessário entrar para avaliar
+  - Quando clica no botão "Iniciar Sessão" do aviso
+  - Então a modal global de autenticação é aberta instantaneamente
+- Resultado esperado: Visitante visualiza avaliações públicas e é orientado a autenticar caso deseje enviar sua própria avaliação.
+- Rastreabilidade: `frontend/e2e/about_reviews.spec.ts`, `frontend/src/pages/Reviews.tsx`, `frontend/src/components/AuthModal.tsx`
+
+#### E2E-SYSREV-02 — Autenticação com usuário de teste mkritli e submissão com sucesso de review do sistema
+- Prioridade: P0
+- Status: aprovado
+- Runner: playwright
+- Comando: `npm --prefix frontend run test:e2e -- e2e/about_reviews.spec.ts -g "E2E-SYSREV-02"`
+- Pré-condições: Usuário autenticado com credenciais de teste válidas de `usuarios.txt` (`mkritli`).
+- Passos:
+  - Dado a sessão autenticada do usuário `mkritli` injetada via storage e perfil
+  - Quando navega até a página de Reviews através do hiperlink no rodapé
+  - Então o formulário de avaliação é renderizado destacando o autor "Avaliando como mkritli"
+  - Quando o usuário digita seu feedback com até 500 caracteres
+  - Então o contador em tempo real acompanha a digitação (ex: `100/500 caracteres`)
+  - Quando o botão de envio é clicado
+  - Então a requisição POST é disparada com sucesso, feedback de confirmação é exibido e o novo comentário surge no topo da listagem
+- Resultado esperado: Review do sistema cadastrada com sucesso vinculando data, hora, recomendação e nome do usuário autenticado.
+- Rastreabilidade: `frontend/e2e/about_reviews.spec.ts`, `frontend/src/pages/Reviews.tsx`, `usuarios.txt`
 
 ## Regressão
 

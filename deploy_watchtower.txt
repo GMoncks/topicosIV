@@ -10,13 +10,13 @@ services:
         max-size: "10m"
         max-file: "3"
     environment:
-      - ENVIRONMENT=production
-      - PORT=8001
-      - JWT_SECRET_KEY=19cf03a8914f545cbef45755391a21a1cf69e8914f3ffe08c5ebb1e8babd477f
-      - JWT_ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - PORT=${AUTH_SERVICE_PORT:-8001}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}
       - AUTH_DATABASE_URL=sqlite:///app/data/auth.db
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     volumes:
       - auth_data:/app/app/data
     networks:
@@ -39,7 +39,7 @@ services:
       - LIBRARY_SERVICE_URL=http://library-service:8003
       - SOCIAL_SERVICE_URL=http://social-service:8004
       - MARKET_SERVICE_URL=http://market-service:8005
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     depends_on:
       - auth-service
       - market-service
@@ -62,7 +62,7 @@ services:
       - PORT=8003
       - LIBRARY_DATABASE_URL=sqlite:///app/data/library.db
       - STORE_SERVICE_URL=http://store-service:8002
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     volumes:
       - library_data:/app/app/data
     depends_on:
@@ -83,11 +83,11 @@ services:
       - ENVIRONMENT=production
       - PORT=8004
       - SOCIAL_DATABASE_URL=sqlite:///app/data/social.db
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
       - AI_PROVIDER=auto
-      - GEMINI_API_KEY=Ab8RN6JALfq98AHHeDDSkDC4LgN0EOV2OhqGYqkw6yv
-      - OPENAI_API_KEY=iCMNTYAqgrCYCQuJXLhAU8BGFkujZFumuSD7YWj0F2tWkyPQBuFMR94cwJJU3xCY9WYU6O22RgT3BlbkFJFESBa
-      - GROQ_API_KEY=""
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - AI_TIMEOUT_SECONDS=8.0
     volumes:
       - social_data:/app/app/data
@@ -108,7 +108,7 @@ services:
       - PORT=8005
       - MARKET_DATABASE_URL=sqlite:///app/data/market.db
       - AUTH_SERVICE_URL=http://auth-service:8001
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     depends_on:
       - auth-service
     volumes:
@@ -130,7 +130,7 @@ services:
       - PORT=8006
       - UGC_DATABASE_URL=sqlite:///app/data/ugc.db
       - UPLOADS_DIR=data/uploads
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     volumes:
       - ugc_data:/app/data
     networks:
@@ -154,9 +154,9 @@ services:
       - SOCIAL_SERVICE_URL=http://social-service:8004
       - MARKET_SERVICE_URL=http://market-service:8005
       - UGC_SERVICE_URL=http://ugc-service:8006
-      - JWT_SECRET_KEY=19cf03a8914f545cbef45755391a21a1cf69e8914f3ffe08c5ebb1e8babd477f
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - JWT_ALGORITHM=HS256
-      - CORS_ORIGINS=https://mist.biomimetics.com.br
+      - CORS_ORIGINS=${CORS_ORIGINS}
     depends_on:
       - auth-service
       - store-service
@@ -190,7 +190,7 @@ services:
     restart: unless-stopped
     command: tunnel run
     environment:
-      - TUNNEL_TOKEN=eyJhIjoiNGY3YzYzNDkwNjc5YjgwMWM4ODI4Y2UwMDFkNThiNTciLCJ0IjoiOGVlMTMzYWEtNzY3NC00YzI5LWEzN2ItOGUwNWFhMDMzMTU3IiwicyI6Ik1UTm1ZbUV6WWprdE5XVmpOaTAwWm1ZMkxUZ3haakl0WWpjM05ERTJORGMxWWpoaCJ9
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
     networks:
       - mist-network
     logging:

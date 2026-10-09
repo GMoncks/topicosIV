@@ -12,6 +12,7 @@ import {
   PublicProfileResponse,
   FriendPendingRequestItem,
   WalletRechargeResponse,
+  SystemReviewItem,
 } from '../types';
 
 
@@ -78,11 +79,29 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
 
   let response: Response;
   try {
-    response = await fetch(`${API_GATEWAY_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-  } catch (err) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    let timeoutId: any = null;
+    let effectiveSignal = options?.signal;
+
+    if (!effectiveSignal && controller) {
+      // Timeout padrão de 60 segundos para uploads e requisições pesadas
+      timeoutId = setTimeout(() => controller.abort(), 60000);
+      effectiveSignal = controller.signal;
+    }
+
+    try {
+      response = await fetch(`${API_GATEWAY_URL}${endpoint}`, {
+        ...options,
+        headers,
+        signal: effectiveSignal,
+      });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  } catch (err: any) {
+    if (err?.name === 'AbortError' || err?.name === 'TimeoutError') {
+      throw new Error('A requisição excedeu o tempo limite de resposta do servidor (Timeout de 60s).');
+    }
     if (isNetworkError(err)) {
       throw new Error('Falha de conexão: o servidor está indisponível no momento.');
     }
@@ -105,8 +124,18 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
   }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `Erro na requisição HTTP (${response.status})`);
+    let errorDetail = '';
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorData.message || '';
+    } catch {
+      if (response.status === 413) {
+        errorDetail = 'O arquivo enviado excede o tamanho máximo permitido pelo servidor.';
+      } else if (response.status === 504 || response.status === 502) {
+        errorDetail = 'Tempo limite esgotado ou serviço temporariamente inacessível.';
+      }
+    }
+    throw new Error(errorDetail || `Erro na requisição HTTP (${response.status})`);
   }
 
   if (response.status === 204 || response.headers?.get?.('content-length') === '0') {
@@ -1363,6 +1392,29 @@ export const publicProfileApi = {
     });
   },
 };
+
+export interface CreateSystemReviewPayload {
+  content: string;
+  is_recommended?: boolean;
+}
+
+export const systemReviewsApi = {
+  async getReviews(params?: { skip?: number; limit?: number }): Promise<SystemReviewItem[]> {
+    const queryParts: string[] = [];
+    if (params?.skip !== undefined) queryParts.push(`skip=${params.skip}`);
+    if (params?.limit !== undefined) queryParts.push(`limit=${params.limit}`);
+    const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+    return fetchApi<SystemReviewItem[]>(`/api/system-reviews${query}`, { method: 'GET' });
+  },
+
+  async createReview(payload: CreateSystemReviewPayload): Promise<SystemReviewItem> {
+    return fetchApi<SystemReviewItem>('/api/system-reviews', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
 
 
 

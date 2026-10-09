@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.database import UPLOADS_DIR
 from app.models.screenshot import Screenshot, ScreenshotLike
 
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_FILE_SIZE = 15 * 1024 * 1024  # 15 MB
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 
 
@@ -43,7 +43,7 @@ class ScreenshotService:
         if file_size > MAX_FILE_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-                detail="Arquivo excede o limite máximo permitido de 10 MB."
+                detail="Arquivo excede o limite máximo permitido de 15 MB."
             )
 
         # Gera nome único seguro

@@ -4611,5 +4611,17 @@
         "origem": "execucao"
       }
     ]
+  },
+  "E2E-PROF-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T01:23:44.899059+00:00",
+        "status": "pass",
+        "duracao_ms": 14574,
+        "erro": null,
+        "origem": "validacao"
+      }
+    ]
   }
 }

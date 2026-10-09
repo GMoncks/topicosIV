@@ -120,7 +120,30 @@ export interface InventoryGroupedResponse {
   total: number;
 }
 
-export type NavigationTab = 'store' | 'library' | 'market' | 'inventory' | 'social' | 'groups' | 'news' | 'points' | 'profile' | 'public_profile' | 'login' | 'workshop';
+export type NavigationTab =
+  | 'store'
+  | 'library'
+  | 'market'
+  | 'inventory'
+  | 'social'
+  | 'groups'
+  | 'news'
+  | 'points'
+  | 'profile'
+  | 'public_profile'
+  | 'login'
+  | 'workshop'
+  | 'about'
+  | 'reviews';
+
+export interface SystemReviewItem {
+  id: number;
+  user_id: number;
+  username: string;
+  content: string;
+  is_recommended: boolean;
+  created_at: string;
+}
 
 export interface LibraryGame {
   id: number;

@@ -9,6 +9,7 @@ from app.db.seed_purchases import seed_purchases_and_wishlist
 from app.models.wishlist import Wishlist
 from app.models.purchase import Purchase
 from app.models.review import Review, ReviewVote
+from app.models.system_review import SystemReview
 from app.api.routes import router as store_router
 
 

@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
+from app.models.system_review import SystemReview
 from app.schemas.game import GameListItemResponse, GameDetailResponse
 from app.schemas.review import ReviewCreate, ReviewResponse, ReviewHelpfulResponse
+from app.schemas.system_review import SystemReviewCreate, SystemReviewResponse
 from app.services.review_service import ReviewService
 from app.services.store_service import StoreService
 
@@ -383,4 +385,52 @@ def get_wishlist_alerts(
     user_id = _require_user_id(x_user_id)
     from app.services.wishlist_ai import get_wishlist_discount_alerts
     return get_wishlist_discount_alerts(db=db, user_id=user_id)
+
+
+@router.get("/system-reviews", response_model=List[SystemReviewResponse], status_code=status.HTTP_200_OK)
+@router.get("/store/system-reviews", response_model=List[SystemReviewResponse], status_code=status.HTTP_200_OK)
+def list_system_reviews(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    Lista avaliações e feedbacks sobre a plataforma MIST em ordem cronológica reversa.
+    """
+    reviews = (
+        db.query(SystemReview)
+        .order_by(SystemReview.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return reviews
+
+
+@router.post("/system-reviews", response_model=SystemReviewResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/store/system-reviews", response_model=SystemReviewResponse, status_code=status.HTTP_201_CREATED)
+def create_system_review(
+    payload: SystemReviewCreate,
+    x_user_id: Optional[str] = Header(None, alias="X-User-Id"),
+    x_user_username: Optional[str] = Header(None, alias="X-User-Username"),
+    db: Session = Depends(get_db)
+):
+    """
+    Registra uma avaliação ou feedback sobre a plataforma MIST deixado por um usuário autenticado.
+    Registra data, hora, nome do usuário logado e valida o limite de 500 caracteres.
+    """
+    user_id = _require_user_id(x_user_id)
+    username = x_user_username or f"usuario_{user_id}"
+
+    review = SystemReview(
+        user_id=user_id,
+        username=username,
+        content=payload.content.strip(),
+        is_recommended=payload.is_recommended,
+    )
+    db.add(review)
+    db.commit()
+    db.refresh(review)
+    return review
+
 

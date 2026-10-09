@@ -11,11 +11,11 @@ O MIST foi projetado para oferecer equivalência funcional em relação às prin
 | Funcionalidade | Steam (Proprietário) | MIST Ecosystem (Open Source) |
 | :--- | :--- | :--- |
 | **Arquitetura da Aplicação** | Cliente desktop C++ proprietário + Serviços em Nuvem | Web SPA React + TS + Arquitetura de Microsserviços Python/FastAPI |
-| **Execução de Jogos** | Steam Client embutido + Motores 3D comerciais | **MIST Local Daemon** (HTTP `127.0.0.1:39090`) executando binários/scripts nativos no SO |
+| **Execução de Jogos** | Steam Client embutido + Motores 3D comerciais | **MIST Local Daemon** (HTTP `${DAEMON_HOST}:${PORT_DAEMON}`) executando binários/scripts nativos no SO |
 | **Jogos MIST Studios vs Importados** | Todos os jogos são binários pesados compilados | **MIST Studios:** Mini-jogos 100% funcionais em Python console (`Forca`, `Labirinto`, `Quiz`).<br>**Comerciais Importados:** Scripts wrappers leves que simulam sessão e telemetria via MIST SDK. |
 | **Integração de Telemetria** | Steamworks C++ / C# SDK | **MIST SDK** (`mist_sdk.py`): módulo stdlib-only em Python (zero dependências `pip`) com auto-recuperação e suporte offline |
 | **Loja & Economia** | Cartão/Pix, Carteira Steam, Wishlist, Recomendações | Carteira MIST Virtual com recarga simulada, Checkout Saga compensatório, Wishlist e Recomendações por IA |
-| **Avaliações (Reviews)** | Recomendações em texto, % de aprovação, votos úteis | Reviews relacionais por jogo, score % automático de aprovação ("Muito Positivo"), horas jogadas e votos de utilidade |
+| **Avaliações (Reviews)** | Recomendações em texto, % de aprovação, votos úteis | Reviews relacionais por jogo, avaliações da plataforma MIST pela comunidade, horas jogadas e votos de utilidade |
 | **Rede Social & Chat** | Amigos, Chat 1:1, Chat de Grupo, Status de Presença | Amigos reais, Chat 1:1 via WebSocket com emoticons animados inline, Chat de Grupo e Presença em Tempo Real (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*) |
 | **Gamificação & XP** | Cartas, Drops por tempo de jogo, Crafting de Insígnias, Níveis | Drop probabilístico de cartas por pings de sessão, Quest Master por conquistas raras, Crafting de Insígnias e cálculo de Nível por $Level = \lfloor\sqrt{\text{total\_xp} / 100}\rfloor$ |
 | **Mercado & Trocas** | Mercado da Comunidade + Trade Offers entre amigos | Mercado público de cosméticos/cartas em R$ + Ofertas de Troca Direta (Trade Offers) com trava atômica de segurança |
@@ -31,13 +31,13 @@ O MIST foi projetado para oferecer equivalência funcional em relação às prin
 O sistema é estruturado como uma aplicação distribuída orientada a microsserviços, garantindo isolamento total de domínios, concorrência e independência de dados:
 
 - **Backend:** Python 3.10+ / 3.12+ com **FastAPI**, **SQLAlchemy ORM** e **Pydantic v2**.
-- **API Gateway:** Gateway centralizado em FastAPI com validação de tokens JWT, eliminação de headers vulneráveis, injeção de cabeçalhos de identidade confiáveis (`X-User-Id`), tratamento de CORS e proxy reverso assíncrono para HTTP REST e WebSockets.
+- **API Gateway:** Gateway centralizado em FastAPI com validação de tokens JWT (`${JWT_SECRET_KEY}`), eliminação de headers vulneráveis, injeção de cabeçalhos de identidade confiáveis (`X-User-Id`, `X-User-Username`), tratamento de CORS (`${CORS_ORIGINS}`) e proxy reverso assíncrono para HTTP REST e WebSockets.
 - **Bancos de Dados Desacoplados:** SQLite com 6 arquivos `.db` totalmente isolados por serviço (`auth.db`, `store.db`, `library.db`, `social.db`, `market.db`, `ugc.db`), prevenindo acoplamentos diretos no banco de dados.
 - **Mensageria e Tempo Real:** WebSockets assíncronos nativos para chat 1:1, salas de chat de grupo, canais de notificação push e difusão de presença (*Online*, *Ausente*, *Jogando [Jogo]*, *Offline*).
 - **Frontend SPA:** **React 18** com **TypeScript**, empacotado via **Vite**, estilizado com **Tailwind CSS**, Context API para estado global (autenticação, carrinho, tema) e ícones FontAwesome.
 - **Jogos MIST Studios:** Mini-jogos interativos em terminal console (`forca.py`, `labirinto.py`, `quiz.py`) desenvolvidos em Python nativo (`stdlib-only`, zero dependências pip) com SDK client-side (`mist_sdk.py`) para telemetria de playtime e desbloqueio de conquistas.
 - **Jogos Comerciais / Importados:** Wrappers/scripts executáveis leves que utilizam o `mist_sdk.py` para simular início de sessão, heartbeat (ping) de tempo de jogo e obtenção de conquistas/cartas sem demandar o hardware ou motores 3D comerciais pesados dos jogos reais na máquina local.
-- **MIST Local Daemon:** Serviço HTTP em background (`runner/mist_daemon.py` rodando em `127.0.0.1:39090`) que transpõe o *sandbox* de segurança dos navegadores web. Permite que o clique no botão "Jogar" na SPA abra janelas de console nativas do SO com 1 clique (`iniciar_mist_daemon.bat`).
+- **MIST Local Daemon:** Serviço HTTP em background (`runner/mist_daemon.py` rodando em `${DAEMON_HOST}:${PORT_DAEMON}`) que transpõe o *sandbox* de segurança dos navegadores web. Permite que o clique no botão "Jogar" na SPA abra janelas de console nativas do SO com 1 clique (`iniciar_mist_daemon.bat`).
 - **Automação de QA:** Pirâmide de testes completa com **Pytest** (backend), **Vitest** (frontend unitários/componentes), **Playwright** (E2E) e adaptador unificado de execução e relatórios (`runner_adapter.py` + `TESTS.md` + `resultados.json`).
 
 ---
@@ -51,16 +51,16 @@ O sistema é estruturado como uma aplicação distribuída orientada a microsser
                 │ HTTP REST /api/*                  │ WebSockets
                 ▼                                   │ (Chat / Presença / Notificações)
 ┌───────────────────────────────────────────────────┴───────────────┐
-│                 API Gateway (:8000) [FastAPI]                     │
+│                 API Gateway (:${PORT_GATEWAY}) [FastAPI]          │
 │   - Validação centralizada de JWT e injeção de X-User-Id          │
 │   - Proxy reverso HTTP e tunelamento assíncrono de WebSockets     │
-│   - Endpoints agregadores (Busca Global)                          │
+│   - Endpoints agregadores (Busca Global e Reviews do Sistema)     │
 └───────┬──────────┬──────────┬──────────┬──────────┬───────────────┘
         │          │          │          │          │
         ▼          ▼          ▼          ▼          ▼
 ┌────────────┐┌────────────┐┌────────────┐┌────────────┐┌────────────┐┌────────────┐
 │Auth Service││Store Service││Library Svc ││Social Service││Market Svc ││UGC Service │
-│  (:8001)   ││  (:8002)   ││  (:8003)   ││  (:8004)   ││  (:8005)   ││  (:8006)   │
+│(:${PORT_AUTH})││(:${PORT_STORE})││(:${PORT_LIB}) ││(:${PORT_SOC}) ││(:${PORT_MKT}) ││(:${PORT_UGC}) │
 │ [auth.db]  ││ [store.db] ││[library.db]││ [social.db]││ [market.db]││  [ugc.db]  │
 └────────────┘└─────┬──────┘└─────▲──────┘└─────▲──────┘└────────────┘└────────────┘
                     │             │             │
@@ -70,102 +70,107 @@ O sistema é estruturado como uma aplicação distribuída orientada a microsser
 
 ### Detalhamento dos Módulos:
 
-1. **API Gateway (`gateway/`, porta `8000`):**
+1. **API Gateway (`gateway/`, porta `${PORT_GATEWAY}`):**
    - Roteamento central de `/api/*` para todos os microsserviços.
    - Proxy bidirecional de WebSockets em `/ws/chat/{room_id}`, `/ws/group/{group_id}/chat`, `/ws/presence` e `/ws/notifications`.
-   - Sanitização de cabeçalhos externos e injeção do header verificado `X-User-Id`.
-   - Busca Global agregada (`GET /api/search?q=...`) consultando serviços assincronamente.
+   - Sanitização de cabeçalhos externos e injeção dos headers verificados `X-User-Id` e `X-User-Username`.
+   - Busca Global agregada (`GET /api/search?q=...`) e canal unificado de avaliações do sistema (`/api/system-reviews`).
 
-2. **Auth Service (`services/auth-service/`, porta `8001`):**
+2. **Auth Service (`services/auth-service/`, porta `${PORT_AUTH}`):**
    - Autenticação com cadastro, login JWT, hashing `bcrypt` e recarga instantânea de saldo na carteira (`POST /me/wallet/recharge`).
    - Gestão de Perfil: nome de usuário, nome real, bio, localização e foto de perfil (`AvatarSelectModal` com upload local ou avatares comprados).
    - Inventário do Usuário: guarda cosméticos, molduras de avatar, planos de fundo, avatares, emoticons, cartas colecionáveis e insígnias.
    - Engine de XP e Níveis: calculador de XP, progresso de nível e estatísticas.
    - Configurações Granulares de Privacidade (`PATCH /me/privacy`).
 
-3. **Store Service (`services/store-service/`, porta `8002`):**
+3. **Store Service (`services/store-service/`, porta `${PORT_STORE}`):**
    - Catálogo de jogos com filtros por gênero/preço, ordenação e paginação (5, 10, 15, 25, 50).
    - Wishlist (Lista de Desejos) com gestão dinâmica sem recarregamento.
-   - Avaliações (Reviews): nota % de aprovação ("Muito Positivo"), comentários, horas jogadas e votos de utilidade.
+   - Avaliações (Reviews): avaliações de jogos e avaliações gerais da plataforma MIST pela comunidade (`system_reviews`).
    - Checkout Saga: transação financeira compensatória com estorno automático de saldo se a concessão da licença falhar.
    - Agente **MIST AI Curator**: seções "Recomendado para Você", "Top Vendidos", "Em Alta" e "Alertas de Desconto".
    - Empacotador de downloads (.zip com executável Python, `mist_sdk.py` e `session.json`).
 
-4. **Library Service (`services/library-service/`, porta `8003`):**
+4. **Library Service (`services/library-service/`, porta `${PORT_LIBRARY}`):**
    - Validação de posse e licenças de jogos (`LibraryItem`).
    - Ciclo de vida de sessões (`/session/start`, `/session/ping`, `/session/end`) com acúmulo de tempo de jogo (*playtime*).
    - Sistema de Conquistas: persistência de conquistas desbloqueadas, notificações toast douradas, modal de detalhes com raridades e **MIST Quest Master** para troféus dinâmicos.
    - Algoritmo de drop de Trading Cards em pings de sessão de jogo.
 
-5. **Social Service (`services/social-service/`, porta `8004`):**
+5. **Social Service (`services/social-service/`, porta `${PORT_SOCIAL}`):**
    - Gestão de amizades reais e solicitações pendentes com ações de aceitar/recusar na interface.
    - Chat 1:1 via WebSocket com histórico persistido, indicador de digitação e parser de emoticons cosméticos animados inline.
    - Status de Presença em Tempo Real (*Online*, *Jogando [Jogo]*, *Ausente*, *Offline*).
    - Grupos e Fórums de Comunidade: criação de grupos, lista de membros, tópicos/respostas de discussão e salas de bate-papo de grupo via WebSocket (`/ws/group/{id}/chat`).
    - Agente **MIST Companion Bot**: amigo de IA interativo presente na lista de contatos.
 
-6. **Market Service (`services/market-service/`, porta `8005`):**
+6. **Market Service (`services/market-service/`, porta `${PORT_MARKET}`):**
    - Mercado da Comunidade: anunciar itens em R$ (`POST /market/list`), listar anúncios ativos (`GET /market/listings`), comprar com transação financeira compensatória e estorno de emergência (`POST /market/buy/{id}`) e cancelamento.
    - Ofertas de Troca Direta (Trade Offers): propor trocas de itens entre amigos (`POST /trades/offer`), aceitar (`POST /trades/{id}/accept`) com trava atômica de segurança nos itens de ambos os lados, ou recusar.
    - Extrato da Carteira (`GET /wallet/history`): histórico financeiro paginado com categorização de depósitos, compras na loja, compras no mercado, vendas e resgates.
 
-7. **UGC Service (`services/ugc-service/`, porta `8006`):**
+7. **UGC Service (`services/ugc-service/`, porta `${PORT_UGC}`):**
    - Showcase de Capturas de Tela: upload manual via drag-and-drop ou automático via SDK Python (`take_screenshot()`), galeria com lightbox e curtidas.
    - Workshop de Conteúdo: upload de mods e skins, tags, busca por popularidade, contagem de subscrições e downloads.
 
-8. **MIST Local Daemon (`runner/mist_daemon.py`, porta `39090`):**
+8. **MIST Local Daemon (`runner/mist_daemon.py`, porta `${PORT_DAEMON}`):**
    - Servidor HTTP leve local em Python que recebe ordens da SPA web (`POST /launch`), descompacta o jogo em `~/.mist/installed/`, injeta o `session.json` e dispara o jogo em uma nova janela de terminal nativa (`iniciar_mist_daemon.bat`).
 
 ---
 
-## 4. Como Rodar o Sistema Localmente
+## 4. Como Rodar o Sistema (Localmente ou em VPS / Home-Server)
 
-Você pode executar o MIST através de duas abordagens: **Docker Compose** (todos os serviços conteinerizados de uma só vez) ou **Modo Nativo** (executando os processos Python e Node no seu terminal).
+O ecossistema MIST oferece suporte tanto para desenvolvimento local ágil quanto para implantação em produção em uma **VPS** ou **Home-Server** (ex: CasaOS / Docker) com segurança Zero Trust.
 
-### Opção 1: Via Docker Compose (Recomendado)
+---
 
-Esta é a maneira mais simples de inicializar todo o ecossistema com um único comando.
+### Opção 1: Execução Local via Docker Compose
+
+Ideal para inicializar o cluster de microsserviços completo com um único comando.
 
 #### Pré-requisitos:
-- [Docker](https://docs.docker.com/get-docker/) e Docker Compose instalados.
+- Docker e Docker Compose instalados.
 
 #### Passos:
-1. Na raiz do projeto, suba todos os containers com build automático:
+1. Copie o arquivo de variáveis de ambiente de exemplo:
+   ```bash
+   cp .env.example .env
+   ```
+2. Inicialize todos os containers:
    ```bash
    docker compose up --build
    ```
-2. Acesse as aplicações nos seguintes endereços:
-   - **Frontend (Interface MIST):** [http://localhost:5173](http://localhost:5173) (ou [http://localhost:3000](http://localhost:3000) no Docker)
-   - **API Gateway (Swagger / OpenAPI):** [http://localhost:8000/docs](http://localhost:8000/docs)
-   - **Auth Service:** `http://localhost:8001`
-   - **Store Service:** `http://localhost:8002`
-   - **Library Service:** `http://localhost:8003`
-   - **Social Service:** `http://localhost:8004`
-   - **Market Service:** `http://localhost:8005`
+3. Acesse as aplicações nos pontos de terminação configurados:
+   - **Frontend (Interface Web):** `http://${DAEMON_HOST}:${PORT_FRONTEND}`
+   - **API Gateway (Swagger / OpenAPI):** `http://${DAEMON_HOST}:${PORT_GATEWAY}/docs`
+   - **Auth Service:** `http://${DAEMON_HOST}:${PORT_AUTH}`
+   - **Store Service:** `http://${DAEMON_HOST}:${PORT_STORE}`
+   - **Library Service:** `http://${DAEMON_HOST}:${PORT_LIBRARY}`
+   - **Social Service:** `http://${DAEMON_HOST}:${PORT_SOCIAL}`
+   - **Market Service:** `http://${DAEMON_HOST}:${PORT_MARKET}`
+   - **UGC Service:** `http://${DAEMON_HOST}:${PORT_UGC}`
 
-3. **Para abrir os jogos nativos na sua máquina:**
-   - Como os containers rodam isolados, inicie o daemon na sua máquina host (fora do Docker):
+4. **Para abrir os jogos nativos na sua máquina:**
+   - Inicie o daemon na sua máquina host (fora do Docker):
      ```bash
-     # Windows (duplo-clique ou terminal):
+     # Windows:
      .\iniciar_mist_daemon.bat
 
      # Linux / macOS:
      python runner/mist_daemon.py
      ```
-   - Agora, ao clicar em **"Jogar"** na Biblioteca web, o jogo abrirá nativamente no seu terminal!
+   - Ao clicar em **"Jogar"** na Biblioteca web, o jogo abrirá nativamente no console!
 
 ---
 
 ### Opção 2: Modo Desenvolvimento Nativo (Sem Docker)
 
-Ideal para desenvolvimento ativo com hot-reload imediato em todos os microsserviços.
+Ideal para desenvolvimento ativo com hot-reload rápido.
 
 #### Pré-requisitos:
-- Python 3.10+ instalado e no PATH do sistema.
-- Node.js 18+ e npm instalados.
+- Python 3.10+ e Node.js 18+ com npm.
 
 #### 1. Configurar o Ambiente Virtual Python:
-Na raiz do repositório:
 ```bash
 # Windows (PowerShell)
 python -m venv .venv
@@ -175,47 +180,75 @@ python -m venv .venv
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Instalar dependências de todos os microsserviços e ferramentas de teste
+# Instalar dependências
 pip install -r requirements-dev.txt
 ```
 
 #### 2. Iniciar os Microsserviços Backend:
-Abra terminais para cada serviço com o ambiente virtual ativado:
-
+Execute cada serviço em terminais dedicados com o `.venv` ativo:
 ```bash
-# Terminal 1 — Auth Service (porta 8001)
-uvicorn services.auth_service.app.main:app --port 8001 --reload
+# Auth Service
+uvicorn services.auth_service.app.main:app --port ${PORT_AUTH} --reload
 
-# Terminal 2 — Store Service (porta 8002)
-uvicorn services.store_service.app.main:app --port 8002 --reload
+# Store Service
+uvicorn services.store_service.app.main:app --port ${PORT_STORE} --reload
 
-# Terminal 3 — Library Service (porta 8003)
-uvicorn services.library_service.app.main:app --port 8003 --reload
+# Library Service
+uvicorn services.library_service.app.main:app --port ${PORT_LIBRARY} --reload
 
-# Terminal 4 — Social Service (porta 8004)
-uvicorn services.social_service.app.main:app --port 8004 --reload
+# Social Service
+uvicorn services.social_service.app.main:app --port ${PORT_SOCIAL} --reload
 
-# Terminal 5 — Market Service (porta 8005)
-uvicorn services.market_service.app.main:app --port 8005 --reload
+# Market Service
+uvicorn services.market_service.app.main:app --port ${PORT_MARKET} --reload
 
-# Terminal 6 — API Gateway (porta 8000)
-uvicorn gateway.app.main:app --port 8000 --reload
+# API Gateway
+uvicorn gateway.app.main:app --port ${PORT_GATEWAY} --reload
 ```
 
 #### 3. Iniciar o Frontend SPA:
-Em outro terminal:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-A interface estará disponível em **[http://localhost:5173](http://localhost:5173)**.
+Acesse em: `http://${DAEMON_HOST}:${PORT_FRONTEND_DEV}`.
 
-#### 4. Iniciar o MIST Local Daemon (Para execução real dos jogos):
+#### 4. Iniciar o MIST Local Daemon:
 ```bash
 python runner/mist_daemon.py
 ```
-*(Ou execute `.\iniciar_mist_daemon.bat` no Windows).*
+
+---
+
+### Opção 3: Deploy em Servidor / VPS / Home-Server (CasaOS)
+
+Esta abordagem permite publicar o MIST na internet de forma segura, com atualização automática de imagens via **Watchtower** e publicação via **Cloudflare Tunnel Zero Trust** sem expor portas do host nem configurar NAT no roteador.
+
+#### Arquitetura de Deploy:
+- **Imagens GHCR:** O GitHub Actions gera as imagens `ghcr.io/gmoncks/topicosiv/mist-*:latest`.
+- **Zero Port Exposure:** O container `cloudflared` conecta à rede `${MIST_NETWORK}` e roteia as requisições HTTPS diretamente para o `mist-frontend`, garantindo que nenhuma porta fique aberta na WAN.
+- **Auto-Update Contínuo:** O container `mist-watchtower` realiza pull contínuo de novas imagens do GHCR e reinicia os serviços de forma autônoma.
+
+#### Passos de Implantação:
+1. No seu servidor/host CasaOS, crie a rede Docker isolada:
+   ```bash
+   docker network create mist-network
+   ```
+2. Configure o arquivo de ambiente `.env` com suas chaves:
+   ```bash
+   ENVIRONMENT=production
+   TUNNEL_TOKEN=${TUNNEL_TOKEN}
+   JWT_SECRET_KEY=${JWT_SECRET_KEY}
+   CORS_ORIGINS=${CORS_ORIGINS}
+   ```
+3. Inicie o stack com o compose de produção:
+   ```bash
+   docker compose -f docker-compose.yml up -d
+   ```
+4. Configure o túnel no painel do Cloudflare Zero Trust apontando para o hostname interno do frontend:
+   - **Service Type:** HTTP
+   - **URL:** `mist-frontend:80` (ou IP local do servidor `${DAEMON_HOST}:${PORT_FRONTEND}`)
 
 ---
 
@@ -255,5 +288,5 @@ python .agents/skills/qa_tester/scripts/runner_adapter.py --categoria "Integraç
 
 ## 6. Rastreamento Perpétuo de Prompts
 
- O histórico e decisões técnicas de cada instrução são registrados incrementalmente no diretório [`prompts/`](./prompts/) sob arquivos diários nomeados no padrão `<user_dayth>.md` (exemplo: `gabriel-T800_2nd.md`).
+O histórico e decisões técnicas de cada instrução são registrados incrementalmente no diretório [`prompts/`](./prompts/) sob arquivos diários nomeados no padrão `<user_dayth>.md` (exemplo: `gabriel-T800_2nd.md` ou `Gabriel_T_08th.md`).
 O histórico consolidado das etapas iniciais está preservado em [`prompts/legacy_prompts.md`](./prompts/legacy_prompts.md).
