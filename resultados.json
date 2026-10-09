@@ -50,6 +50,20 @@
         "duracao_ms": 17542,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 26713,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14800,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -616,6 +630,20 @@
         "run_id": "2026-09-26T22:04:51.762339+00:00",
         "status": "pass",
         "duracao_ms": 28074,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 36605,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test auth.spec.ts -g E2E-AUTH-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [firefox] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (12.1s)\n  x  1 [chromium] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout (30.1s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Encerrar Sessão\"]')\n        - locator resolved to <button title=\"Encerrar Sessão\" class=\"hidden lg:flex w-8 h-8 items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition ml-2\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      74 |\n      75 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n    > 76 |     await logoutBtn.click();\n         |                     ^\n      77 |     await expect(page.locator('button', { hasText: /Entrar na Conta/i })).toBeVisible();\n      78 |   });\n      79 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:76:21\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-59da2--00-na-UI-e-permitir-logout-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=R$ 200,00').first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=R$ 200,00').first() with timeout 5000ms\n      - waiting for locator('text=R$ 200,00').first()\n\n\n      71 |     await expect(modal).not.toBeVisible();\n      72 |     await expect(page.locator('text=gamer_e2e').first()).toBeVisible();\n    > 73 |     await expect(page.locator('text=R$ 200,00').first()).toBeVisible();\n         |                                                          ^\n      74 |\n      75 |     const logoutBtn = page.locator('button[title=\"Encerrar Sessão\"]');\n      76 |     await logoutBtn.click();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:73:58\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-59da2--00-na-UI-e-permitir-logout-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout \n    [firefox] › e2e\\auth.spec.ts:6:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-AUTH-01 — deve abrir modal, cadastrar novo usuário, exibir saldo de R$ 200,00 na UI e permitir logout",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 19817,
         "erro": null,
         "origem": "execucao"
       }
@@ -4173,6 +4201,20 @@
         "duracao_ms": 7051,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 24519,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16876,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4183,6 +4225,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 7430,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 36532,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts -g E2E-PROF-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais (30.1s)\n  x  1 [firefox] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais (30.4s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      125 |     // Navega para o Perfil\n      126 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 127 |     await profileBtn.click();\n          |                      ^\n      128 |\n      129 |     // Aciona botão de editar perfil\n      130 |     const editBtn = page.locator('[data-testid=\"btn-edit-profile\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:127:22\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-6cc2c-ir-alterar-dados-cadastrais-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      125 |     // Navega para o Perfil\n      126 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 127 |     await profileBtn.click();\n          |                      ^\n      128 |\n      129 |     // Aciona botão de editar perfil\n      130 |     const editBtn = page.locator('[data-testid=\"btn-edit-profile\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:127:22\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-6cc2c-ir-alterar-dados-cadastrais-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais \n    [firefox] › e2e\\auth.spec.ts:107:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-01 — deve abrir modal de edição de perfil e permitir alterar dados cadastrais",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14391,
         "erro": null,
         "origem": "execucao"
       }
@@ -4197,6 +4253,20 @@
         "duracao_ms": 6098,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 35355,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts -g E2E-WALLET-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [firefox] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente (9.8s)\n  x  1 [chromium] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente (30.1s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[data-testid=\"btn-header-add-funds\"]')\n        - locator resolved to <button type=\"button\" data-testid=\"btn-header-add-funds\" title=\"Adicionar saldo à carteira\" aria-label=\"Adicionar saldo à carteira\" class=\"bg-emerald-700/80 hover:bg-emerald-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-emerald-500/40 shadow-sm flex items-center gap-1 transition cursor-pointer\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      200 |     const addFundsBtn = page.locator('[data-testid=\"btn-header-add-funds\"]');\n      201 |     await expect(addFundsBtn).toBeVisible();\n    > 202 |     await addFundsBtn.click();\n          |                       ^\n      203 |\n      204 |     // Valida abertura da modal\n      205 |     const fundsModal = page.locator('[data-testid=\"add-funds-modal\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:202:23\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-c0064-itar-saldo-instantaneamente-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('[data-testid=\"btn-header-add-funds\"]')\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('[data-testid=\"btn-header-add-funds\"]') with timeout 5000ms\n      - waiting for locator('[data-testid=\"btn-header-add-funds\"]')\n\n\n      199 |     // Clica no botão de adicionar fundos no Header\n      200 |     const addFundsBtn = page.locator('[data-testid=\"btn-header-add-funds\"]');\n    > 201 |     await expect(addFundsBtn).toBeVisible();\n          |                               ^\n      202 |     await addFundsBtn.click();\n      203 |\n      204 |     // Valida abertura da modal\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:201:31\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-c0064-itar-saldo-instantaneamente-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente \n    [firefox] › e2e\\auth.spec.ts:182:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 15495,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4209,6 +4279,20 @@
         "duracao_ms": 6358,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 24799,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14547,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4219,6 +4303,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 6754,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 35059,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-STORE-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST (30.1s)\n  x  1 [firefox] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST (30.2s)\n\n\n  1) [chromium] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('text=Cyberpunk Odyssey 2088').first()\n        - locator resolved to <h4 class=\"font-bold text-lg mb-1 truncate text-white group-hover:text-brand-purple transition w-full\">Cyberpunk Odyssey 2088</h4>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is not stable\n        - retrying click action\n        - waiting 20ms\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      2 × retrying click action\n          - waiting 100ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      51 × retrying click action\n           - waiting 500ms\n           - waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting 500ms\n\n\n      174 |     const gameCard = page.locator('text=Cyberpunk Odyssey 2088').first();\n      175 |     await expect(gameCard).toBeVisible();\n    > 176 |     await gameCard.click();\n          |                    ^\n      177 |\n      178 |     const buyBtn = page.locator('button', { hasText: /Comprar Agora|Adicionar ao Carrinho/i }).first();\n      179 |     await expect(buyBtn).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\store.spec.ts:176:20\n\n    Error Context: test-results\\store-Loja-Catálogo-Review-c3b8e-eira-e-creditar-pontos-MIST-chromium\\error-context.md\n\n  2) [firefox] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('text=Cyberpunk Odyssey 2088').first()\n        - locator resolved to <p class=\"text-sm font-semibold text-white mt-1\">Cyberpunk Odyssey 2088 está com 25% de desconto!</p>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <p class=\"text-xs text-gray-400 mt-0.5\">Sua plataforma gamer de títulos e comunidades</p> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> subtree intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - <p class=\"text-xs text-gray-400 mt-0.5\">Sua plataforma gamer de títulos e comunidades</p> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> subtree intercepts pointer events\n      2 × retrying click action\n          - waiting 100ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      8 × retrying click action\n          - waiting 500ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <p class=\"text-xs text-gray-400 mt-0.5\">Sua plataforma gamer de títulos e comunidades</p> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> subtree intercepts pointer events\n        - retrying click action\n          - waiting 500ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <p class=\"text-xs text-gray-400 mt-0.5\">Sua plataforma gamer de títulos e comunidades</p> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> subtree intercepts pointer events\n        - retrying click action\n          - waiting 500ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 500ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      2 × retrying click action\n          - waiting 500ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <p class=\"text-xs text-gray-400 mt-0.5\">Sua plataforma gamer de títulos e comunidades</p> from <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> subtree intercepts pointer events\n      - retrying click action\n        - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n\n\n      174 |     const gameCard = page.locator('text=Cyberpunk Odyssey 2088').first();\n      175 |     await expect(gameCard).toBeVisible();\n    > 176 |     await gameCard.click();\n          |                    ^\n      177 |\n      178 |     const buyBtn = page.locator('button', { hasText: /Comprar Agora|Adicionar ao Carrinho/i }).first();\n      179 |     await expect(buyBtn).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\store.spec.ts:176:20\n\n    Error Context: test-results\\store-Loja-Catálogo-Review-c3b8e-eira-e-creditar-pontos-MIST-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST \n    [firefox] › e2e\\store.spec.ts:154:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-STORE-02 — deve efetuar compra com saldo de carteira e creditar pontos MIST",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 15183,
         "erro": null,
         "origem": "execucao"
       }
@@ -4261,6 +4359,27 @@
         "duracao_ms": 8447,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 37105,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (30.2s)\n  x  2 [chromium] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (30.1s)\n\n\n  1) [chromium] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('h4').filter({ hasText: 'Cyberpunk Odyssey 2088' }).first()\n        - locator resolved to <h4 class=\"font-bold text-lg mb-1 truncate text-white group-hover:text-brand-purple transition w-full\">Cyberpunk Odyssey 2088</h4>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is not stable\n        - retrying click action\n        - waiting 20ms\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      2 × retrying click action\n          - waiting 100ms\n          - waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      50 × retrying click action\n           - waiting 500ms\n           - waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting 500ms\n\n\n      198 |     const gameCard = page.locator('h4', { hasText: 'Cyberpunk Odyssey 2088' }).first();\n      199 |     await expect(gameCard).toBeVisible();\n    > 200 |     await gameCard.click();\n          |                    ^\n      201 |\n      202 |     // Valida abertura do botão de avaliação e abre o formulário\n      203 |     const reviewBtn = page.locator('button', { hasText: /Escrever avaliação|Editar avaliação/i }).first();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\store.spec.ts:200:20\n\n    Error Context: test-results\\store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-chromium\\error-context.md\n\n  2) [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('h4').filter({ hasText: 'Cyberpunk Odyssey 2088' }).first()\n        - locator resolved to <h4 class=\"font-bold text-lg mb-1 truncate text-white group-hover:text-brand-purple transition w-full\">Cyberpunk Odyssey 2088</h4>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        22 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      198 |     const gameCard = page.locator('h4', { hasText: 'Cyberpunk Odyssey 2088' }).first();\n      199 |     await expect(gameCard).toBeVisible();\n    > 200 |     await gameCard.click();\n          |                    ^\n      201 |\n      202 |     // Valida abertura do botão de avaliação e abre o formulário\n      203 |     const reviewBtn = page.locator('button', { hasText: /Escrever avaliação|Editar avaliação/i }).first();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\store.spec.ts:200:20\n\n    Error Context: test-results\\store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n    [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "fail",
+        "duracao_ms": 19391,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/store.spec.ts -g E2E-REV-01\n\n\nRunning 2 tests using 2 workers\n\n  ok 2 [chromium] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (7.3s)\n  x  1 [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação (12.4s)\n\n\n  1) [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=Excelente jogo, recomendo muito!').first()\n    Expected: visible\n    Timeout: 10000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=Excelente jogo, recomendo muito!').first() with timeout 10000ms\n      - waiting for locator('text=Excelente jogo, recomendo muito!').first()\n\n\n      219 |\n      220 |     // Valida que o modal de formulário fechou ou que o review aparece na lista\n    > 221 |     await expect(page.locator('text=Excelente jogo, recomendo muito!').first()).toBeVisible({ timeout: 10000 });\n          |                                                                                 ^\n      222 |   });\n      223 |\n      224 |   test('E2E-REV-02 — deve renderizar percentual de aprovação comunitária nas avaliações', async ({ page }) => {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\store.spec.ts:221:81\n\n    Error Context: test-results\\store-Loja-Catálogo-Review-ee4b2-oras-jogadas-e-recomendação-firefox\\error-context.md\n\n  1 failed\n    [firefox] › e2e\\store.spec.ts:183:3 › Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S) › E2E-REV-01 — deve submeter review com horas jogadas e recomendação \n  1 passed (18.4s)",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:47:43.420649+00:00",
+        "status": "pass",
+        "duracao_ms": 19150,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4271,6 +4390,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 9133,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 32216,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14808,
         "erro": null,
         "origem": "execucao"
       }
@@ -4285,6 +4418,20 @@
         "duracao_ms": 6365,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 26416,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 15679,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4295,6 +4442,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 7606,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 25518,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 12261,
         "erro": null,
         "origem": "execucao"
       }
@@ -4309,6 +4470,20 @@
         "duracao_ms": 9390,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 51015,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/library.spec.ts -g E2E-LIB-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas (30.2s)\n  x  2 [firefox] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas (44.3s)\n\n\n  1) [chromium] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Biblioteca\"]')\n        - locator resolved to <button title=\"Biblioteca\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        48 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      41 |\n      42 |     const libBtn = page.locator('button[title=\"Biblioteca\"]');\n    > 43 |     await libBtn.click();\n         |                  ^\n      44 |\n      45 |     // Valida exibição do título na lista lateral da biblioteca\n      46 |     await expect(page.locator('text=Cyberpunk Odyssey 2088').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\library.spec.ts:43:18\n\n    Error Context: test-results\\library-Biblioteca-e-Licen-9a582-time-e-painel-de-conquistas-chromium\\error-context.md\n\n  2) [firefox] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Biblioteca\"]')\n        - locator resolved to <button title=\"Biblioteca\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        30 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      41 |\n      42 |     const libBtn = page.locator('button[title=\"Biblioteca\"]');\n    > 43 |     await libBtn.click();\n         |                  ^\n      44 |\n      45 |     // Valida exibição do título na lista lateral da biblioteca\n      46 |     await expect(page.locator('text=Cyberpunk Odyssey 2088').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\library.spec.ts:43:18\n\n    Error Context: test-results\\library-Biblioteca-e-Licen-9a582-time-e-painel-de-conquistas-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas \n    [firefox] › e2e\\library.spec.ts:5:3 › Biblioteca e Licenças de Jogos (Bloco D) › E2E-LIB-01 — deve listar jogos adquiridos, exibir estatísticas de playtime e painel de conquistas",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13901,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4319,6 +4494,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 10981,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 44421,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/wallet_history.spec.ts -g E2E-WAL-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis (30.4s)\n  x  1 [firefox] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis (30.6s)\n\n\n  1) [chromium] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Ver extrato da carteira\"]')\n        - locator resolved to <button type=\"button\" title=\"Ver extrato da carteira\" aria-label=\"Ver extrato da carteira\" class=\"text-emerald-300 font-bold text-sm bg-brand-green/90 hover:bg-brand-green px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition cursor-pointer\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is not stable\n        - retrying click action\n          - waiting 100ms\n        47 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n\n\n      42 |     // Clica no botão de extrato de saldo no Header\n      43 |     const walletBalanceBtn = page.locator('button[title=\"Ver extrato da carteira\"]');\n    > 44 |     await walletBalanceBtn.click();\n         |                            ^\n      45 |\n      46 |     // Valida abertura da modal de extrato financeiro\n      47 |     await expect(page.locator('[data-testid=\"wallet-history-modal\"]')).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\wallet_history.spec.ts:44:28\n\n    Error Context: test-results\\wallet_history-Histórico-d-da05b-istar-lançamentos-contábeis-chromium\\error-context.md\n\n  2) [firefox] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Ver extrato da carteira\"]')\n        - locator resolved to <button type=\"button\" title=\"Ver extrato da carteira\" aria-label=\"Ver extrato da carteira\" class=\"text-emerald-300 font-bold text-sm bg-brand-green/90 hover:bg-brand-green px-3.5 py-1.5 rounded-lg border border-emerald-600/40 shadow-sm flex items-center gap-1.5 transition cursor-pointer\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        23 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      42 |     // Clica no botão de extrato de saldo no Header\n      43 |     const walletBalanceBtn = page.locator('button[title=\"Ver extrato da carteira\"]');\n    > 44 |     await walletBalanceBtn.click();\n         |                            ^\n      45 |\n      46 |     // Valida abertura da modal de extrato financeiro\n      47 |     await expect(page.locator('[data-testid=\"wallet-history-modal\"]')).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\wallet_history.spec.ts:44:28\n\n    Error Context: test-results\\wallet_history-Histórico-d-da05b-istar-lançamentos-contábeis-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis \n    [firefox] › e2e\\wallet_history.spec.ts:5:3 › Histórico de Transações da Carteira (Bloco T) › E2E-WAL-02 — deve abrir extrato detalhado da carteira e listar lançamentos contábeis",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13419,
         "erro": null,
         "origem": "execucao"
       }
@@ -4333,6 +4522,20 @@
         "duracao_ms": 7645,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 44667,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/points_shop.spec.ts -g E2E-PTS-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos (30.2s)\n  x  2 [firefox] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos (37.4s)\n\n\n  1) [chromium] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Loja de Pontos\"]')\n        - locator resolved to <button title=\"Loja de Pontos\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        32 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      51 |\n      52 |     const pointsBtn = page.locator('button[title=\"Loja de Pontos\"]');\n    > 53 |     await pointsBtn.click();\n         |                     ^\n      54 |\n      55 |     // Valida título da página e saldo de pontos\n      56 |     await expect(page.locator('text=/Loja de MIST Points|Cosméticos Disponíveis/i').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\points_shop.spec.ts:53:21\n\n    Error Context: test-results\\points_shop-Loja-de-Pontos-aa342-ar-item-com-saldo-de-pontos-chromium\\error-context.md\n\n  2) [firefox] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Loja de Pontos\"]')\n        - locator resolved to <button title=\"Loja de Pontos\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        11 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      51 |\n      52 |     const pointsBtn = page.locator('button[title=\"Loja de Pontos\"]');\n    > 53 |     await pointsBtn.click();\n         |                     ^\n      54 |\n      55 |     // Valida título da página e saldo de pontos\n      56 |     await expect(page.locator('text=/Loja de MIST Points|Cosméticos Disponíveis/i').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\points_shop.spec.ts:53:21\n\n    Error Context: test-results\\points_shop-Loja-de-Pontos-aa342-ar-item-com-saldo-de-pontos-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos \n    [firefox] › e2e\\points_shop.spec.ts:31:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-01 — deve listar cosméticos da Loja de Pontos e resgatar item com saldo de pontos",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14727,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4343,6 +4546,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 7631,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 42492,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/points_shop.spec.ts -g E2E-PTS-02\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil (30.2s)\n  x  2 [firefox] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil (33.3s)\n\n\n  1) [chromium] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      77 |     await page.goto('/');\n      78 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 79 |     await profileBtn.click();\n         |                      ^\n      80 |\n      81 |     // Valida que o perfil renderizou\n      82 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\points_shop.spec.ts:79:22\n\n    Error Context: test-results\\points_shop-Loja-de-Pontos-582d6-uirida-e-refletir-no-perfil-chromium\\error-context.md\n\n  2) [firefox] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      77 |     await page.goto('/');\n      78 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 79 |     await profileBtn.click();\n         |                      ^\n      80 |\n      81 |     // Valida que o perfil renderizou\n      82 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\points_shop.spec.ts:79:22\n\n    Error Context: test-results\\points_shop-Loja-de-Pontos-582d6-uirida-e-refletir-no-perfil-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil \n    [firefox] › e2e\\points_shop.spec.ts:63:3 › Loja de Pontos e Cosméticos (Bloco I) › E2E-PTS-02 — deve equipar moldura de avatar adquirida e refletir no perfil",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14468,
         "erro": null,
         "origem": "execucao"
       }
@@ -4357,6 +4574,20 @@
         "duracao_ms": 7359,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 42330,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/inventory.spec.ts -g E2E-INV-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias (30.2s)\n  x  2 [firefox] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias (35.9s)\n\n\n  1) [chromium] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        47 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      53 |\n      54 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 55 |     await invBtn.click();\n         |                  ^\n      56 |\n      57 |     // Valida carregamento da página de inventário\n      58 |     await expect(page.locator('[data-testid=\"inventory-page\"]')).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:55:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-a9519-trar-por-abas-de-categorias-chromium\\error-context.md\n\n  2) [firefox] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        21 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      53 |\n      54 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 55 |     await invBtn.click();\n         |                  ^\n      56 |\n      57 |     // Valida carregamento da página de inventário\n      58 |     await expect(page.locator('[data-testid=\"inventory-page\"]')).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:55:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-a9519-trar-por-abas-de-categorias-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias \n    [firefox] › e2e\\inventory.spec.ts:51:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-01 — deve listar itens no grid de inventário e filtrar por abas de categorias",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16281,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4367,6 +4598,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 8584,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 49369,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/inventory.spec.ts -g E2E-INV-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card (30.6s)\n  x  1 [firefox] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card (44.9s)\n\n\n  1) [chromium] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - performing click action\n        - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        47 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      74 |     await page.goto('/');\n      75 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 76 |     await invBtn.click();\n         |                  ^\n      77 |\n      78 |     const equipBtn = page.locator('[data-testid=\"btn-equip-1\"]').first();\n      79 |     if (await equipBtn.isVisible()) {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:76:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-cfc45-smético-diretamente-do-card-chromium\\error-context.md\n\n  2) [firefox] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        27 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      74 |     await page.goto('/');\n      75 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 76 |     await invBtn.click();\n         |                  ^\n      77 |\n      78 |     const equipBtn = page.locator('[data-testid=\"btn-equip-1\"]').first();\n      79 |     if (await equipBtn.isVisible()) {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:76:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-cfc45-smético-diretamente-do-card-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card \n    [firefox] › e2e\\inventory.spec.ts:65:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-INV-02 — deve acionar equipar e desequipar cosmético diretamente do card",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16477,
         "erro": null,
         "origem": "execucao"
       }
@@ -4381,6 +4626,20 @@
         "duracao_ms": 6905,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 29419,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/inventory.spec.ts -g E2E-XP-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [firefox] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar (9.2s)\n  x  1 [chromium] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar (13.2s)\n\n\n  1) [chromium] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=/NÍVEL/i').first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=/NÍVEL/i').first() with timeout 5000ms\n      - waiting for locator('text=/NÍVEL/i').first()\n\n\n      86 |\n      87 |     // Valida exibição do nível do usuário na Sidebar\n    > 88 |     await expect(page.locator('text=/NÍVEL/i').first()).toBeVisible();\n         |                                                         ^\n      89 |   });\n      90 |\n      91 |   test('E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar', async ({ page }) => {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:88:57\n\n    Error Context: test-results\\inventory-Inventário-Cards-3840d-so-de-nível-e-XP-na-sidebar-chromium\\error-context.md\n\n  2) [firefox] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar \n\n    Error: expect(locator).toBeVisible() failed\n\n    Locator: locator('text=/NÍVEL/i').first()\n    Expected: visible\n    Timeout: 5000ms\n    Error: element(s) not found\n\n    Call log:\n      - Expect \"toBeVisible\" locator('text=/NÍVEL/i').first() with timeout 5000ms\n      - waiting for locator('text=/NÍVEL/i').first()\n\n\n      86 |\n      87 |     // Valida exibição do nível do usuário na Sidebar\n    > 88 |     await expect(page.locator('text=/NÍVEL/i').first()).toBeVisible();\n         |                                                         ^\n      89 |   });\n      90 |\n      91 |   test('E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar', async ({ page }) => {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:88:57\n\n    Error Context: test-results\\inventory-Inventário-Cards-3840d-so-de-nível-e-XP-na-sidebar-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar \n    [firefox] › e2e\\inventory.spec.ts:84:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-XP-01 — deve exibir barra de progresso de nível e XP na sidebar",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14490,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4391,6 +4650,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 6236,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 37793,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/inventory.spec.ts -g E2E-CRF-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar (30.1s)\n  x  1 [firefox] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar (30.3s)\n\n\n  1) [chromium] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        38 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      105 |     await page.goto('/');\n      106 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 107 |     await invBtn.click();\n          |                  ^\n      108 |\n      109 |     // Valida se o banner de fabricação de insígnias está presente\n      110 |     const craftBanner = page.locator('[data-testid=\"crafting-banner\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:107:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-21003-sígnias-e-permitir-fabricar-chromium\\error-context.md\n\n  2) [firefox] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Inventário\"]')\n        - locator resolved to <button title=\"Inventário\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        46 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      105 |     await page.goto('/');\n      106 |     const invBtn = page.locator('button[title=\"Inventário\"]');\n    > 107 |     await invBtn.click();\n          |                  ^\n      108 |\n      109 |     // Valida se o banner de fabricação de insígnias está presente\n      110 |     const craftBanner = page.locator('[data-testid=\"crafting-banner\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\inventory.spec.ts:107:18\n\n    Error Context: test-results\\inventory-Inventário-Cards-21003-sígnias-e-permitir-fabricar-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar \n    [firefox] › e2e\\inventory.spec.ts:91:3 › Inventário, Cards, Insígnias e XP (Blocos J, K) › E2E-CRF-01 — deve exibir painel de crafting de insígnias e permitir fabricar",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16096,
         "erro": null,
         "origem": "execucao"
       }
@@ -4405,6 +4678,20 @@
         "duracao_ms": 6177,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 38194,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/market_trade.spec.ts -g E2E-MKT-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [firefox] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito (30.4s)\n  x  1 [chromium] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito (30.2s)\n\n\n  1) [chromium] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        47 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      89 |\n      90 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 91 |     await marketBtn.click();\n         |                     ^\n      92 |\n      93 |     // Valida exibição do item à venda\n      94 |     await expect(page.locator('text=Netrunner Supremo').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:91:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-0b474--permitir-compra-com-débito-chromium\\error-context.md\n\n  2) [firefox] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        43 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      89 |\n      90 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 91 |     await marketBtn.click();\n         |                     ^\n      92 |\n      93 |     // Valida exibição do item à venda\n      94 |     await expect(page.locator('text=Netrunner Supremo').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:91:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-0b474--permitir-compra-com-débito-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito \n    [firefox] › e2e\\market_trade.spec.ts:76:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-01 — deve listar ofertas do Mercado da Comunidade e permitir compra com débito",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 15807,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4415,6 +4702,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 6278,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 39936,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/market_trade.spec.ts -g E2E-MKT-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas (30.1s)\n  x  1 [firefox] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas (30.3s)\n\n\n  1) [chromium] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        43 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      118 |     await page.goto('/');\n      119 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 120 |     await marketBtn.click();\n          |                     ^\n      121 |\n      122 |     const myAdsTab = page.locator('button', { hasText: /Meus Anúncios/i }).first();\n      123 |     await myAdsTab.click();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:120:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-b756b-do-criar-e-cancelar-ofertas-chromium\\error-context.md\n\n  2) [firefox] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        42 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      118 |     await page.goto('/');\n      119 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 120 |     await marketBtn.click();\n          |                     ^\n      121 |\n      122 |     const myAdsTab = page.locator('button', { hasText: /Meus Anúncios/i }).first();\n      123 |     await myAdsTab.click();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:120:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-b756b-do-criar-e-cancelar-ofertas-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas \n    [firefox] › e2e\\market_trade.spec.ts:109:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-MKT-02 — deve gerenciar aba Meus Anúncios permitindo criar e cancelar ofertas",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16447,
         "erro": null,
         "origem": "execucao"
       }
@@ -4429,6 +4730,20 @@
         "duracao_ms": 6094,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 38052,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/market_trade.spec.ts -g E2E-TRD-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta (30.1s)\n  x  1 [firefox] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta (30.4s)\n\n\n  1) [chromium] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        36 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n        - waiting for element to be visible, enabled and stable\n\n\n      139 |     await page.goto('/');\n      140 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 141 |     await marketBtn.click();\n          |                     ^\n      142 |\n      143 |     // Navega para aba de Trocas\n      144 |     const tradesTab = page.locator('button', { hasText: /^Trocas$/i }).first();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:141:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-d3835-re-amigos-e-enviar-proposta-chromium\\error-context.md\n\n  2) [firefox] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Mercado\"]')\n        - locator resolved to <button title=\"Mercado\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        45 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      139 |     await page.goto('/');\n      140 |     const marketBtn = page.locator('button[title=\"Mercado\"]');\n    > 141 |     await marketBtn.click();\n          |                     ^\n      142 |\n      143 |     // Navega para aba de Trocas\n      144 |     const tradesTab = page.locator('button', { hasText: /^Trocas$/i }).first();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\market_trade.spec.ts:141:21\n\n    Error Context: test-results\\market_trade-Mercado-da-Co-d3835-re-amigos-e-enviar-proposta-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta \n    [firefox] › e2e\\market_trade.spec.ts:130:3 › Mercado da Comunidade e Trade Offers (Bloco L) › E2E-TRD-01 — deve abrir modal de troca interativa entre amigos e enviar proposta",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13442,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4439,6 +4754,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 5645,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 27565,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14960,
         "erro": null,
         "origem": "execucao"
       }
@@ -4453,6 +4782,20 @@
         "duracao_ms": 5889,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 26120,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 12690,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4463,6 +4806,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 5737,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 32414,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14506,
         "erro": null,
         "origem": "execucao"
       }
@@ -4477,6 +4834,20 @@
         "duracao_ms": 6132,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 38951,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/ugc_screenshots.spec.ts -g E2E-UGC-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir (30.1s)\n  x  2 [firefox] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir (30.4s)\n\n\n  1) [chromium] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      43 |     // Acessa perfil para ver galeria de screenshots ou na página de detalhes\n      44 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 45 |     await profileBtn.click();\n         |                      ^\n      46 |\n      47 |     // Valida que o perfil renderizou\n      48 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\ugc_screenshots.spec.ts:45:22\n\n    Error Context: test-results\\ugc_screenshots-Showcase-d-d3a4b-unitárias-e-permitir-curtir-chromium\\error-context.md\n\n  2) [firefox] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      43 |     // Acessa perfil para ver galeria de screenshots ou na página de detalhes\n      44 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 45 |     await profileBtn.click();\n         |                      ^\n      46 |\n      47 |     // Valida que o perfil renderizou\n      48 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\ugc_screenshots.spec.ts:45:22\n\n    Error Context: test-results\\ugc_screenshots-Showcase-d-d3a4b-unitárias-e-permitir-curtir-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir \n    [firefox] › e2e\\ugc_screenshots.spec.ts:32:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-01 — deve renderizar galeria de screenshots comunitárias e permitir curtir",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 21575,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4487,6 +4858,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 5978,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 40836,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/ugc_screenshots.spec.ts -g E2E-UGC-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [firefox] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview (30.4s)\n  x  1 [chromium] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview (30.1s)\n\n\n  1) [chromium] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      52 |     await page.goto('/');\n      53 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 54 |     await profileBtn.click();\n         |                      ^\n      55 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n      56 |   });\n      57 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\ugc_screenshots.spec.ts:54:22\n\n    Error Context: test-results\\ugc_screenshots-Showcase-d-ee082--de-screenshots-com-preview-chromium\\error-context.md\n\n  2) [firefox] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      52 |     await page.goto('/');\n      53 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 54 |     await profileBtn.click();\n         |                      ^\n      55 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n      56 |   });\n      57 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\ugc_screenshots.spec.ts:54:22\n\n    Error Context: test-results\\ugc_screenshots-Showcase-d-ee082--de-screenshots-com-preview-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview \n    [firefox] › e2e\\ugc_screenshots.spec.ts:51:3 › Showcase de Capturas de Tela — UGC (Bloco N) › E2E-UGC-02 — deve abrir modal de upload de screenshots com preview",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 22966,
         "erro": null,
         "origem": "execucao"
       }
@@ -4501,6 +4886,20 @@
         "duracao_ms": 6022,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 43114,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/workshop.spec.ts -g E2E-WKS-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [firefox] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa (30.2s)\n  x  2 [chromium] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa (30.1s)\n\n\n  1) [chromium] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Oficina\"]')\n        - locator resolved to <button title=\"Oficina\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        47 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      53 |     const workshopBtn = page.locator('button[title=\"Oficina\"]');\n      54 |     if (await workshopBtn.isVisible()) {\n    > 55 |       await workshopBtn.click();\n         |                         ^\n      56 |       await expect(page.locator('text=/Workshop de Mods|Oficina da Comunidade/i').first()).toBeVisible();\n      57 |       await expect(page.locator('text=Texturas HD Realistas 4K').first()).toBeVisible();\n      58 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\workshop.spec.ts:55:25\n\n    Error Context: test-results\\workshop-Oficina-da-Comuni-06b70--alternar-inscrição-reativa-chromium\\error-context.md\n\n  2) [firefox] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Oficina\"]')\n        - locator resolved to <button title=\"Oficina\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        44 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      53 |     const workshopBtn = page.locator('button[title=\"Oficina\"]');\n      54 |     if (await workshopBtn.isVisible()) {\n    > 55 |       await workshopBtn.click();\n         |                         ^\n      56 |       await expect(page.locator('text=/Workshop de Mods|Oficina da Comunidade/i').first()).toBeVisible();\n      57 |       await expect(page.locator('text=Texturas HD Realistas 4K').first()).toBeVisible();\n      58 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\workshop.spec.ts:55:25\n\n    Error Context: test-results\\workshop-Oficina-da-Comuni-06b70--alternar-inscrição-reativa-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa \n    [firefox] › e2e\\workshop.spec.ts:42:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-01 — deve listar mods no catálogo da Oficina e alternar inscrição reativa",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 14545,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4511,6 +4910,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 6884,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 34067,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/workshop.spec.ts -g E2E-WKS-02\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil (30.1s)\n  x  2 [firefox] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil (30.2s)\n\n\n  1) [chromium] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      67 |     await page.goto('/');\n      68 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 69 |     await profileBtn.click();\n         |                      ^\n      70 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n      71 |   });\n      72 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\workshop.spec.ts:69:22\n\n    Error Context: test-results\\workshop-Oficina-da-Comuni-42b14-ficina-publicadas-no-perfil-chromium\\error-context.md\n\n  2) [firefox] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      67 |     await page.goto('/');\n      68 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 69 |     await profileBtn.click();\n         |                      ^\n      70 |     await expect(page.locator('text=player_one').first()).toBeVisible();\n      71 |   });\n      72 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\workshop.spec.ts:69:22\n\n    Error Context: test-results\\workshop-Oficina-da-Comuni-42b14-ficina-publicadas-no-perfil-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil \n    [firefox] › e2e\\workshop.spec.ts:66:3 › Oficina da Comunidade — Mods e Criações (Bloco O) › E2E-WKS-02 — deve exibir aba de criações da oficina publicadas no perfil",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 18578,
         "erro": null,
         "origem": "execucao"
       }
@@ -4525,6 +4938,20 @@
         "duracao_ms": 5712,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 19570,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 12834,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4535,6 +4962,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 6297,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 33599,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/public_profile.spec.ts -g E2E-PRV-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções (30.1s)\n  x  1 [firefox] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções (30.2s)\n\n\n  1) [chromium] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      64 |     await page.goto('/');\n      65 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 66 |     await profileBtn.click();\n         |                      ^\n      67 |\n      68 |     const privacyBtn = page.locator('[data-testid=\"btn-open-privacy-modal\"]').first();\n      69 |     if (await privacyBtn.isVisible()) {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\public_profile.spec.ts:66:22\n\n    Error Context: test-results\\public_profile-Perfil-Públ-877bc-rnar-visibilidade-de-seções-chromium\\error-context.md\n\n  2) [firefox] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      64 |     await page.goto('/');\n      65 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 66 |     await profileBtn.click();\n         |                      ^\n      67 |\n      68 |     const privacyBtn = page.locator('[data-testid=\"btn-open-privacy-modal\"]').first();\n      69 |     if (await privacyBtn.isVisible()) {\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\public_profile.spec.ts:66:22\n\n    Error Context: test-results\\public_profile-Perfil-Públ-877bc-rnar-visibilidade-de-seções-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções \n    [firefox] › e2e\\public_profile.spec.ts:55:3 › Perfil Público e Configurações de Privacidade (Bloco P) › E2E-PRV-01 — deve abrir modal de privacidade e alternar visibilidade de seções",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13234,
         "erro": null,
         "origem": "execucao"
       }
@@ -4549,6 +4990,20 @@
         "duracao_ms": 5886,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 33632,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/notifications_search.spec.ts -g E2E-NOT-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [chromium] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown (30.1s)\n  x  2 [firefox] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown (30.2s)\n\n\n  1) [chromium] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[data-testid=\"notifications-button\"]').first()\n        - locator resolved to <button type=\"button\" title=\"Notificações\" aria-label=\"Notificações\" data-testid=\"notifications-button\" class=\"relative p-2 rounded-xl bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-300 hover:text-white transition shadow-sm cursor-pointer flex items-center justify-center w-9 h-9\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        40 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      52 |     // Clica no sininho de notificações\n      53 |     const bellBtn = page.locator('[data-testid=\"notifications-button\"]').first();\n    > 54 |     await bellBtn.click();\n         |                   ^\n      55 |     await expect(page.locator('text=/sarah_connor|amizade|notificação/i').first()).toBeVisible();\n      56 |   });\n      57 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\notifications_search.spec.ts:54:19\n\n    Error Context: test-results\\notifications_search-Notif-f9716--não-lidas-e-abrir-dropdown-chromium\\error-context.md\n\n  2) [firefox] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[data-testid=\"notifications-button\"]').first()\n        - locator resolved to <button type=\"button\" title=\"Notificações\" aria-label=\"Notificações\" data-testid=\"notifications-button\" class=\"relative p-2 rounded-xl bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-300 hover:text-white transition shadow-sm cursor-pointer flex items-center justify-center w-9 h-9\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        51 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      52 |     // Clica no sininho de notificações\n      53 |     const bellBtn = page.locator('[data-testid=\"notifications-button\"]').first();\n    > 54 |     await bellBtn.click();\n         |                   ^\n      55 |     await expect(page.locator('text=/sarah_connor|amizade|notificação/i').first()).toBeVisible();\n      56 |   });\n      57 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\notifications_search.spec.ts:54:19\n\n    Error Context: test-results\\notifications_search-Notif-f9716--não-lidas-e-abrir-dropdown-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown \n    [firefox] › e2e\\notifications_search.spec.ts:49:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-01 — deve exibir badge de notificações não lidas e abrir dropdown",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16225,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4559,6 +5014,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 5841,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 34056,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/notifications_search.spec.ts -g E2E-NOT-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar (30.1s)\n  x  1 [firefox] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar (30.2s)\n\n\n  1) [chromium] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[data-testid=\"notifications-button\"]').first()\n        - locator resolved to <button type=\"button\" title=\"Notificações\" aria-label=\"Notificações\" data-testid=\"notifications-button\" class=\"relative p-2 rounded-xl bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-300 hover:text-white transition shadow-sm cursor-pointer flex items-center justify-center w-9 h-9\">…</button>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting 20ms\n        - waiting for element to be visible, enabled and stable\n        - element is visible, enabled and stable\n        - scrolling into view if needed\n        - done scrolling\n        - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n      - retrying click action\n        - waiting 100ms\n        - waiting for element to be visible, enabled and stable\n        - element is not stable\n      - retrying click action\n        - waiting 100ms\n        52 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      68 |     const bellBtn = page.locator('[data-testid=\"notifications-button\"]').first();\n      69 |     if (await bellBtn.isVisible()) {\n    > 70 |       await bellBtn.click();\n         |                     ^\n      71 |     }\n      72 |   });\n      73 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\notifications_search.spec.ts:70:21\n\n    Error Context: test-results\\notifications_search-Notif-10cbd-ficação-como-lida-ao-clicar-chromium\\error-context.md\n\n  2) [firefox] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[data-testid=\"notifications-button\"]').first()\n        - locator resolved to <button type=\"button\" title=\"Notificações\" aria-label=\"Notificações\" data-testid=\"notifications-button\" class=\"relative p-2 rounded-xl bg-brand-surface border border-gray-700 hover:border-brand-purple text-gray-300 hover:text-white transition shadow-sm cursor-pointer flex items-center justify-center w-9 h-9\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        50 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      68 |     const bellBtn = page.locator('[data-testid=\"notifications-button\"]').first();\n      69 |     if (await bellBtn.isVisible()) {\n    > 70 |       await bellBtn.click();\n         |                     ^\n      71 |     }\n      72 |   });\n      73 |\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\notifications_search.spec.ts:70:21\n\n    Error Context: test-results\\notifications_search-Notif-10cbd-ficação-como-lida-ao-clicar-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar \n    [firefox] › e2e\\notifications_search.spec.ts:58:3 › Notificações Globais e Busca Unificada (Blocos Q, R) › E2E-NOT-02 — deve marcar notificação como lida ao clicar",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13581,
         "erro": null,
         "origem": "execucao"
       }
@@ -4573,6 +5042,20 @@
         "duracao_ms": 7347,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 14087,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 13672,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4583,6 +5066,20 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 7870,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 34175,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/social_chat.spec.ts -g E2E-SOC-01\n\n\nRunning 2 tests using 2 workers\n\n  x  1 [firefox] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente (30.1s)\n  x  2 [chromium] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente (30.1s)\n\n\n  1) [chromium] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title*=\"Comunidade\"]').first()\n        - locator resolved to <button title=\"Comunidade\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        35 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      58 |     const socialBtn = page.locator('button[title*=\"Comunidade\"]').first();\n      59 |     if (await socialBtn.isVisible()) {\n    > 60 |       await socialBtn.click();\n         |                       ^\n      61 |\n      62 |       // Valida amigos listados\n      63 |       await expect(page.locator('text=sarah_connor').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\social_chat.spec.ts:60:23\n\n    Error Context: test-results\\social_chat-Comunidade-Ami-e3bb3-convite-de-amizade-pendente-chromium\\error-context.md\n\n  2) [firefox] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title*=\"Comunidade\"]').first()\n        - locator resolved to <button title=\"Comunidade\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        52 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      58 |     const socialBtn = page.locator('button[title*=\"Comunidade\"]').first();\n      59 |     if (await socialBtn.isVisible()) {\n    > 60 |       await socialBtn.click();\n         |                       ^\n      61 |\n      62 |       // Valida amigos listados\n      63 |       await expect(page.locator('text=sarah_connor').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\social_chat.spec.ts:60:23\n\n    Error Context: test-results\\social_chat-Comunidade-Ami-e3bb3-convite-de-amizade-pendente-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente \n    [firefox] › e2e\\social_chat.spec.ts:47:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-01 — deve listar amigos e processar convite de amizade pendente",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 45420,
         "erro": null,
         "origem": "execucao"
       }
@@ -4597,6 +5094,20 @@
         "duracao_ms": 6179,
         "erro": null,
         "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 33881,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/social_chat.spec.ts -g E2E-SOC-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem (30.1s)\n  x  1 [firefox] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem (30.3s)\n\n\n  1) [chromium] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title*=\"Comunidade\"]').first()\n        - locator resolved to <button title=\"Comunidade\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        36 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      75 |     const socialBtn = page.locator('button[title*=\"Comunidade\"]').first();\n      76 |     if (await socialBtn.isVisible()) {\n    > 77 |       await socialBtn.click();\n         |                       ^\n      78 |       const friendCard = page.locator('text=sarah_connor').first();\n      79 |       if (await friendCard.isVisible()) {\n      80 |         await friendCard.click();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\social_chat.spec.ts:77:23\n\n    Error Context: test-results\\social_chat-Comunidade-Ami-239c0--e-exibir-balão-de-mensagem-chromium\\error-context.md\n\n  2) [firefox] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title*=\"Comunidade\"]').first()\n        - locator resolved to <button title=\"Comunidade\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        52 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      75 |     const socialBtn = page.locator('button[title*=\"Comunidade\"]').first();\n      76 |     if (await socialBtn.isVisible()) {\n    > 77 |       await socialBtn.click();\n         |                       ^\n      78 |       const friendCard = page.locator('text=sarah_connor').first();\n      79 |       if (await friendCard.isVisible()) {\n      80 |         await friendCard.click();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\social_chat.spec.ts:77:23\n\n    Error Context: test-results\\social_chat-Comunidade-Ami-239c0--e-exibir-balão-de-mensagem-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem \n    [firefox] › e2e\\social_chat.spec.ts:73:3 › Comunidade, Amigos e Chat em Tempo Real (Bloco F) › E2E-SOC-02 — deve abrir janela de chat com amigo e exibir balão de mensagem",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 19671,
+        "erro": null,
+        "origem": "execucao"
       }
     ]
   },
@@ -4607,6 +5118,129 @@
         "run_id": "2026-10-03T03:42:26.674686+00:00",
         "status": "pass",
         "duracao_ms": 8788,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 35043,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/master_flow.spec.ts -g E2E-INTEG-01\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST (30.1s)\n  x  1 [firefox] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST (30.1s)\n\n\n  1) [chromium] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Biblioteca\"]')\n        - locator resolved to <button title=\"Biblioteca\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        40 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      113 |     // Passo 2: Navega para Biblioteca e valida posse\n      114 |     const libBtn = page.locator('button[title=\"Biblioteca\"]');\n    > 115 |     await libBtn.click();\n          |                  ^\n      116 |     await expect(page.locator('text=Cyberpunk Odyssey 2088').first()).toBeVisible();\n      117 |\n      118 |     // Passo 3: Navega para o Mercado da Comunidade\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\master_flow.spec.ts:115:18\n\n    Error Context: test-results\\master_flow-Fluxo-Mestre-I-9f03d-ompleta-do-ecossistema-MIST-chromium\\error-context.md\n\n  2) [firefox] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('button[title=\"Biblioteca\"]')\n        - locator resolved to <button title=\"Biblioteca\" class=\"w-full flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl transition group text-gray-400 hover:bg-gray-800 hover:text-white\">…</button>\n      - attempting click action\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n        - waiting 20ms\n        2 × waiting for element to be visible, enabled and stable\n          - element is visible, enabled and stable\n          - scrolling into view if needed\n          - done scrolling\n          - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n        - retrying click action\n          - waiting 100ms\n        49 × waiting for element to be visible, enabled and stable\n           - element is visible, enabled and stable\n           - scrolling into view if needed\n           - done scrolling\n           - <div role=\"dialog\" aria-modal=\"true\" aria-label=\"Autenticação MIST\" class=\"fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in\">…</div> intercepts pointer events\n         - retrying click action\n           - waiting 500ms\n\n\n      113 |     // Passo 2: Navega para Biblioteca e valida posse\n      114 |     const libBtn = page.locator('button[title=\"Biblioteca\"]');\n    > 115 |     await libBtn.click();\n          |                  ^\n      116 |     await expect(page.locator('text=Cyberpunk Odyssey 2088').first()).toBeVisible();\n      117 |\n      118 |     // Passo 3: Navega para o Mercado da Comunidade\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\master_flow.spec.ts:115:18\n\n    Error Context: test-results\\master_flow-Fluxo-Mestre-I-9f03d-ompleta-do-ecossistema-MIST-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST \n    [firefox] › e2e\\master_flow.spec.ts:6:3 › Fluxo Mestre Integrado — Fase 5 Dia 13 (E2E-INTEG-01) › E2E-INTEG-01 — deve percorrer jornada completa do ecossistema MIST",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 25657,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-PROF-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T01:23:44.899059+00:00",
+        "status": "pass",
+        "duracao_ms": 14574,
+        "erro": null,
+        "origem": "validacao"
+      },
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 38240,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/auth.spec.ts -g E2E-PROF-02\n\n\nRunning 2 tests using 2 workers\n\n  x  2 [chromium] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado (30.1s)\n  x  1 [firefox] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado (30.3s)\n\n\n  1) [chromium] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n        - locator resolved to <div title=\"Ver Perfil\" class=\"flex items-center cursor-pointer transition flex-1 rounded-xl p-1 hover:bg-gray-800/50\">…</div>\n      - attempting click action\n        - waiting for element to be visible, enabled and stable\n      - element was detached from the DOM, retrying\n\n\n      163 |     // Navega para a página de Perfil enquanto logado\n      164 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 165 |     await profileBtn.click();\n          |                      ^\n      166 |\n      167 |     // Valida que está na tela de Perfil do usuário logado\n      168 |     await expect(page.locator('text=gamer_pro').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:165:22\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-c6bd6-rfil-sem-exibir-mock-legado-chromium\\error-context.md\n\n  2) [firefox] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado \n\n    Test timeout of 30000ms exceeded.\n\n    Error: locator.click: Test timeout of 30000ms exceeded.\n    Call log:\n      - waiting for locator('[title=\"Ver Perfil\"]').first()\n\n\n      163 |     // Navega para a página de Perfil enquanto logado\n      164 |     const profileBtn = page.locator('[title=\"Ver Perfil\"]').first();\n    > 165 |     await profileBtn.click();\n          |                      ^\n      166 |\n      167 |     // Valida que está na tela de Perfil do usuário logado\n      168 |     await expect(page.locator('text=gamer_pro').first()).toBeVisible();\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\auth.spec.ts:165:22\n\n    Error Context: test-results\\auth-Autenticação-e-Gestão-c6bd6-rfil-sem-exibir-mock-legado-firefox\\error-context.md\n\n  2 failed\n    [chromium] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado \n    [firefox] › e2e\\auth.spec.ts:145:3 › Autenticação e Gestão de Sessão (Bloco B) › E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 16718,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-DISCLAIMER-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 26139,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 20035,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-ABT-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "fail",
+        "duracao_ms": 55621,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/about_reviews.spec.ts -g E2E-ABT-01\n\n\nRunning 6 tests using 6 workers\n\n  ok 2 [chromium] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub (1.7s)\n  ok 3 [chromium] › e2e\\about_reviews.spec.ts:117:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-02 — deve autenticar com usuário de teste mkritli, preencher e enviar review do sistema com sucesso (1.7s)\n  ok 5 [firefox] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub (3.4s)\n  ok 6 [firefox] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login (6.4s)\n  ok 4 [firefox] › e2e\\about_reviews.spec.ts:117:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-02 — deve autenticar com usuário de teste mkritli, preencher e enviar review do sistema com sucesso (5.5s)\n  x  1 [chromium] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login (35.1s)\n\n\n  1) [chromium] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login \n\n    Test timeout of 30000ms exceeded.\n\n    Error: page.goto: net::ERR_ABORTED; maybe frame was detached?\n    Call log:\n      - navigating to \"http://localhost:3000/\", waiting until \"load\"\n\n\n      90 |     });\n      91 |\n    > 92 |     await page.goto('/');\n         |                ^\n      93 |\n      94 |     // 1. Clica no link \"Reviews do MIST\" no rodapé\n      95 |     const footerReviewsLink = page.locator('[data-testid=\"footer-link-reviews\"]');\n        at E:\\Windows-Linux\\Semestre_5\\Desafios_de_IA\\topicosIV\\frontend\\e2e\\about_reviews.spec.ts:92:16\n\n    Error Context: test-results\\about_reviews-Sobre-o-MIST-b53fc-aviso-com-atalho-para-login-chromium\\error-context.md\n\n  1 failed\n    [chromium] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login \n  5 passed (54.2s)",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "fail",
+        "duracao_ms": 46629,
+        "erro": "> mist-frontend@1.0.0 test:e2e\n> playwright test e2e/about_reviews.spec.ts -g E2E-ABT-01\n\n\nRunning 6 tests using 6 workers\n\n  ok 1 [chromium] › e2e\\about_reviews.spec.ts:117:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-02 — deve autenticar com usuário de teste mkritli, preencher e enviar review do sistema com sucesso (2.7s)\n  ok 3 [firefox] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub (3.1s)\n  ok 6 [firefox] › e2e\\about_reviews.spec.ts:117:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-02 — deve autenticar com usuário de teste mkritli, preencher e enviar review do sistema com sucesso (7.2s)\n  ok 5 [firefox] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login (7.8s)\n  ok 4 [chromium] › e2e\\about_reviews.spec.ts:74:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-SYSREV-01 — deve navegar para Reviews do MIST como visitante e exibir aviso com atalho para login (20.9s)\n  x  2 [chromium] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub (31.6s)\n\n\n  1) [chromium] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub \n\n    Test timeout of 30000ms exceeded.\n\n    Error Context: test-results\\about_reviews-Sobre-o-MIST-ba89a--do-README-e-link-do-GitHub-chromium\\error-context.md\n\n  1 failed\n    [chromium] › e2e\\about_reviews.spec.ts:49:3 › Sobre o MIST e Reviews da Plataforma (E2E-ABT-01 & E2E-SYSREV-01 / 02) › E2E-ABT-01 — deve navegar para a página Sobre pelo rodapé e validar informações do README e link do GitHub \n  5 passed (45.6s)",
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:48:15.239313+00:00",
+        "status": "pass",
+        "duracao_ms": 31858,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-SYSREV-01": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 58786,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 25603,
+        "erro": null,
+        "origem": "execucao"
+      }
+    ]
+  },
+  "E2E-SYSREV-02": {
+    "runner": "playwright",
+    "historico": [
+      {
+        "run_id": "2026-10-09T02:03:58.480933+00:00",
+        "status": "pass",
+        "duracao_ms": 20587,
+        "erro": null,
+        "origem": "execucao"
+      },
+      {
+        "run_id": "2026-10-09T11:26:28.433942+00:00",
+        "status": "pass",
+        "duracao_ms": 18977,
         "erro": null,
         "origem": "execucao"
       }

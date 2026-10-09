@@ -69,5 +69,27 @@ export async function setupAuthenticatedSession(page: Page, options: MockUserOpt
     });
   });
 
+  await page.route('**/api/library/achievements/recent*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
+    });
+  });
+
+  await page.route('**/api/cards/level-progress*', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        level: options.level ?? 2,
+        current_level: options.level ?? 2,
+        current_xp: 100,
+        next_level_xp: 200,
+        progress_percent: 50,
+      }),
+    });
+  });
+
   return user;
 }

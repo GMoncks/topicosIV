@@ -25,7 +25,7 @@ http_client: Optional[httpx.AsyncClient] = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global http_client
-    http_client = httpx.AsyncClient(timeout=15.0)
+    http_client = httpx.AsyncClient(timeout=30.0)
     yield
     await http_client.aclose()
 
@@ -280,6 +280,8 @@ async def proxy_store(path: str, request: Request):
         try:
             user_payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
             forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+            if "username" in user_payload:
+                forward_headers["X-User-Username"] = str(user_payload["username"])
             forward_headers["X-User-Token"] = token
         except Exception:
             pass
@@ -306,6 +308,14 @@ async def proxy_store(path: str, request: Request):
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={"detail": "Serviço de loja temporariamente indisponível"}
         )
+
+
+@app.api_route("/api/system-reviews", methods=["GET", "POST", "OPTIONS"])
+@app.api_route("/api/system-reviews/{path:path}", methods=["GET", "POST", "OPTIONS"])
+async def proxy_system_reviews(request: Request, path: str = ""):
+    """Proxy reverso para avaliações e feedback da plataforma MIST no store-service."""
+    subpath = f"/{path}" if path else ""
+    return await proxy_store(f"system-reviews{subpath}", request)
 
 
 @app.api_route("/api/library/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
@@ -569,7 +579,8 @@ async def proxy_ugc(path: str, request: Request):
             url=target_url,
             headers=forward_headers,
             params=request.query_params,
-            content=body
+            content=body,
+            timeout=60.0
         )
         return Response(
             content=upstream_response.content,

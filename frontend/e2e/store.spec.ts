@@ -194,6 +194,50 @@ test.describe('Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S)', () => {
       });
     });
 
+    let reviewSubmitted = false;
+    await page.route('**/api/store/games/*/reviews*', async (route) => {
+      if (route.request().method() === 'POST') {
+        reviewSubmitted = true;
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            id: 99,
+            user_id: 1,
+            game_id: 1,
+            text: 'Excelente jogo, recomendo muito!',
+            is_recommended: true,
+            playtime_at_review: 180,
+            helpful_count: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(
+            reviewSubmitted
+              ? [
+                  {
+                    id: 99,
+                    user_id: 1,
+                    game_id: 1,
+                    text: 'Excelente jogo, recomendo muito!',
+                    is_recommended: true,
+                    playtime_at_review: 180,
+                    helpful_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  },
+                ]
+              : []
+          ),
+        });
+      }
+    });
+
     await page.goto('/');
     const gameCard = page.locator('h4', { hasText: 'Cyberpunk Odyssey 2088' }).first();
     await expect(gameCard).toBeVisible();
@@ -213,8 +257,8 @@ test.describe('Loja, Catálogo, Reviews e AI Curator (Blocos C, H, S)', () => {
     await expect(textarea).toBeVisible();
     await textarea.fill('Excelente jogo, recomendo muito!');
 
-    const publishBtn = page.getByRole('button', { name: /Publicar avaliação/i }).first();
-    await expect(publishBtn).toBeEnabled();
+    const publishBtn = page.locator('button', { hasText: /Publicar avaliação|Atualizar avaliação/i }).last();
+    await expect(publishBtn).toBeEnabled({ timeout: 5000 });
     await publishBtn.click();
 
     // Valida que o modal de formulário fechou ou que o review aparece na lista

@@ -142,6 +142,43 @@ test.describe('Autenticação e Gestão de Sessão (Bloco B)', () => {
     await expect(page.locator('text=Perfil atualizado com sucesso!')).toBeVisible();
   });
 
+  test('E2E-PROF-02 — deve redirecionar para a loja ao encerrar sessão a partir da página de perfil sem exibir mock legado', async ({ page }) => {
+    await setupAuthenticatedSession(page, { username: 'gamer_pro', wallet_balance: 200 });
+
+    await page.route('**/api/me/inventory*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], total: 0 }) });
+    });
+    await page.route('**/api/cards/level-progress*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ level: 1, current_xp_in_level: 0, xp_needed_in_level: 100, progress_percent: 0 }) });
+    });
+    await page.route('**/api/social/feed*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    });
+    await page.route('**/api/ugc/items*', async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], total: 0 }) });
+    });
+
+    await page.goto('/');
+
+    // Navega para a página de Perfil enquanto logado
+    const profileBtn = page.locator('[title="Ver Perfil"]').first();
+    await profileBtn.click();
+
+    // Valida que está na tela de Perfil do usuário logado
+    await expect(page.locator('text=gamer_pro').first()).toBeVisible();
+
+    // Clica no botão de logout da Sidebar
+    const logoutBtn = page.locator('button[title="Encerrar Sessão"]');
+    await logoutBtn.click();
+
+    // Valida que o usuário foi deslogado e redirecionado para a Loja
+    await expect(page.locator('button', { hasText: /Entrar na Conta|Iniciar Sessão/i }).first()).toBeVisible();
+
+    // Assegura que nenhum dado legado do mock hardcoded (ggtorres2001 / Acumulador Adepto) é renderizado
+    await expect(page.locator('text=ggtorres2001')).not.toBeVisible();
+    await expect(page.locator('text=Acumulador Adepto')).not.toBeVisible();
+  });
+
   test('E2E-WALLET-01 — deve abrir AddFundsModal, selecionar recarga e creditar saldo instantaneamente', async ({ page }) => {
     await setupAuthenticatedSession(page, { wallet_balance: 200.0 });
 

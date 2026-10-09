@@ -448,5 +448,235 @@ Arquivo dedicado ao rastreamento de prompts e decisões técnicas relacionadas a
 - Modificado: `frontend/Dockerfile` (Linha 2, injeção de `$BUILDPLATFORM`).
 - Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
 
+---
+
+## 2026-10-07 — Prompt 19
+
+**Prompt do usuário:**
+
+> Fiz as alterações na publicação e dessa vez consegui criar o container no meu home-server. Entretanto, notei que o site não está funcionando quando pesquiso pela URL que defini. Para tentar debbugar, acionei o Live Logs do Tunnel e ao dar refresh na página, obtive o seguinte log. Quais poderiam ser as causas desse erro? Pode ser pelo fato de eu ter que ter usado o container cloudflared-web para funcionar? Antes de usar o conatainer cloudflared, sequer consta como ativo o túnel no meu painel da cloudflare *(Logs do Cloudflare exibindo erro DNS "no such host" na busca pelo originService `http://frontend:80`)*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico do Erro de DNS (`no such host`):**
+   - Confirmada a hipótese do usuário: a falha ocorreu porque o daemon de tunelamento estava operando a partir do app nativo do CasaOS (`cloudflared-web`), o qual opera em uma bridge network do Docker distinta da rede do compose do sistema (`mist-network`). Consequentemente, o túnel era incapaz de resolver o alias de serviço interno (`frontend` ou `mist-frontend`).
+2. **Diagnóstico da Falha do Túnel Integrado:**
+   - Explicado que a falha de ativação do container de túnel interno do compose (declarado no Prompt 9) decorre de um comportamento anômalo conhecido da UI de importação do CasaOS, que rotineiramente omite a diretiva `command: tunnel run` durante o parsing do YAML para a interface visual.
+3. **Planos de Resolução Propostos:**
+   - **Caminho A (Manutenção do Túnel Externo CasaOS):** Requer a modificação do conceito Zero Trust rígido estabelecido inicialmente. Exige mapear as portas (`3000:80`) no host OS via UI do CasaOS e ajustar a rota no Cloudflare Zero Trust Dashboard para apontar para a interface de rede do host (`http://<IP-DO-PI>:3000`).
+   - **Caminho B (Reativação do Túnel Integrado):** Manutenção do ecossistema Zero Trust. Exige o desligamento do daemon externo, reconfiguração manual do `Container Command` para incluir `tunnel run` na UI do `mist-cloudflared` dentro do app MIST, e apontar o dashboard do Cloudflare para o hostname interno (`http://mist-frontend:80`).
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Consultoria de DevOps para redes Docker Isoladas em ambiente CasaOS.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 20
+
+**Prompt do usuário:**
+
+> Não há a rede "mist-network" pura e simplesmente. Devo setar a lacuna Rede do container cloudflare com algum desses? Ou todos devem ser setados com uma rede? Faça o tutorial completo de instação do docker usando o arquivo deploy_watchtower.txt que você criou para mim, caso este ainda seja válido *(Acompanhado de screenshot listando as redes disponíveis, revelando o prefixo `exquisite_rafael_mist-network`)*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Esclarecimento sobre Nomenclatura de Redes Compose no CasaOS:**
+   - Explicado que o Docker Compose prepende o "Project Name" aos recursos criados (redes e volumes). Como o compose foi importado via UI sem a diretiva top-level `name:`, o CasaOS gerou um slug aleatório (`exquisite_rafael`) e nomeou a rede como `exquisite_rafael_mist-network`.
+   - Instruído o usuário a assinalar todos os containers do escopo (inclusive o Cloudflared) nesta rede prefixada exata para garantir a resolução de DNS interno (`mist-frontend:80`).
+2. **Consolidação do Tutorial de Deploy (Standard Operating Procedure):**
+   - Compilado um "Tutorial Definitivo" incorporando todas as descobertas de bugs de parsing da UI do CasaOS enfrentados na sessão:
+     1. Importação do YAML.
+     2. Limpeza manual de interpolação bash (`${VAR}`) dos environment variables.
+     3. Resolução do bug de serialização de volumes (substituição de `[object Object]` por Absolute Bind Mounts `/DATA/AppData/mist/...`).
+     4. Correção da omissão da flag de execução do túnel (inserção manual de `tunnel run` no *Container Command*).
+     5. Configuração da rota reversa no Cloudflare Zero Trust (Target: `http://mist-frontend:80`).
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Criação e consolidação de Standard Operating Procedure (SOP) para deploy no ecossistema de destino do usuário.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 21
+
+**Prompt do usuário:**
+
+> Tive alguns problemas com o container MIST, uma vez que o watchtower parece que estava configurado sem restrições, e por isso atualizou todos os demais containers do meu CasaOS. Sete para que somente os containers do MIST sejam atualizados no periodo. Além disso, aproveitando, revise se não tem mais nenhum problema nas configurações do docker compose. Tendo feita a desinstalação desse container (maldito), devo apagar as imagens antigas do MIST ou apenas criar um novo container é seguro?
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Restrição de Escopo do Watchtower:**
+   - Detectado que a configuração padrão anterior (`WATCHTOWER_LABEL_ENABLE=false`) permitia que o Watchtower atuasse globalmente sob o daemon do Docker local, causando atualizações indesejadas em serviços de terceiros do host (CasaOS).
+   - Implementado o controle de escopo estrito via labels: alterada a variável `WATCHTOWER_LABEL_ENABLE` para `true` e injetada a tag `labels: - "com.centurylinklabs.watchtower.enable=true"` individualmente em todos os 9 containers do projeto MIST (inclusive Cloudflared, mas não no próprio Watchtower para evitar auto-ciclagens indesejadas).
+2. **Revisão e Otimização do Compose YAML:**
+   - Foi gerado e entregue um arquivo `docker-compose.yml` consolidado. O arquivo novo já carrega explicitamente os Absolute Bind Mounts (`/DATA/AppData/mist/...`) na raiz dos volumes, mitigando definitivamente a ocorrência do erro visual `[object Object]` do importador do CasaOS, otimizando o SOP do usuário.
+3. **Gestão de Artefatos Órfãos:**
+   - Explicado que a criação de um novo container sobressalente é segura e utiliza eficientemente as camadas de cache das imagens pré-existentes localmente.
+   - Esclarecido que exclusão manual de imagens órfãs/antigas não é mandatória, visto que a rotina automatizada (`WATCHTOWER_CLEANUP=true`) irá iterar e realizar *prune* dos manifests obsoletos a cada atualização, prevenindo degradação de storage do Raspberry Pi.
+
+**Resumo das saídas:**
+
+- Refatoração do `docker-compose.yml` (entregue no chat) com políticas rigorosas de escopo de CD.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 22
+
+**Prompt do usuário:**
+
+> Parece que não está funcionando mais uma vez, mas dessa vez não quebrou nada além do próprio container, que parece estar restartando continuamente. Segue o yaml do container criado *(Acompanhado do export YAML do CasaOS contendo chaves como `network_mode: bridge` em todos os serviços e chaves de API expostas)*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico do Restart Loop:**
+   - Analisado o manifesto exportado pelo CasaOS e detectado o root cause: todos os serviços foram instanciados com a diretiva `network_mode: bridge`.
+   - Explicado ao usuário a limitação técnica fundamental do daemon Docker: a rede `bridge` default (`docker0`) não provê resolução de DNS interno (Embedded DNS server). 
+   - Concluído que os microserviços (como o `gateway` e o `store-service`) falharam ao tentar resolver os hostnames de suas dependências (ex: `http://auth-service:8001`), resultando em erros fatais de networking (`connection refused` ou `name not known`) e consequentes restarts contínuos gerenciados pela flag `unless-stopped`.
+2. **Resolução de Infraestrutura via UI:**
+   - Orientado o usuário a acessar as configurações do app no CasaOS e transicionar individualmente o campo "Network" de todos os 9 containers (saindo de `bridge` genérico para a custom bridge network criada no namespace do projeto, ex: `harmonious_amor_default`).
+   - Reafirmado que a adoção de uma Custom Bridge Network restaurará a visibilidade e o DNS Service Discovery entre os microserviços e o Cloudflare Tunnel.
+3. **Auditoria Geral:**
+   - Revisados positivamente os apontamentos anteriores do usuário no YAML: Absolute Bind Mounts de volume devidamente configurados; política de scope restrito de CD (`WATCHTOWER_LABEL_ENABLE=true` e os `labels` presentes) aplicada de forma impecável.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Resolução de Service Discovery DNS em redes Docker.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 23
+
+**Prompt do usuário:**
+
+> Simplesmente não há essa rede. Pode não existir justamente porque criei o container com bridge selecionado, e ele não "se deu conta" de criar a nova rede? *(Acompanhado de screenshot listando as redes disponíveis, revelando uma rede inusitada chamada `auth-service`)*
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Diagnóstico de Anomalia do CasaOS Parser:**
+   - O usuário reportou a ausência da rede `harmonious_amor...` ou `mist-network`.
+   - Analisando o screenshot, detectou-se que o parser visual do CasaOS batizou a rede gerada para o compose com o nome do primeiro serviço declarado no arquivo YAML (`auth-service`). Isso é comprovado pelo snippet de metadados `x-casaos:` exportado no prompt anterior, onde `title.en_us` foi setado como `auth-service`.
+2. **Workaround Pragmático:**
+   - Esclarecido ao usuário que a rede listada como `auth-service` é, na verdade, a Custom Bridge Network designada para a stack inteira.
+   - Instruído o usuário a adotar essa rede para todos os 9 containers da aplicação. Apesar da nomenclatura semanticamente incorreta/confusa gerada pela UI, tecnicamente ela é uma user-defined bridge network isolada, o que garante a ativação do Embedded DNS Server (127.0.0.11) necessário para a resolução de nomes (Service Discovery) exigida pela arquitetura de microserviços do MIST.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Troubleshooting de idiossincrasias/glitches da plataforma hospedeira CasaOS.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 24
+
+**Prompt do usuário:**
+
+> Garantidamente esse auth-service não pode ser de outro container? Eu tenho uma série de apps no meu home-server
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Reavaliação de Segurança e UI Ambiguity:**
+   - O usuário demonstrou justa desconfiança em utilizar a opção `auth-service` da dropdown list, temendo conflito com outros apps do servidor.
+   - Constatou-se que o CasaOS frequentemente lista instâncias de containers ativas na mesma dropdown de redes (referente ao driver `network_mode: container:<name>`). Assinalar essa opção poderia causar atachamento de network namespace em vez de criar um Virtual Switch (Bridge) adequado, o que não resolveria o problema de DNS Service Discovery para o cluster inteiro.
+2. **Workaround Definitivo via CLI:**
+   - Abandonou-se a dependência no parser falho da interface visual do CasaOS para a criação de redes.
+   - Orientado o usuário a provisionar explicitamente a rede desejada via Docker CLI no host (`docker network create mist-network`).
+   - Essa manobra garante a criação de uma `user-defined bridge` pura, isolada e com resolução de DNS (127.0.0.11) habilitada, sem contaminação de prefixos ou riscos de colisão com outros workloads do home-server. Em seguida, a UI do CasaOS apenas consumirá a rede recém-criada.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Prevenção de conflito de redes Docker.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-07 — Prompt 25
+
+**Prompt do usuário:**
+
+> Não resolveu nosso problema inicial de dar erro Error 1033 ao tentar acessar a URL. Caso não haja riscos em seguir com o método A de usar o container cloudflared que eu já tinha e já funcionava, voltemos a essa ideia. Reformule e liste novamente as mudanças que eu teria que fazer para seguir com o método A
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Avaliação de Risco e Fallback Estratégico:**
+   - O usuário reportou o *Error 1033* (Argo Tunnel error indicando falha de roteamento interno para o *origin service*), evidenciando que os glitches de rede do CasaOS comprometeram irremediavelmente a integração do daemon do túnel in-compose.
+   - Analisada a solicitação de *rollback* para o "Caminho A" (utilizar o app `cloudflared-web` nativo do CasaOS em bridge isolada).
+   - Concluído que, para um ambiente homelab, o trade-off de segurança é negligenciável: a exposição da porta via *Host Port Binding* torna a interface acessível via LAN (WLAN local), mas mantém a barreira de ingressamento externo (WAN) estritamente protegida pelos túneis da Cloudflare.
+2. **Definição do SOP (Standard Operating Procedure) do Caminho A:**
+   - **Remoção de Conflitos:** Orientado o expurgo (`rm`) do container `mist-cloudflared` defeituoso do compose.
+   - **Port Binding:** Instruído o mapeamento explícito de portas no container `mist-frontend` via UI do CasaOS (Host: `3000` -> Container: `80`).
+   - **Roteamento Zero Trust:** Reconfiguração do *Public Hostname* no dashboard da Cloudflare, substituindo o DNS interno do Docker (`http://mist-frontend:80`) pelo roteamento via IP da LAN local do Raspberry Pi (`http://<LAN_IP>:3000`).
+
+**Resumo das saídas:**
+
+- Nenhuma modificação de código no repositório. Pivotagem arquitetural (Fallback) documentada e executada para estabilização de infraestrutura.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-08 — Prompt 26
+
+**Prompt do usuário:**
+
+> Realizei o deploy do MIST na internet via cloudflare tunnel pelo meu Home-server. Entretanto, acabei de verificar que o MIST não está realizando o download do "jogo" na minha máquina, somente dizendo que foi baixado.
+> Revise se, com base na implementação seguida no MIST_deploy.md e no estado atual do sistema em termos de mecanismos relacionados com o download do jogo, não há algo que impeça o correto envio do jogo para a máquina do cliente
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Auditoria da Arquitetura de Download vs Catálogo:**
+   - O ecossistema MIST possui 25 jogos no catálogo. Desses, 22 são jogos mockados/simulados para enriquecimento de portfólio acadêmico (`game_file = None`), sem binário real no backend.
+   - Apenas 3 títulos possuem pacotes executáveis reais desenvolvidos pela MIST Studios: `MIST Forca` (ID 14), `MIST Labirinto` (ID 15) e `MIST Quiz` (ID 16).
+2. **Identificação do Mecanismo de Download e Injeção de Bloqueios:**
+   - Em [`Library.tsx`](../frontend/src/pages/Library.tsx), ao clicar em "Baixar":
+     - Dispara o evento `mist:start-download` (a [`DownloadBar.tsx`](../frontend/src/components/DownloadBar.tsx) inicia animação de 0% a 100%, emite som/toast e marca o jogo como instalado).
+     - Paralelamente, em bloco `try/catch`, invoca `storeApi.downloadGamePackage(item.game_id)` para obter o `.zip`.
+     - Caso o backend retorne HTTP 400 (para os 22 jogos não-MIST) ou se a chamada falhar, o bloco `catch` suprime o erro silenciosamente via `console.info`, mantendo a simulação visual intacta. Isso causa exatamente o sintoma reportado: a interface avisa que foi baixado sem que nenhum arquivo físico caia no computador.
+3. **Auditoria de Rotas de Rede e Docker Proxy (Deploy CasaOS/Cloudflare):**
+   - No frontend: `downloadGamePackage` faz `fetch('/api/games/${gameId}/download')`.
+   - No Nginx: `/api/` é redirecionado para `http://gateway:8000`.
+   - No Gateway: `@app.api_route("/api/games/{path:path}")` repassa para `http://store-service:8002/games/{path}`.
+   - No Store Service: `@router.get("/games/{game_id}/download")` monta dinamicamente o `.zip` e envia como stream `application/zip`.
+   - Conclusão: A cadeia de infraestrutura e roteamento do deploy está íntegra para os títulos reais. O sintoma ocorre primariamente pelo teste ter sido feito em um jogo do catálogo comercial simulado ou devido a bloqueios de download em segundo plano no navegador web.
+
+**Resumo das saídas:**
+
+- Nenhuma modificação no código-fonte necessária. Realizada auditoria arquitetural e diagnóstico técnico da infraestrutura de deploy e do fluxo de downloads.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+---
+
+## 2026-10-08 — Prompt 27
+
+**Prompt do usuário:**
+
+> Para qualquer um dos jogos MIST, o resultado é o mesmo em essencia:
+> - 404 Not Found
+> - https://mist.biomimetics.com.br/api/games/16/download
+> - "detail": "Arquivo fonte do jogo 'games/quiz.py' não foi encontrado no servidor."
+> - Jogo 'MIST Forca' não possui pacote binário no backend; download simulado mantido.
+> 
+> Talvez os jogos não tenham sido transportados para o servidor, não é possível? Caso seja isso, onde devo salvar os jogos?
+
+**Decisões arquiteturais e técnicas:**
+
+1. **Identificação da Causa Raiz (.gitignore ignorando código dos jogos):**
+   - O arquivo `.gitignore` do repositório contém a regra abrangente `services/*/app/data/`.
+   - Como os scripts dos jogos (`quiz.py`, `forca.py`, `labirinto.py`) e o módulo `mist_sdk.py` foram colocados dentro de `services/store-service/app/data/games/` e `services/store-service/app/data/`, o Git nunca os rastreou no repositório.
+   - Consequentemente, quando o GitHub Actions executou o workflow de release (`release.yml`), os arquivos de jogo **não existiam no repositório remoto** e não foram incluídos na imagem Docker `mist-store-service:latest`.
+2. **Impacto Adicional do Volume no CasaOS:**
+   - No `docker-compose.yml`, o `store-service` monta um volume de persistência em `/app/app/data` (mapeado para `/DATA/AppData/mist/store_data` no host CasaOS). Qualquer diretório montado sobrescreve o conteúdo da imagem com o conteúdo da pasta do host.
+3. **Estratégia de Resolução:**
+   - **Solução Definitiva no Repositório:** Designorar os arquivos de código estáticos no `.gitignore` com exceções `!services/store-service/app/data/games/` e `!services/store-service/app/data/mist_sdk.py`, commitando-os no repositório para serem incorporados automaticamente nos futuros builds de Docker via CI/CD.
+   - **Solução Imediata no Home-Server (sem rebuild):** Copiar a pasta `games/` e o arquivo `mist_sdk.py` diretamente para a pasta de dados do volume no host (`/DATA/AppData/mist/store_data/`), onde o `store-service` busca os arquivos.
+
+**Resumo das saídas:**
+
+- Identificada a causa raiz exata do erro 404.
+- Atualizado: [`prompts/MIST_deploy.md`](MIST_deploy.md).
+
+
 
 

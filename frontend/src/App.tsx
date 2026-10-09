@@ -20,36 +20,40 @@ import { Profile } from './pages/Profile';
 import { PublicProfile } from './pages/PublicProfile';
 import { Login } from './pages/Login';
 import { Workshop } from './pages/Workshop';
+import { About } from './pages/About';
+import { Reviews } from './pages/Reviews';
+import { Footer } from './components/Footer';
 import { NavigationTab, UserProfile } from './types';
 import { storeApi, libraryApi } from './api/client';
 
 
 const defaultGuestUser: UserProfile = {
   id: 0,
-  username: 'ggtorres2001',
-  realName: 'Gabriel Torres',
-  location: 'Rio Grande do Sul, Brazil',
-  level: 7,
-  avatarText: 'GG',
-  avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=100&q=80',
-  status: 'Online',
+  username: 'Visitante',
+  realName: 'Visitante',
+  bio: '',
+  location: '',
+  level: 1,
+  avatarText: 'VI',
+  avatarUrl: '',
+  status: 'Offline',
   walletBalance: 0.00,
   pointsBalance: 0,
   featuredBadge: {
-    title: 'Acumulador Adepto',
-    xp: 190,
-    icon: 'fa-certificate'
+    title: '',
+    xp: 0,
+    icon: 'fa-user'
   },
-  recentPlaytimeWeeks: 8.7,
+  recentPlaytimeWeeks: 0,
   recentGames: [],
   badges: [],
   stats: {
-    gamesCount: 22,
-    inventoryCount: 45,
-    screenshotsCount: 18,
-    videosCount: 3,
-    workshopCount: 1,
-    reviewsCount: 12
+    gamesCount: 0,
+    inventoryCount: 0,
+    screenshotsCount: 0,
+    videosCount: 0,
+    workshopCount: 0,
+    reviewsCount: 0
   }
 };
 
@@ -72,6 +76,20 @@ function AppContent() {
   const lastAchievementCheckRef = useRef<string>(new Date().toISOString());
 
   const { user, logout, openAuthModal, updateUserBalance, isAuthenticated } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    if (activeTab === 'profile') {
+      setActiveTab('store');
+    }
+  };
+
+  // Redireciona para a loja se a sessão for encerrada enquanto estiver na página de perfil
+  useEffect(() => {
+    if (!isAuthenticated && activeTab === 'profile') {
+      setActiveTab('store');
+    }
+  }, [isAuthenticated, activeTab]);
 
   // Listener para navegação ao perfil público de usuários ao clicar em seus nomes
   useEffect(() => {
@@ -277,7 +295,7 @@ function AppContent() {
         onSelectTab={setActiveTab}
         user={user}
         onOpenAuth={() => openAuthModal('login')}
-        onLogout={logout}
+        onLogout={handleLogout}
       />
 
       {/* Área Principal Scrollável */}
@@ -355,9 +373,16 @@ function AppContent() {
 
           {activeTab === 'workshop' && <Workshop />}
 
+          {activeTab === 'about' && <About />}
+
+          {activeTab === 'reviews' && <Reviews />}
+
           {activeTab === 'login' && (
             <Login onLoginSuccess={() => setActiveTab('store')} />
           )}
+
+          {/* Rodapé Global do Sistema */}
+          <Footer onNavigate={(tab) => setActiveTab(tab)} />
         </div>
 
         {/* Componente Flutuante de Download */}

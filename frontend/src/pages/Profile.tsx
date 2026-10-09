@@ -61,22 +61,31 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
   const [isLoadingGames, setIsLoadingGames] = useState<boolean>(false);
   const [isLoadingActivities, setIsLoadingActivities] = useState<boolean>(false);
 
-  const currentUser = authUser || propUser || {
-    username: 'ggtorres2001',
-    realName: 'Gabriel Torres',
-    location: 'Rio Grande do Sul, Brazil',
-    level: 7,
-    avatarText: 'GG',
-    avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=300&q=80',
+  // Redireciona para a loja caso o perfil seja acessado sem usuário autenticado
+  useEffect(() => {
+    if (!authUser && !propUser) {
+      onNavigate?.('store');
+    }
+  }, [authUser, propUser, onNavigate]);
+
+  const fallbackGuestUser: UserProfile = {
+    id: 0,
+    username: 'Visitante',
+    realName: 'Visitante',
+    bio: '',
+    location: '',
+    level: 1,
+    avatarText: 'VI',
+    avatarUrl: '',
     avatarFrameUrl: undefined,
     profileBackgroundUrl: undefined,
-    status: 'Online' as const,
-    walletBalance: 200.0,
-    pointsBalance: 500,
+    status: 'Offline',
+    walletBalance: 0.0,
+    pointsBalance: 0,
     featuredBadge: {
-      title: 'Acumulador Adepto',
-      xp: 190,
-      icon: 'fa-certificate'
+      title: '',
+      xp: 0,
+      icon: 'fa-user'
     },
     recentPlaytimeWeeks: 0,
     recentGames: [],
@@ -84,12 +93,14 @@ export const Profile: React.FC<ProfileProps> = ({ user: propUser, onNavigate }) 
     stats: {
       gamesCount: 0,
       inventoryCount: 0,
-      screenshotsCount: 18,
-      videosCount: 3,
-      workshopCount: 1,
-      reviewsCount: 12
+      screenshotsCount: 0,
+      videosCount: 0,
+      workshopCount: 0,
+      reviewsCount: 0
     }
   };
+
+  const currentUser: UserProfile = authUser || propUser || fallbackGuestUser;
 
   useEffect(() => {
     async function loadUserWorkshop() {
