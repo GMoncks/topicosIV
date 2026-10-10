@@ -1,6 +1,8 @@
 import asyncio
 import os
+from collections import defaultdict
 from contextlib import asynccontextmanager
+from time import time
 from typing import Optional
 import httpx
 import jwt
@@ -21,6 +23,55 @@ from app.config import (
 
 http_client: Optional[httpx.AsyncClient] = None
 
+# Rate Limiter em memória para proteção contra brute-force e criação massiva de contas (F3)
+_login_attempts_min = defaultdict(list)
+_login_attempts_day = defaultdict(list)
+_register_attempts_day = defaultdict(list)
+
+
+def _is_rate_limited(ip: str, path: str, method: str) -> Optional[int]:
+    """
+    Retorna retry_after em segundos caso o limite seja ultrapassado, ou None se permitido.
+    """
+    if method != "POST":
+        return None
+    now = time()
+    clean_ip = ip.strip()
+
+    if path == "register" or path.endswith("/register"):
+        window = 86400  # 1 dia
+        limit = 5       # 5 cadastros por dia por IP
+        history = [t for t in _register_attempts_day[clean_ip] if now - t < window]
+        _register_attempts_day[clean_ip] = history
+        if len(history) >= limit:
+            retry_after = int(window - (now - history[0])) if history else 3600
+            return max(1, retry_after)
+        _register_attempts_day[clean_ip].append(now)
+        return None
+
+    if path == "login" or path.endswith("/login"):
+        window_min = 60
+        limit_min = 10  # 10 tentativas por minuto
+        hist_min = [t for t in _login_attempts_min[clean_ip] if now - t < window_min]
+        _login_attempts_min[clean_ip] = hist_min
+        if len(hist_min) >= limit_min:
+            retry_after = int(window_min - (now - hist_min[0])) if hist_min else 60
+            return max(1, retry_after)
+
+        window_day = 86400
+        limit_day = 50  # 50 tentativas por dia
+        hist_day = [t for t in _login_attempts_day[clean_ip] if now - t < window_day]
+        _login_attempts_day[clean_ip] = hist_day
+        if len(hist_day) >= limit_day:
+            retry_after = int(window_day - (now - hist_day[0])) if hist_day else 3600
+            return max(1, retry_after)
+
+        _login_attempts_min[clean_ip].append(now)
+        _login_attempts_day[clean_ip].append(now)
+        return None
+
+    return None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,6 +88,39 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Injeta cabeçalhos HTTP de segurança obrigatórios em todas as respostas (F4, F5)."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' ws: wss:; "
+        "frame-ancestors 'none'; "
+        "base-uri 'self'; "
+        "object-src 'none'"
+    )
+    return response
+
+
+@app.exception_handler(OverflowError)
+async def overflow_exception_handler(request: Request, exc: OverflowError):
+    """Trata inteiros que excedem a faixa permitida de 64 bits do SQLite (F6)."""
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": "Recurso não encontrado."}
+    )
+
+
 cors_origins_env = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000")
 allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
 
@@ -49,6 +133,7 @@ app.add_middleware(
 )
 
 PUBLIC_AUTH_PATHS = {"register", "login", "health", "points-shop/items", "cards/catalog"}
+
 
 
 
@@ -108,8 +193,19 @@ async def proxy_auth(path: str, request: Request):
         # Se rota for pública mas o usuário já possuir token válido, propaga identidade
         forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
 
-    # 3. Encaminhamento via httpx
+    # 3. Rate Limiting nos endpoints de registro e login (F3)
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "127.0.0.1")
+    retry_after = _is_rate_limited(client_ip, path, request.method)
+    if retry_after is not None:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": "Limite de requisições excedido. Tente novamente mais tarde."},
+            headers={"Retry-After": str(retry_after)}
+        )
+
+    # 4. Encaminhamento via httpx
     target_url = f"{AUTH_SERVICE_URL.rstrip('/')}/{path}"
+
     body = await request.body()
 
     try:
@@ -225,6 +321,7 @@ async def proxy_games(request: Request, path: str = ""):
             forward_headers[header_name] = header_value
 
     auth_header = request.headers.get("authorization")
+    user_payload: Optional[dict] = None
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
         try:
@@ -232,10 +329,19 @@ async def proxy_games(request: Request, path: str = ""):
             forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
             forward_headers["X-User-Token"] = token
         except Exception:
-            pass
+            user_payload = None
+
 
     subpath = f"/{path}" if path else ""
+    if "download" in path:
+        if not user_payload:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Token de autenticação obrigatório para download de pacotes de jogos."}
+            )
+
     target_url = f"{STORE_SERVICE_URL.rstrip('/')}/games{subpath}"
+
 
     try:
         upstream_response = await http_client.request(
@@ -275,6 +381,7 @@ async def proxy_store(path: str, request: Request):
             forward_headers[header_name] = header_value
 
     auth_header = request.headers.get("authorization")
+    user_payload: Optional[dict] = None
     if auth_header and auth_header.startswith("Bearer "):
         token = auth_header.split(" ", 1)[1].strip()
         try:
@@ -284,9 +391,18 @@ async def proxy_store(path: str, request: Request):
                 forward_headers["X-User-Username"] = str(user_payload["username"])
             forward_headers["X-User-Token"] = token
         except Exception:
-            pass
+            user_payload = None
+
+
+    if "download" in path:
+        if not user_payload:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"detail": "Token de autenticação obrigatório para download de pacotes de jogos."}
+            )
 
     target_url = f"{STORE_SERVICE_URL.rstrip('/')}/{path}"
+
     body = await request.body()
 
     try:
@@ -351,8 +467,17 @@ async def proxy_library(path: str, request: Request):
         except Exception:
             user_payload = None
 
-    # Rotas que exigem obrigatoriamente usuário autenticado
-    requires_auth = path.startswith("my-games")
+    # Rotas públicas do library-service (apenas health e consulta pública de catálogo/conquistas de terceiros)
+    is_public = (
+        path == "health"
+        or path == "library/health"
+        or (request.method == "GET" and (
+            "has-game" in path
+            or path.endswith("/achievements")
+            or path.endswith("/quests")
+        ))
+    )
+    requires_auth = not is_public
 
     if requires_auth:
         if not user_payload:
@@ -361,8 +486,13 @@ async def proxy_library(path: str, request: Request):
                 content={"detail": "Token de autenticação ausente ou inválido"}
             )
         forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        if auth_header and auth_header.startswith("Bearer "):
+            forward_headers["X-User-Token"] = auth_header.split(" ", 1)[1].strip()
     elif user_payload:
         forward_headers["X-User-Id"] = str(user_payload.get("sub", ""))
+        if auth_header and auth_header.startswith("Bearer "):
+            forward_headers["X-User-Token"] = auth_header.split(" ", 1)[1].strip()
+
 
     subpath = f"/{path}" if path else ""
     target_url = f"{LIBRARY_SERVICE_URL.rstrip('/')}/library{subpath}"
@@ -732,10 +862,21 @@ async def global_search(
             )
             if resp.status_code == 200:
                 data = resp.json()
-                return data if isinstance(data, list) else []
+                raw_users = data if isinstance(data, list) else []
+                safe_users = []
+                for u in raw_users:
+                    if isinstance(u, dict):
+                        u_copy = dict(u)
+                        u_copy.pop("email", None)
+                        u_copy.pop("wallet_balance", None)
+                        u_copy.pop("points_balance", None)
+                        u_copy.pop("total_xp", None)
+                        safe_users.append(u_copy)
+                return safe_users
             return []
         except Exception:
             return []
+
 
     async def fetch_groups():
         try:
