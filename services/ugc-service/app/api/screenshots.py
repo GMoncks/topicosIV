@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+
 
 from app.db.database import UPLOADS_DIR, get_db
 from app.schemas.screenshot import (
@@ -141,9 +143,11 @@ def delete_screenshot(
 
 @router.get("/uploads/{filename}")
 def serve_upload(filename: str):
-    """Serve arquivos de imagem estáticos armazenados no volume."""
+    """Serve arquivos de imagem estáticos armazenados no volume com defesa em profundidade (F12)."""
     safe_filename = os.path.basename(filename)
-    file_path = os.path.join(UPLOADS_DIR, safe_filename)
-    if not os.path.isfile(file_path):
+    base = Path(UPLOADS_DIR).resolve()
+    target = (base / safe_filename).resolve()
+    if not target.is_file() or base not in target.parents:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Arquivo não encontrado.")
-    return FileResponse(file_path)
+    return FileResponse(str(target))
+

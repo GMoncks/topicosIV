@@ -70,7 +70,13 @@ def test_search_users_by_username(client, seed_users):
     data = resp.json()
     assert len(data) == 1
     assert data[0]["username"] == "gabriel_t800"
-    assert data[0]["email"] == "gabriel@mistgames.com"
+    assert "email" not in data[0]
+    assert "wallet_balance" not in data[0]
+    assert "points_balance" not in data[0]
+    assert "level" in data[0]
+    assert "games_count" in data[0]
+    assert "friends_count" in data[0]
+
 
 
 def test_search_users_by_email(client, seed_users):

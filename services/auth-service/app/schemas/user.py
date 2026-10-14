@@ -4,6 +4,11 @@ import re
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
+COMMON_WEAK_PASSWORDS = {
+    "password123!", "12345678@aa", "admin123!aa", "qwertyuiop!1a", "senha123!aa", "mudar123!aa"
+}
+
+
 class UserRegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
@@ -14,6 +19,8 @@ class UserRegisterRequest(BaseModel):
     def validate_password_complexity(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("A senha deve ter no mínimo 8 caracteres")
+        if v.lower() in COMMON_WEAK_PASSWORDS:
+            raise ValueError("Senha muito comum ou vulnerável. Escolha uma senha mais segura")
         if not re.search(r"[A-Z]", v):
             raise ValueError("A senha deve conter ao menos uma letra maiúscula")
         if not re.search(r"[a-z]", v):
@@ -29,6 +36,22 @@ class UserRegisterRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     username_or_email: str
     password: str
+
+
+class UserPublicSearchResponse(BaseModel):
+    id: int
+    username: str
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    avatar_frame_url: Optional[str] = None
+    bio: Optional[str] = None
+    level: int = 1
+    games_count: int = 0
+    friends_count: int = 0
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
 
 
 class UserProfileResponse(BaseModel):

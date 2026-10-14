@@ -1,4 +1,6 @@
+import os
 from typing import Optional, List
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Header, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -9,6 +11,7 @@ from app.schemas.user import (
     UserLoginRequest,
     TokenResponse,
     UserProfileResponse,
+    UserPublicSearchResponse,
     UserProfileUpdateRequest,
     WalletDebitRequest,
     WalletCreditRequest,
@@ -155,18 +158,58 @@ def get_current_user_profile(
     return user
 
 
-@router.get("/users/search", response_model=List[UserProfileResponse], status_code=status.HTTP_200_OK)
+@router.get("/users/search", response_model=List[UserPublicSearchResponse], status_code=status.HTTP_200_OK)
 def search_users_endpoint(
     q: Optional[str] = Query(None, description="Termo de busca por username ou email"),
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db)
 ):
     """
-    Busca pública de usuários por username ou email (para busca global e convites).
+    Busca pública segura de usuários (para busca global e convites).
+    Suprime estritamente PII e saldos financeiros, expondo apenas perfil público e agregados seguros.
     """
     if not q or not q.strip():
         return []
-    return search_users(db=db, query=q.strip(), limit=limit)
+    users = search_users(db=db, query=q.strip(), limit=limit)
+    library_url = os.getenv("LIBRARY_SERVICE_URL", "http://localhost:8003").rstrip("/")
+    social_url = os.getenv("SOCIAL_SERVICE_URL", "http://localhost:8004").rstrip("/")
+
+    results = []
+    for u in users:
+        games_count = 0
+        friends_count = 0
+        try:
+            with httpx.Client(timeout=0.3) as c:
+                rg = c.get(f"{library_url}/my-games", headers={"X-User-Id": str(u.id)})
+                if rg.status_code == 200:
+                    games_count = len(rg.json())
+        except Exception:
+            games_count = 0
+
+        try:
+            with httpx.Client(timeout=0.3) as c:
+                rf = c.get(f"{social_url}/friends", headers={"X-User-Id": str(u.id)})
+                if rf.status_code == 200:
+                    friends_count = len(rf.json())
+        except Exception:
+            friends_count = 0
+
+        results.append(
+            UserPublicSearchResponse(
+                id=u.id,
+                username=u.username,
+                display_name=u.real_name or u.username,
+                avatar_url=u.avatar_url,
+                avatar_frame_url=u.avatar_frame_url,
+                bio=u.bio,
+                level=u.level or 1,
+                games_count=games_count,
+                friends_count=friends_count,
+                created_at=u.created_at,
+            )
+        )
+    return results
+
 
 
 @router.get("/users/{user_id}", response_model=UserProfileResponse)
