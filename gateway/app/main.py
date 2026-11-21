@@ -101,8 +101,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src https://fonts.gstatic.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "img-src 'self' data: https: blob:; "
         "connect-src 'self' ws: wss:; "
         "frame-ancestors 'none'; "
