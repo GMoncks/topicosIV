@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-runner_adapter.py — Adaptador de execução de testes para qa_tester no projeto MIST.
+runner_adapter.py — Test execution adapter for qa_tester in the MIST project.
 
-Funcionalidades:
-1. Parseia TESTS.md para extrair testes e seus metadados.
-2. Executa testes reais via subprocess para pytest, vitest e playwright.
-3. Normaliza a saída de cada runner para o schema comum do resultados.json.
-4. Aplica escrita atômica (arquivo temporário + rename).
-5. Mantém histórico FIFO das últimas 10 execuções por ID de teste.
+Features:
+1. Parses TESTS.md to extract tests and their metadata.
+2. Runs real tests via subprocess for pytest, vitest, and playwright.
+3. Normalizes each runner's output to the common results.json schema.
+4. Applies atomic writing (temp file + rename).
+5. Maintains a FIFO history of the last 10 executions per test ID.
 """
 
 import sys
@@ -27,7 +27,7 @@ RESULTADOS_JSON_PATH = ROOT_DIR / "resultados.json"
 
 def parse_tests_md(category_filter=None, test_id_filter=None):
     if not TESTS_MD_PATH.exists():
-        raise FileNotFoundError(f"Arquivo não encontrado: {TESTS_MD_PATH}")
+        raise FileNotFoundError(f"File not found: {TESTS_MD_PATH}")
 
     content = TESTS_MD_PATH.read_text(encoding="utf-8")
     lines = content.splitlines()
@@ -84,7 +84,7 @@ def parse_tests_md(category_filter=None, test_id_filter=None):
     if current_test:
         tests.append(current_test)
 
-    # Filtragem
+    # Filtering
     filtered = []
     for t in tests:
         if test_id_filter and t["id"].lower() != test_id_filter.lower():
@@ -161,20 +161,20 @@ def atomic_save_resultados(data):
         json.dump(data, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
-    # Substituição atômica no SO
+    # Atomic replacement at OS level
     os.replace(temp_file_path, RESULTADOS_JSON_PATH)
 
 
 def execute_suite(category=None, test_id=None, origem="execucao"):
     tests = parse_tests_md(category_filter=category, test_id_filter=test_id)
     if not tests:
-        print(f"[qa_tester] Nenhum teste encontrado com os critérios (categoria='{category}', id='{test_id}').")
+        print(f"[qa_tester] No tests found matching the criteria (category='{category}', id='{test_id}').")
         return
 
     resultados = load_resultados()
     run_timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    print(f"[qa_tester] Iniciando processamento de {len(tests)} teste(s) [origem={origem}]...")
+    print(f"[qa_tester] Starting processing of {len(tests)} test(s) [origin={origem}]...")
 
     for test in tests:
         t_id = test["id"]
@@ -198,9 +198,9 @@ def execute_suite(category=None, test_id=None, origem="execucao"):
                 "erro": None,
                 "origem": origem
             }
-            print(f" - [{t_id}] PENDING (planejado ou sem comando automatizado)")
+            print(f" - [{t_id}] PENDING (planned or without automated command)")
         else:
-            print(f" - [{t_id}] EXECUTANDO ({t_runner}): `{t_cmd}`")
+            print(f" - [{t_id}] RUNNING ({t_runner}): `{t_cmd}`")
             exec_res = run_command(t_cmd, t_runner)
             entry = {
                 "run_id": run_timestamp,
@@ -209,26 +209,26 @@ def execute_suite(category=None, test_id=None, origem="execucao"):
                 "erro": exec_res["erro"],
                 "origem": origem
             }
-            print(f"   |-> Resultado: {entry['status'].upper()} em {entry['duracao_ms']}ms")
+            print(f"   |-> Result: {entry['status'].upper()} in {entry['duracao_ms']}ms")
 
-        # Manter histórico FIFO das últimas 10 execuções
+        # Maintain FIFO history of the last 10 executions
         historico = resultados[t_id].get("historico", [])
         historico.append(entry)
         if len(historico) > 10:
             historico = historico[-10:]
         resultados[t_id]["historico"] = historico
 
-    # Escrita atômica garantida
+    # Guaranteed atomic write
     atomic_save_resultados(resultados)
-    print(f"[qa_tester] Resultados salvos atomicamente em {RESULTADOS_JSON_PATH}")
+    print(f"[qa_tester] Results saved atomically to {RESULTADOS_JSON_PATH}")
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Executor de testes para a skill qa_tester")
-    parser.add_argument("--categoria", help="Filtrar por categoria do TESTS.md")
-    parser.add_argument("--id", help="Filtrar por ID de teste único")
-    parser.add_argument("--origem", default="execucao", choices=["execucao", "validacao"], help="Origem da execução")
+    parser = argparse.ArgumentParser(description="Test executor for qa_tester skill")
+    parser.add_argument("--categoria", help="Filter by category from TESTS.md")
+    parser.add_argument("--id", help="Filter by single test ID")
+    parser.add_argument("--origem", default="execucao", choices=["execucao", "validacao"], help="Execution origin")
 
     args = parser.parse_args()
     execute_suite(category=args.categoria, test_id=args.id, origem=args.origem)

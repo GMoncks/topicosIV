@@ -1,0 +1,137 @@
+# Local AI Prompts — Log
+
+---
+
+## Prompt
+> You are a junior web developer.
+> The csp_icons.md file describes (in portuguese) what was the problem with the icons that weren't visible anymore. Read the file and plan the recommended fixes.
+> The present prompt and output shall be saved in a new file called "local_ai_prompts". This file shall be always be appended with new future prompts and outputs, so create a "rule" to always append this file.
+
+---
+
+## Output — CSP Icons: Diagnosis & Fix Plan
+
+### 1. Problem Summary
+After a security hardening commit (`4a38874`), multiple FontAwesome 6 icons disappeared from the UI due to **Content-Security-Policy (CSP) blocking**. Affected icons include:
+
+| Icon | Context |
+|---|---|
+| `fa-gamepad` | Sidebar next to MIST logo |
+| `fa-bell` | Notification bell |
+| `fa-xmark` | Close buttons (academic warning, modals) |
+| `fa-triangle-exclamation` | Academic warning alert |
+| `fa-wand-magic-sparkles` | Curadoria MIST section |
+| `fa-chevron-left/right` | Game screenshot carousel |
+| `fa-magnifying-glass` | Global search field |
+
+### 2. Root Cause
+The CSP header misplaces `https://cdnjs.cloudflare.com` under **`script-src`** instead of **`style-src`**, and omits it entirely from **`font-src`**. FontAwesome is loaded via `<link rel="stylesheet">` and serves `.woff2`/`.ttf` font files — both are blocked by the current policy.
+
+Two CSP-violation console errors occur:
+- `Refused to load the stylesheet ... because it violates "style-src"`
+- `Refused to load the font ... because it violates "font-src"`
+
+### 3. Recommended Fixes
+
+#### File 1: `frontend/nginx.conf` (~ line 16)
+**Change:** Move `https://cdnjs.cloudflare.com` into `style-src` and add it to `font-src`. Also include `'self' data:` in `font-src` for resilience.
+
+
+
+---
+
+## Prompt
+> Great. Now, fix the icon problems that you learned before how to fix
+
+---
+
+## Output — CSP Icons Fix Applied
+
+### 1. Changes Made
+
+Both CSP headers were updated to allow `https://cdnjs.cloudflare.com` in both `style-src` and `font-src` directives:
+
+#### File 1: `frontend/nginx.conf` (line 16)
+
+**Before:**
+```nginx
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; ..." always;
+```
+
+**After:**
+```nginx
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; ..." always;
+```
+
+#### File 2: `gateway/app/main.py` (~ line 104, inside `add_security_headers`)
+
+**Before:**
+```python
+"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+"font-src https://fonts.gstatic.com; "
+```
+
+**After:**
+```python
+"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+"font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
+```
+
+### 2. Next Steps for Deployment
+
+1. **Run gateway tests:**
+   ```bash
+   pytest gateway/tests/test_gateway.py
+   ```
+
+2. **Rebuild and restart Docker containers:**
+   ```bash
+   docker compose up -d --build frontend gateway
+   ```
+
+3. **Browser verification:**
+   - Open DevTools Console (`F12`) — confirm **zero CSP violation errors**.
+   - Hard refresh (`Ctrl + F5`) to clear cached CSS/fonts.
+   - Verify all previously missing icons are restored.
+
+---
+---
+**Prompt:**
+Create a new environment in my notebook called "mist_env" administered by the "conda". Activate the mist_env with conda.
+
+**Decisions:**
+- Created conda environment `mist_env` using `conda create -n mist_env -y` (no Python version specified, uses default).
+- Used `source ~/anaconda3/etc/profile.d/conda.sh && conda activate mist_env` to activate since `conda init` was not previously run in this shell session.
+
+**Outputs/Changes:**
+- Environment `mist_env` created at `/home/user/anaconda3/envs/mist_env`.
+- Environment is now active (marked with `*` in conda envs list).
+---
+**Prompt:**
+Now that the new env is created and activated, prepare the env with the dependencies listed in requirements-dev.txt. After, run `pytest gateway/tests/test_gateway.py` to test the capabilities of the env
+
+**Decisions:**
+- The initial conda environment `mist_env` was created without a Python version, which caused a PEP 668 externally-managed-environment error.
+- Recreated the environment with Python 3.12: `conda create -n mist_env python=3.12 -y`
+- Installed dependencies from `requirements-dev.txt`: pytest, pytest-asyncio, httpx, pytest-mock, coverage
+- Additional runtime dependencies required by the test file and application: PyJWT, fastapi, websockets
+- These were not in requirements-dev.txt but are needed by the app under test (gateway/app/main.py)
+
+**Outputs/Changes:**
+- Environment `mist_env` now has Python 3.12.16
+- All test dependencies installed successfully
+- Additional deps installed: PyJWT-2.15.1, fastapi-0.165.0, websockets-17.4
+- Test results: **13 passed, 5 warnings** (warnings are about pytest.mark.security and deprecated httpx usage with starlette.testclient - non-blocking)
+---
+**Prompt:**
+Update the requirements.txt with the new dependencies that were not previously listed
+
+**Decisions:**
+- The requirements.txt file was missing runtime dependencies that were required by the gateway application but not included in the file
+- Added PyJWT, fastapi, and websockets as they are needed by gateway/app/main.py and its tests
+
+**Outputs/Changes:**
+- Updated requirements.txt to include three new dependencies under a "Dependências de runtime para o Gateway" section:
+  - PyJWT>=2.8.0
+  - fastapi>=0.100.0
+  - websockets>=12.0

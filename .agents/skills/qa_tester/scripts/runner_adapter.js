@@ -8,7 +8,7 @@ const RESULTADOS_JSON_PATH = path.join(ROOT_DIR, 'resultados.json');
 
 function parseTestsMd(categoryFilter, testIdFilter) {
   if (!fs.existsSync(TESTS_MD_PATH)) {
-    throw new Error(`Arquivo não encontrado: ${TESTS_MD_PATH}`);
+    throw new Error(`File not found: ${TESTS_MD_PATH}`);
   }
 
   const content = fs.readFileSync(TESTS_MD_PATH, 'utf-8');
@@ -116,14 +116,14 @@ function atomicSaveResultados(data) {
 function executeSuite({ category, testId, origem = 'execucao' }) {
   const tests = parseTestsMd(category, testId);
   if (tests.length === 0) {
-    console.log(`[qa_tester] Nenhum teste encontrado com os critérios (categoria='${category}', id='${testId}').`);
+    console.log(`[qa_tester] No tests found matching the criteria (category='${category}', id='${testId}').`);
     return;
   }
 
   const resultados = loadResultados();
   const runTimestamp = new Date().toISOString();
 
-  console.log(`[qa_tester] Iniciando processamento de ${tests.length} teste(s) [origem=${origem}]...`);
+  console.log(`[qa_tester] Starting processing of ${tests.length} test(s) [origin=${origem}]...`);
 
   for (const test of tests) {
     const { id: t_id, runner: t_runner, status: t_status, comando: t_cmd } = test;
@@ -143,9 +143,9 @@ function executeSuite({ category, testId, origem = 'execucao' }) {
         erro: null,
         origem
       };
-      console.log(` - [${t_id}] PENDING (planejado ou sem comando automatizado)`);
+      console.log(` - [${t_id}] PENDING (planned or without automated command)`);
     } else {
-      console.log(` - [${t_id}] EXECUTANDO (${t_runner}): \`${t_cmd}\``);
+      console.log(` - [${t_id}] RUNNING (${t_runner}): \`${t_cmd}\``);
       const execRes = runCommand(t_cmd);
       entry = {
         run_id: runTimestamp,
@@ -154,7 +154,7 @@ function executeSuite({ category, testId, origem = 'execucao' }) {
         erro: execRes.erro,
         origem
       };
-      console.log(`   └─ Resultado: ${entry.status.toUpperCase()} em ${entry.duracao_ms}ms`);
+      console.log(`   └─ Result: ${entry.status.toUpperCase()} in ${entry.duracao_ms}ms`);
     }
 
     let historico = resultados[t_id].historico || [];
